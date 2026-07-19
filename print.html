@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>تقرير للطباعة — منصة المواقع الاستثمارية بالمدينة المنورة</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🖨️</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    /* صفحة تقارير مخصصة للطباعة وحفظ PDF — عربية RTL بالكامل */
+    :root { --primary: #0e7a4f; --border: #d8e2db; --text2: #5b6d63; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Tajawal', 'Segoe UI', Tahoma, sans-serif;
+      direction: rtl; color: #1b2b23; background: #eef2ef; padding: 24px;
+    }
+    .toolbar {
+      max-width: 1350px; margin: 0 auto 16px; display: flex; gap: 10px; justify-content: flex-end;
+    }
+    /* شريط سفلي نحيف باسم الأمانة (بدون شعار) */
+    .brand-footer {
+      position: absolute; bottom: 0; right: 0; left: 0;
+      background: #e8f3ec; border-radius: 0 0 10px 10px;
+      display: flex; align-items: center; justify-content: flex-start;
+      padding: 4px 22px; min-height: 30px;
+    }
+    .brand-footer .brand-text { text-align: right; line-height: 1.25; }
+    .brand-footer .brand-text b { display: inline-block; font-size: 11.5px; color: #0e6b48; }
+    .brand-footer .brand-text small { display: inline-block; font-size: 8.5px; color: #5b6d63; margin-inline-start: 8px; letter-spacing: 0.3px; }
+    .toolbar button {
+      font-family: inherit; padding: 10px 20px; border-radius: 8px; border: none;
+      background: var(--primary); color: #fff; font-size: 14px; font-weight: 700; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .toolbar button.ghost { background: #fff; color: var(--primary); border: 1px solid var(--primary); }
+    .sheet {
+      max-width: 1350px; margin: 0 auto; background: #fff; border-radius: 10px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1); padding: 32px 36px 56px;
+      position: relative;
+    }
+    /* تخطيط عرضي بعمودين: البيانات والجدول يميناً — الخرائط يساراً (كنموذج الأمانة) */
+    .report-grid {
+      display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 26px; align-items: start;
+      margin-top: 6px;
+    }
+    @media (max-width: 900px) { .report-grid { grid-template-columns: 1fr; } }
+    .report-header {
+      display: flex; align-items: center; gap: 16px; border-bottom: 3px solid var(--primary);
+      padding-bottom: 16px; margin-bottom: 20px;
+    }
+    .report-header .emblem {
+      width: 58px; height: 58px; border-radius: 12px; background: var(--primary);
+      color: #fff; display: flex; align-items: center; justify-content: center; font-size: 26px;
+    }
+    .report-header h1 { font-size: 21px; color: var(--primary); }
+    .report-header .sub { font-size: 13px; color: var(--text2); margin-top: 3px; }
+    .report-header .date { margin-inline-start: auto; text-align: left; font-size: 12px; color: var(--text2); }
+    h2 { font-size: 16px; color: var(--primary); margin: 22px 0 10px; border-inline-start: 4px solid var(--primary); padding-inline-start: 10px; }
+    .stat-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 14px 0; }
+    .stat-cards .card { border: 1px solid var(--border); border-radius: 10px; padding: 14px 10px; text-align: center; }
+    .stat-cards .card b { display: block; font-size: 20px; color: var(--primary); }
+    .stat-cards .card span { font-size: 11.5px; color: var(--text2); }
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 8px; }
+    th { background: var(--primary); color: #fff; padding: 8px; text-align: right; font-size: 12px; }
+    td { padding: 7px 8px; border-bottom: 1px solid var(--border); }
+    tr:nth-child(even) td { background: #f6faf7; }
+    .num { font-variant-numeric: tabular-nums; direction: ltr; text-align: right; }
+    .kv { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 24px; }
+    .kv .row { display: flex; justify-content: space-between; padding: 7px 4px; border-bottom: 1px dashed var(--border); font-size: 13px; }
+    .kv .row span:first-child { color: var(--text2); }
+    .kv .row b { color: #1b2b23; }
+    .footer { margin-top: 28px; padding-top: 14px; border-top: 1px solid var(--border); font-size: 11px; color: var(--text2); display: flex; justify-content: space-between; }
+    .empty { text-align: center; padding: 60px 20px; color: var(--text2); }
+    /* عمود الخرائط بجانب الجدول */
+    .maps-page { margin-top: 0; }
+    .maps-page h2 { margin-top: 0; }
+    .map-block { margin-bottom: 14px; page-break-inside: avoid; }
+    .map-frame {
+      height: 300px; border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+      position: relative;
+    }
+    /* زر تصدير الخريطة كصورة (لا يُطبع) */
+    .img-export-btn {
+      position: absolute; top: 8px; left: 8px; z-index: 1000;
+      font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
+      background: #fff; color: var(--primary); border: 1.5px solid var(--primary);
+      border-radius: 7px; padding: 5px 10px; display: inline-flex; gap: 6px; align-items: center;
+    }
+    .img-export-btn:hover { background: var(--primary); color: #fff; }
+    @media print { .img-export-btn { display: none !important; } }
+    .map-frame .lmap { height: 100%; width: 100%; }
+    .map-caption { font-size: 11.5px; color: var(--text2); margin-top: 6px; text-align: center; }
+    .leaflet-control-attribution { font-size: 9px !important; }
+    /* علامات المعالم على خرائط التقرير */
+    .print-lm { background: transparent; border: none; }
+    .pm-dot {
+      display: block; width: 10px; height: 10px; border-radius: 50%;
+      border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    }
+    .pm-lbl {
+      position: absolute; top: 11px; right: 50%; transform: translateX(50%);
+      background: rgba(255,255,255,0.9); color: #1b2b23; font-size: 9px; font-weight: 700;
+      padding: 1px 5px; border-radius: 4px; white-space: nowrap; box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+      font-family: 'Tajawal', sans-serif;
+    }
+    .site-tip { font-weight: 800; font-size: 12px; direction: rtl; font-family: 'Tajawal', sans-serif; }
+    /* وسم اسم الموقع: متمركز أفقياً فوق علامة الموقع مباشرة */
+    .site-lbl {
+      position: absolute; bottom: 12px; right: 50%; transform: translateX(50%);
+      background: #fff; color: #1b2b23; border: 1.5px solid #b91c1c; border-radius: 6px;
+      font-size: 12px; font-weight: 800; padding: 2px 8px; white-space: nowrap;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.35); direction: rtl; font-family: 'Tajawal', sans-serif;
+    }
+    /* سهم صغير يشير للعلامة — يرث لون إطار الوسم */
+    .site-lbl::after {
+      content: ''; position: absolute; top: 100%; right: 50%; transform: translateX(50%);
+      border: 5px solid transparent; border-top-color: inherit;
+    }
+    .pm-lbl-tip {
+      background: rgba(255,255,255,0.9); border: none; box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+      font-size: 9px; font-weight: 700; padding: 1px 5px; direction: rtl; font-family: 'Tajawal', sans-serif;
+    }
+    .pm-lbl-tip::before { display: none; }
+    /* شرائح فلاتر الفئات في شريط أدوات الطباعة */
+    .cat-chip {
+      font-size: 12px; font-weight: 700; padding: 5px 12px; border-radius: 20px; cursor: pointer;
+      border: 1.5px solid var(--primary); color: var(--primary); background: #fff; user-select: none;
+    }
+    .cat-chip.active { background: var(--primary); color: #fff; }
+    /* زر إخفاء معلم من صف الجدول — لا يُطبع */
+    .row-hide-btn {
+      background: none; border: none; cursor: pointer; font-size: 11px; opacity: 0.45;
+      padding: 0 3px; vertical-align: middle;
+    }
+    .row-hide-btn:hover { opacity: 1; }
+    .row-hide-btn i { font-style: normal; }
+    @media print { .row-hide-btn { display: none !important; } }
+    /* فاصل المواقع في التقرير متعدد المواقع */
+    .land-sep { background: var(--primary); color: #fff; padding: 10px 14px; border-radius: 8px; border: none; }
+    .land-sep + h2 { margin-top: 14px; }
+    @media print {
+      body { background: #fff; padding: 0; }
+      .toolbar { display: none; }
+      .sheet { box-shadow: none; border-radius: 0; max-width: 100%; padding: 1mm 2mm 11mm; }
+      /* A4 عرضية (Landscape): التقرير كاملاً في صفحة واحدة */
+      @page { size: A4 landscape; margin: 8mm; }
+      thead { display: table-header-group; }
+      tr { page-break-inside: avoid; }
+      table { font-size: 10.5px; }
+      td { padding: 4px 6px; }
+      th { padding: 5px 6px; font-size: 10.5px; }
+      .report-grid { gap: 14px; }
+      /* ترويسة مضغوطة */
+      .report-header { padding-bottom: 8px; margin-bottom: 10px; }
+      .report-header .emblem { width: 38px; height: 38px; font-size: 17px; border-radius: 8px; }
+      .report-header h1 { font-size: 16px; }
+      .report-header .sub { font-size: 11px; }
+      .report-header .date { font-size: 10px; }
+      h2 { font-size: 13px; margin: 10px 0 6px; }
+      .stat-cards { gap: 8px; margin: 8px 0; }
+      .stat-cards .card { padding: 8px 6px; }
+      .stat-cards .card b { font-size: 15px; }
+      .stat-cards .card span { font-size: 10px; }
+      .footer { margin-top: 10px; padding-top: 8px; font-size: 9.5px; }
+      /* خريطتان متراصتان تتسعان مع الترويسة والتذييل في صفحة واحدة:
+         192mm ارتفاع متاح − ترويسة ~15 − تذييل 10 − عناوين ~10 = ~157mm للخريطتين */
+      .map-frame { height: 57mm; }
+      .map-block { margin-bottom: 5px; }
+      .map-caption { font-size: 9.5px; margin-top: 3px; }
+      /* الشريط السفلي النحيف يتكرر في كل صفحة مطبوعة */
+      .brand-footer {
+        position: fixed; bottom: 0; right: 0; left: 0; border-radius: 0; min-height: 8mm;
+        -webkit-print-color-adjust: exact; print-color-adjust: exact;
+      }
+      .leaflet-control-zoom { display: none !important; }
+      .break-before { page-break-before: always; }
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar" id="mapControls" style="display:none;justify-content:flex-start;align-items:center;flex-wrap:wrap;background:#fff;border-radius:10px;padding:10px 14px;box-shadow:0 1px 4px rgba(0,0,0,0.08)">
+    <label style="font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px">
+      خريطة الأساس:
+      <select id="basemapSel" style="font-family:inherit;padding:6px 10px;border-radius:7px;border:1px solid #cfd8d2">
+        <option value="streets">الشوارع</option>
+        <option value="satellite">الأقمار الصناعية</option>
+        <option value="light">فاتحة</option>
+        <option value="dark">داكنة</option>
+      </select>
+    </label>
+    <span style="font-size:13px;font-weight:700;margin-inline-start:12px">المعالم:</span>
+    <div id="catFilterChips" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+  </div>
+  <div class="toolbar">
+    <button onclick="window.print()">🖨️ طباعة / حفظ PDF</button>
+    <button class="ghost" onclick="window.close()">إغلاق</button>
+  </div>
+  <div class="sheet" id="sheet">
+    <div class="empty">لا توجد بيانات للعرض — افتح هذه الصفحة من داخل التطبيق عبر أزرار الطباعة والتصدير.</div>
+  </div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-simple-map-screenshoter@0.4.5/dist/leaflet-simple-map-screenshoter.js"></script>
+  <script src="js/print-page.js"></script>
+</body>
+</html>
