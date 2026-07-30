@@ -9,3 +9,6 @@ desktop.ini
 # مخلفات أدوات التطوير
 node_modules/
 *.log
+
+# ملف خط النشر — رمز الدخول الحالي بلا صلاحية workflow (أضفه يدوياً من واجهة GitHub أو بعد gh auth login)
+.github/

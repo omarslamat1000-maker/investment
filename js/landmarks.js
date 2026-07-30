@@ -46,26 +46,10 @@
     'fa-water', 'fa-person-walking', 'fa-car', 'fa-gas-pump', 'fa-utensils',
   ];
 
-  // المعالم الافتراضية للمدينة المنورة (إحداثيات تقريبية قابلة للتعديل من صفحة إدارة المعالم)
-  const DEFAULT_LANDMARKS = [
-    { id: 'bl-prophet-mosque', name: 'المسجد النبوي الشريف', category: 'religious', lat: 24.4672, lng: 39.6111, icon: 'fa-mosque', description: 'ثاني أقدس المساجد في الإسلام، في قلب المدينة المنورة.' },
-    { id: 'bl-quba-mosque', name: 'مسجد قباء', category: 'religious', lat: 24.4394, lng: 39.6172, icon: 'fa-mosque', description: 'أول مسجد بني في الإسلام، جنوب المدينة المنورة.' },
-    { id: 'bl-qiblatain', name: 'مسجد القبلتين', category: 'religious', lat: 24.4844, lng: 39.5788, icon: 'fa-mosque', description: 'المسجد الذي تحولت فيه القبلة من بيت المقدس إلى الكعبة.' },
-    { id: 'bl-miqat', name: 'ميقات ذي الحليفة (أبيار علي)', category: 'religious', lat: 24.4139, lng: 39.5427, icon: 'fa-kaaba', description: 'ميقات أهل المدينة ومن مرّ بها للإحرام.' },
-    { id: 'bl-airport', name: 'مطار الأمير محمد بن عبدالعزيز الدولي', category: 'airport', lat: 24.5534, lng: 39.7051, icon: 'fa-plane', description: 'المطار الدولي للمدينة المنورة، شمال شرق المدينة.' },
-    { id: 'bl-hhr-station', name: 'محطة قطار الحرمين بالمدينة المنورة', category: 'transport', lat: 24.4836, lng: 39.5420, icon: 'fa-train', description: 'محطة قطار الحرمين السريع، غرب المدينة قرب مدينة المعرفة الاقتصادية.' },
-    { id: 'bl-uhud', name: 'جبل أحد', category: 'tourism', lat: 24.5085, lng: 39.6137, icon: 'fa-mountain', description: 'أكبر جبال المدينة المنورة وموقع غزوة أحد.' },
-    { id: 'bl-aqeeq-walk', name: 'ممشى وادي العقيق', category: 'tourism', lat: 24.4400, lng: 39.5680, icon: 'fa-person-walking', description: 'ممشى ترفيهي على ضفاف وادي العقيق المبارك.' },
-    // الطرق الدائرية — نموذج حلقي: المسافة تحسب لأقرب نقطة على الحلقة
-    { id: 'bl-ring1', name: 'الطريق الدائري الأول (طريق الملك فيصل)', category: 'road', lat: 24.4672, lng: 39.6111, icon: 'fa-road', ring: { radiusKm: 1.3 }, description: 'الدائري المحيط بالمنطقة المركزية حول المسجد النبوي.' },
-    { id: 'bl-ring2', name: 'الطريق الدائري الثاني (طريق الملك عبدالله)', category: 'road', lat: 24.4672, lng: 39.6111, icon: 'fa-road', ring: { radiusKm: 4.5 }, description: 'الدائري الأوسط للمدينة المنورة.' },
-    { id: 'bl-ring3', name: 'الطريق الدائري الثالث (طريق الملك خالد)', category: 'road', lat: 24.4672, lng: 39.6111, icon: 'fa-road', ring: { radiusKm: 8.5 }, description: 'الدائري الخارجي للمدينة المنورة.' },
-    // محاور رئيسة (نقاط استدلالية على المحور)
-    { id: 'bl-hijrah-rd', name: 'طريق الهجرة (محور مكة)', category: 'road', lat: 24.4080, lng: 39.5560, icon: 'fa-road', description: 'المحور الرئيس جنوب غرب المدينة باتجاه مكة المكرمة.' },
-    { id: 'bl-airport-rd', name: 'طريق المطار (محور الشمال الشرقي)', category: 'road', lat: 24.5150, lng: 39.6560, icon: 'fa-road', description: 'المحور الرابط بين وسط المدينة والمطار.' },
-    { id: 'bl-king-abdulaziz-rd', name: 'طريق الملك عبدالعزيز', category: 'road', lat: 24.4900, lng: 39.5900, icon: 'fa-road', description: 'محور رئيس يخترق المدينة من الشمال الغربي.' },
-    { id: 'bl-qassim-rd', name: 'طريق القصيم (محور الشرق)', category: 'road', lat: 24.4850, lng: 39.6800, icon: 'fa-road', description: 'المحور الشرقي باتجاه القصيم.' },
-  ];
+  // المعالم الافتراضية — تُحمَّل من data/landmarks-data.js (مولَّد بـ tools/convert-landmarks.js)
+  // لتحديثها: صدّر المعالم GeoJSON من صفحة الإدارة ثم:
+  //   node tools/convert-landmarks.js معالم.geojson data/landmarks-data.js
+  const DEFAULT_LANDMARKS = window.DEFAULT_LANDMARKS_DATA || [];
 
   let overrides = {}; // تعديلات المستخدم على المعالم الافتراضية
   let userLandmarks = []; // معالم أضافها المستخدم
