@@ -1,0 +1,17 @@
+/* خريطة المبادرات SVG */
+.mi-map-card { padding: var(--mi-sp-4); }
+.mi-map { display: block; border-radius: var(--mi-radius); }
+.mi-map-bg { fill: var(--mi-surface-2); }
+.mi-map-grid line { stroke: var(--mi-line); stroke-width: 1; opacity: 0.6; }
+.mi-map-pin { cursor: pointer; }
+.mi-map-pin:hover circle, .mi-map-pin:focus circle { stroke: var(--mi-gold-500); stroke-width: 4; }
+.mi-map-landmark { color: var(--mi-green-900); }
+.mi-map-landmark text { font: 700 12px var(--mi-font-body); fill: var(--mi-muted); }
+.mi-map-legend {
+  display: flex; gap: var(--mi-sp-4); flex-wrap: wrap;
+  padding: var(--mi-sp-3) var(--mi-sp-2) 0; font-size: var(--mi-fs-xs); color: var(--mi-ink-soft);
+}
+.mi-map-legend .mi-legend-dot { width: 12px; height: 12px; border-radius: 999px; vertical-align: middle; display: inline-block; }
+.mi-legend-dot--need { border: 2px dashed var(--mi-gold-500); background: transparent !important; border-radius: 3px !important; }
+.mi-map-info { padding: var(--mi-sp-3) var(--mi-sp-2); font-size: var(--mi-fs-sm); min-height: 3.4rem; display: flex; flex-direction: column; gap: var(--mi-sp-1); align-items: flex-start; }
+.mi-map-info .mi-btn { margin-top: var(--mi-sp-1); }

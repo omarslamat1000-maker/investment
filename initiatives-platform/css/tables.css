@@ -1,0 +1,22 @@
+/* الجداول */
+.mi-table-wrap { overflow-x: auto; border: 1px solid var(--mi-line); border-radius: var(--mi-radius-lg); background: var(--mi-surface); }
+.mi-table { width: 100%; border-collapse: collapse; font-size: var(--mi-fs-sm); }
+.mi-table th {
+  text-align: right; padding: var(--mi-sp-3) var(--mi-sp-4);
+  background: var(--mi-surface-2); color: var(--mi-ink-soft);
+  border-bottom: 2px solid var(--mi-line);
+  white-space: nowrap;
+}
+.mi-table td { padding: var(--mi-sp-3) var(--mi-sp-4); border-bottom: 1px solid var(--mi-line); vertical-align: top; }
+.mi-table tbody tr:last-child td { border-bottom: 0; }
+.mi-table tbody tr[role="button"] { cursor: pointer; }
+.mi-table tbody tr[role="button"]:hover, .mi-table tbody tr[role="button"]:focus-visible { background: var(--mi-green-100); }
+.mi-table-empty { text-align: center; color: var(--mi-muted); padding: var(--mi-sp-6) !important; }
+
+.mi-th-sort {
+  background: none; border: 0; font: inherit; color: inherit; cursor: pointer;
+  padding: 0; font-weight: 700;
+}
+.mi-table-tools { display: flex; align-items: center; gap: var(--mi-sp-3); margin-bottom: var(--mi-sp-3); }
+.mi-table-search { max-width: 18rem; }
+.mi-table-count { color: var(--mi-muted); font-size: var(--mi-fs-xs); white-space: nowrap; }

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>بوابة الشركاء — منصة المبادرات</title>
+  <meta name="description" content="بوابة شركاء أمانة منطقة المدينة المنورة: مبادراتكم ومساهماتكم ومنافعها المتحققة.">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./assets/logo-placeholder.svg" type="image/svg+xml">
+  <meta name="theme-color" content="#073B2E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&family=Noto+Kufi+Arabic:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./css/tokens.css">
+  <link rel="stylesheet" href="./css/base.css">
+  <link rel="stylesheet" href="./css/components.css">
+  <link rel="stylesheet" href="./css/layout.css">
+  <link rel="stylesheet" href="./css/navigation.css">
+  <link rel="stylesheet" href="./css/forms.css">
+  <link rel="stylesheet" href="./css/dashboard.css">
+  <link rel="stylesheet" href="./css/responsive.css">
+  <link rel="stylesheet" href="./css/themes.css">
+</head>
+<body>
+  <header class="mi-page-head-bar">
+    <a class="mi-sidebar__brand" href="./index.html">
+      <span class="mi-brand-arch" aria-hidden="true"></span>
+      <span class="mi-brand-text"><b>منصة المبادرات</b><small>أمانة منطقة المدينة المنورة</small></span>
+    </a>
+    <a class="mi-back" href="./index.html">← العودة للبوابة</a>
+  </header>
+
+  <main class="mi-page-plain mi-page-plain--wide" id="mi-partner-main">
+    <h1>بوابة الشركاء</h1>
+    <p class="mi-muted">اختر جهتك لعرض مبادراتها ومساهماتها — في النسخة التجريبية الاختيار مفتوح بلا مصادقة.</p>
+    <div class="mi-form-field" style="max-width:24rem">
+      <label for="mi-partner-select">الجهة الشريكة</label>
+      <select class="mi-input" id="mi-partner-select"></select>
+    </div>
+    <div id="mi-partner-content"></div>
+  </main>
+
+  <script type="module">
+    import { APP_CONFIG } from './js/config.example.js';
+    import { initDataProvider } from './js/data/data-provider.js';
+    import { seedDemoDataIfEmpty } from './js/services/import-service.js';
+    import { repos } from './js/data/repositories.js';
+    import { html, raw } from './js/core/sanitizer.js';
+    import { statusBadge, gateTrackHtml, definitionList } from './js/ui/components.js';
+    import { partnerTypeLabel, modelLabel } from './js/domain/partner-model.js';
+    import { categoryLabel } from './js/domain/initiative-model.js';
+    import { realizationPercent, benefitStatus } from './js/domain/benefits.js';
+    import { fmtMoney, fmtNumber, sum } from './js/core/utils.js';
+
+    (async () => {
+      await initDataProvider(APP_CONFIG);
+      await seedDemoDataIfEmpty();
+      const [partners, links, initiatives, benefits] = await Promise.all([
+        repos.partners.getAll(), repos.initiativePartners.getAll(),
+        repos.initiatives.getAll(), repos.benefits.getAll()
+      ]);
+
+      const select = document.getElementById('mi-partner-select');
+      const content = document.getElementById('mi-partner-content');
+      select.innerHTML = partners.filter((p) => p.active)
+        .map((p) => `<option value="${p.id}">${p.name}</option>`).join('');
+
+      function draw(partnerId) {
+        const partner = partners.find((p) => p.id === partnerId);
+        if (!partner) { content.innerHTML = ''; return; }
+        const myLinks = links.filter((l) => l.partnerId === partnerId);
+        const myInis = myLinks.map((l) => ({ link: l, ini: initiatives.find((i) => i.id === l.initiativeId) })).filter((x) => x.ini);
+        const totalValue = sum(myInis, (x) => x.ini.budget);
+
+        content.innerHTML = html`
+          <div class="mi-card" style="margin-top:1rem">
+            <h2>${partner.name}</h2>
+            ${raw(definitionList([
+              ['نوع الجهة', partnerTypeLabel(partner.type)],
+              ['ممثل الجهة', partner.contactName || '—'],
+              ['عدد المبادرات المرتبطة', String(myInis.length)],
+              ['قيمة المبادرات المرتبطة', fmtMoney(totalValue)],
+              ['تقييم الأداء', partner.rating ? `${partner.rating}/5` : 'شريك جديد']
+            ]))}
+          </div>
+          ${myInis.length ? raw(myInis.map(({ link, ini }) => {
+            const myBenefits = benefits.filter((b) => b.initiativeId === ini.id);
+            return html`
+            <div class="mi-card" style="margin-top:1rem">
+              <h3>${ini.title}</h3>
+              <p class="mi-muted">${ini.id} • ${categoryLabel(ini.category)} • دور الجهة: ${modelLabel(link.model)}${link.contribution ? ' — ' + link.contribution : ''}</p>
+              <p>${raw(statusBadge(ini.status))}</p>
+              ${raw(gateTrackHtml(ini.status, { compact: false }))}
+              ${myBenefits.length ? raw('<h4 class="mi-subhead">المنافع المعلنة</h4>' + myBenefits.map((b) => {
+                const p = realizationPercent(b);
+                return html`<div class="mi-ms"><span class="mi-ms__dot" style="background:var(--mi-gold-500)"></span>
+                  <span>${b.title}</span>
+                  <small>${p === null ? 'لم تُقس بعد' : benefitStatus(b).label + ' — ' + fmtNumber(Math.min(p, 100)) + '٪'}</small></div>`;
+              }).join('')) : ''}
+            </div>`;
+          }).join('')) : raw('<div class="mi-card mi-empty" style="margin-top:1rem"><h3>لا مبادرات مرتبطة بهذه الجهة</h3><p class="mi-muted">تصفحوا الفرص المطروحة وقدموا مبادرة لتبنّي إحداها.</p><a class="mi-btn mi-btn--gold" href="./index.html#mi-opportunities">الفرص المطروحة</a></div>')}`;
+      }
+
+      select.addEventListener('change', () => draw(select.value));
+      if (partners.length) draw(select.value || partners[0].id);
+    })().catch((err) => console.error('تعذر تشغيل بوابة الشركاء', err));
+  </script>
+</body>
+</html>

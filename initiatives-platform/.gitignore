@@ -1,0 +1,8 @@
+# إعدادات محلية تحمل أسرارًا — لا تُرفع للمستودع أبدًا
+js/config.local.js
+
+# ملفات النظام والأدوات
+node_modules/
+.DS_Store
+Thumbs.db
+*.log

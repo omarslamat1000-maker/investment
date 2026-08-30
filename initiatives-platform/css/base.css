@@ -1,0 +1,77 @@
+/* أساسيات — إعادة ضبط خفيفة وقواعد عامة داخل نطاق المنصة فقط */
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--mi-font-body);
+  font-size: var(--mi-fs-md);
+  line-height: 1.7;
+  color: var(--mi-ink);
+  background: var(--mi-bg);
+  min-height: 100vh;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--mi-font-display);
+  line-height: 1.35;
+  color: var(--mi-green-900);
+  margin: 0 0 var(--mi-sp-3);
+  font-weight: 700;
+}
+h1 { font-size: var(--mi-fs-2xl); }
+h2 { font-size: var(--mi-fs-xl); }
+h3 { font-size: var(--mi-fs-lg); }
+h4 { font-size: var(--mi-fs-md); }
+
+p { margin: 0 0 var(--mi-sp-3); }
+a { color: var(--mi-green-700); }
+a:hover { color: var(--mi-green-500); }
+
+img, svg { max-width: 100%; }
+
+code {
+  font-family: Consolas, 'Courier New', monospace;
+  background: var(--mi-surface-2);
+  padding: 0 var(--mi-sp-1);
+  border-radius: 4px;
+  font-size: 0.9em;
+  direction: ltr;
+  unicode-bidi: embed;
+}
+
+.mi-muted { color: var(--mi-muted); }
+.mi-subhead { margin-top: var(--mi-sp-5); font-size: var(--mi-fs-md); }
+
+/* إتاحة الوصول */
+.mi-visually-hidden {
+  position: absolute; width: 1px; height: 1px;
+  margin: -1px; padding: 0; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+.mi-skip-link {
+  position: absolute; top: -100%; inset-inline-start: var(--mi-sp-4);
+  background: var(--mi-green-900); color: #fff;
+  padding: var(--mi-sp-2) var(--mi-sp-4);
+  border-radius: 0 0 var(--mi-radius) var(--mi-radius);
+  z-index: 100; transition: top var(--mi-transition);
+}
+.mi-skip-link:focus { top: 0; color: #fff; }
+
+:focus-visible {
+  outline: 3px solid var(--mi-gold-500);
+  outline-offset: 2px;
+}
+
+::selection { background: var(--mi-gold-200); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

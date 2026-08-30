@@ -1,0 +1,50 @@
+/* السمة الداكنة — تُفعَّل عبر data-mi-theme="dark" على عنصر html */
+[data-mi-theme="dark"] {
+  --mi-bg: #0C1713;
+  --mi-surface: #14231D;
+  --mi-surface-2: #1B2E26;
+  --mi-ink: #E4EDE8;
+  --mi-ink-soft: #B9C9C1;
+  --mi-muted: #8AA096;
+  --mi-line: #274033;
+
+  --mi-green-100: #1E3B30;
+  --mi-green-300: #4E8F7B;
+  --mi-green-900: #BFE0D3;
+  --mi-green-950: #071812;
+
+  --mi-gold-100: #33301B;
+  --mi-gold-200: #D9C476;
+  --mi-gold-700: #D9C476;
+
+  --mi-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(0, 0, 0, 0.25);
+  --mi-shadow-lg: 0 6px 30px rgba(0, 0, 0, 0.5);
+}
+
+[data-mi-theme="dark"] h1,
+[data-mi-theme="dark"] h2,
+[data-mi-theme="dark"] h3,
+[data-mi-theme="dark"] h4 { color: var(--mi-green-900); }
+
+[data-mi-theme="dark"] a { color: var(--mi-green-300); }
+[data-mi-theme="dark"] .mi-btn--primary { background: var(--mi-green-700); }
+[data-mi-theme="dark"] .mi-btn--ghost { color: var(--mi-ink-soft); }
+[data-mi-theme="dark"] .mi-status-badge[data-tone="bad"] { background: #402525; color: #E8A5A5; }
+[data-mi-theme="dark"] .mi-status-badge[data-tone="warn"] { background: #3A311A; color: #E3C86B; }
+[data-mi-theme="dark"] .mi-status-badge[data-tone="info"] { background: #1B3238; color: #8FD0DD; }
+[data-mi-theme="dark"] .mi-health[data-health="red"],
+[data-mi-theme="dark"] .mi-tag[data-benefit="atRisk"],
+[data-mi-theme="dark"] .mi-tag--priority[data-priority="high"],
+[data-mi-theme="dark"] .mi-risk-line__badge[data-level="critical"] { background: #402525; color: #E8A5A5; }
+[data-mi-theme="dark"] .mi-risk-line__badge[data-level="high"] { background: #3D2E1B; color: #E3B36B; }
+[data-mi-theme="dark"] .mi-risk-cell[data-exposure="high"] { background: #3D2E1B; }
+[data-mi-theme="dark"] .mi-risk-cell[data-exposure="critical"] { background: #402525; }
+[data-mi-theme="dark"] .mi-risk-cell { color: var(--mi-ink); }
+[data-mi-theme="dark"] .mi-alert--error { background: #402525; color: #E8A5A5; }
+[data-mi-theme="dark"] .mi-progress__text { color: var(--mi-ink); }
+[data-mi-theme="dark"] .mi-donut-total { fill: var(--mi-green-900); }
+[data-mi-theme="dark"] .mi-hero::before {
+  background: radial-gradient(28px 42px at 36px 100%, var(--mi-bg) 98%, transparent 100%) repeat-x;
+  background-size: 72px 72px;
+}
+[data-mi-theme="dark"] .mi-toast { background: var(--mi-surface-2); }

@@ -1,0 +1,31 @@
+/* أنماط تقارير الطباعة A4 — تُستخدم في print.html */
+.mi-print-page {
+  max-width: 210mm; margin: 0 auto; padding: var(--mi-sp-5);
+  background: #fff; color: #1a1a1a;
+}
+.mi-print-head {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  border-bottom: 3px solid var(--mi-green-900); padding-bottom: var(--mi-sp-3);
+  margin-bottom: var(--mi-sp-4);
+}
+.mi-print-head h1 { font-size: 1.3rem; margin: 0; }
+.mi-print-head .mi-print-entity { text-align: left; font-size: var(--mi-fs-xs); color: var(--mi-muted); }
+.mi-print-sub { color: var(--mi-muted); font-size: var(--mi-fs-sm); margin: 0 0 var(--mi-sp-2); }
+.mi-print-section { margin-bottom: var(--mi-sp-5); break-inside: avoid; }
+.mi-print-section h2 {
+  font-size: 1.05rem; border-inline-start: 4px solid var(--mi-gold-500);
+  padding-inline-start: var(--mi-sp-2); margin-bottom: var(--mi-sp-2);
+}
+.mi-print-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+.mi-print-table th { background: var(--mi-green-100); border: 1px solid var(--mi-line); padding: 6px 8px; text-align: right; }
+.mi-print-table td { border: 1px solid var(--mi-line); padding: 5px 8px; }
+.mi-print-foot { margin-top: var(--mi-sp-5); font-size: var(--mi-fs-xs); color: var(--mi-muted); border-top: 1px solid var(--mi-line); padding-top: var(--mi-sp-2); display: flex; justify-content: space-between; }
+.mi-print-toolbar { display: flex; gap: var(--mi-sp-2); justify-content: center; padding: var(--mi-sp-4); }
+
+@media print {
+  @page { size: A4; margin: 14mm 12mm; }
+  body { background: #fff !important; }
+  .mi-print-toolbar { display: none !important; }
+  .mi-print-page { padding: 0; max-width: none; }
+  .mi-print-table tr { break-inside: avoid; }
+}

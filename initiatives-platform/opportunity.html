@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تفاصيل الفرصة — منصة المبادرات</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./assets/logo-placeholder.svg" type="image/svg+xml">
+  <meta name="theme-color" content="#073B2E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&family=Noto+Kufi+Arabic:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./css/tokens.css">
+  <link rel="stylesheet" href="./css/base.css">
+  <link rel="stylesheet" href="./css/components.css">
+  <link rel="stylesheet" href="./css/layout.css">
+  <link rel="stylesheet" href="./css/navigation.css">
+  <link rel="stylesheet" href="./css/dashboard.css">
+  <link rel="stylesheet" href="./css/responsive.css">
+  <link rel="stylesheet" href="./css/themes.css">
+</head>
+<body>
+  <header class="mi-page-head-bar">
+    <a class="mi-sidebar__brand" href="./index.html">
+      <span class="mi-brand-arch" aria-hidden="true"></span>
+      <span class="mi-brand-text"><b>منصة المبادرات</b><small>أمانة منطقة المدينة المنورة</small></span>
+    </a>
+    <a class="mi-back" href="./index.html#mi-opportunities">← جميع الفرص</a>
+  </header>
+
+  <main class="mi-page-plain" id="mi-opportunity-main">
+    <p class="mi-muted">جارٍ التحميل…</p>
+  </main>
+
+  <script type="module">
+    import { APP_CONFIG } from './js/config.example.js';
+    import { initDataProvider } from './js/data/data-provider.js';
+    import { seedDemoDataIfEmpty } from './js/services/import-service.js';
+    import { repos } from './js/data/repositories.js';
+    import { html, raw } from './js/core/sanitizer.js';
+    import { categoryLabel } from './js/domain/initiative-model.js';
+    import { PRIORITY_LABELS, needStatusLabel } from './js/domain/infrastructure-need-model.js';
+    import { modelLabel } from './js/domain/partner-model.js';
+    import { fmtMoney, fmtNumber } from './js/core/utils.js';
+    import { definitionList } from './js/ui/components.js';
+
+    (async () => {
+      await initDataProvider(APP_CONFIG);
+      await seedDemoDataIfEmpty();
+      const main = document.getElementById('mi-opportunity-main');
+      const id = new URLSearchParams(location.search).get('id');
+      const need = id ? await repos.needs.get(id) : null;
+
+      if (!need) {
+        main.innerHTML = html`
+          <div class="mi-card mi-empty">
+            <div class="mi-empty__mark" aria-hidden="true">◈</div>
+            <h1>الفرصة غير موجودة</h1>
+            <p class="mi-muted">تأكد من الرابط أو تصفح الفرص المطروحة حاليًا.</p>
+            <a class="mi-btn mi-btn--primary" href="./index.html#mi-opportunities">جميع الفرص</a>
+          </div>`;
+        return;
+      }
+
+      document.title = `${need.title} — منصة المبادرات`;
+      main.innerHTML = html`
+        <span class="mi-tag mi-tag--priority" data-priority="${need.priority}">${PRIORITY_LABELS[need.priority] || need.priority}</span>
+        <h1>${need.title}</h1>
+        <p class="mi-muted">${need.id} • ${categoryLabel(need.category)} • حي ${need.district} • ${needStatusLabel(need.status)}</p>
+        <div class="mi-card">
+          <p>${need.description}</p>
+          ${raw(definitionList([
+            ['الموقع', need.location || '—'],
+            ['التكلفة التقديرية', fmtMoney(need.estimatedCost)],
+            ['المستفيدون المقدَّرون', fmtNumber(need.beneficiaries || 0)],
+            ['الأثر المتوقع', need.expectedImpact || '—'],
+            ['نماذج الشراكة المفضلة', (need.preferredModels || []).map(modelLabel).join('، ') || '—']
+          ]))}
+        </div>
+        <div class="mi-card" style="margin-top:1rem">
+          <h2>ترغب جهتك في تبنّي هذه الفرصة؟</h2>
+          <p class="mi-muted">قدّم مبادرة مرتبطة بهذا الاحتياج وسيربطها فريق مكتب المبادرات بالفرصة عند الفرز — اذكر رقم الفرصة <b dir="ltr">${need.id}</b> في وصف مبادرتك.</p>
+          <a class="mi-btn mi-btn--gold" href="./submit.html">تقديم مبادرة لتبنّي الفرصة</a>
+        </div>`;
+    })().catch((err) => console.error('تعذر تحميل الفرصة', err));
+  </script>
+</body>
+</html>

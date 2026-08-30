@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تقرير طباعة — منصة المبادرات</title>
+  <link rel="icon" href="./assets/logo-placeholder.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&family=Noto+Kufi+Arabic:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./css/tokens.css">
+  <link rel="stylesheet" href="./css/base.css">
+  <link rel="stylesheet" href="./css/components.css">
+  <link rel="stylesheet" href="./css/print.css">
+</head>
+<body>
+  <div class="mi-print-toolbar">
+    <button class="mi-btn mi-btn--primary" onclick="window.print()">طباعة / حفظ PDF</button>
+    <button class="mi-btn mi-btn--ghost" onclick="window.close()">إغلاق</button>
+  </div>
+  <div class="mi-print-page" id="mi-print-root">
+    <p class="mi-muted" style="text-align:center;padding:3rem">
+      لا توجد حمولة تقرير — افتح التقرير من داخل المنصة (صفحة التقارير أو تفاصيل المبادرة).
+    </p>
+  </div>
+
+  <script type="module">
+    import { readPrintPayload } from './js/services/print-service.js';
+    import { escapeHtml } from './js/core/sanitizer.js';
+    import { fmtDateTime, fmtHijri } from './js/core/date-time.js';
+
+    const payload = readPrintPayload();
+    if (payload) {
+      document.title = `${payload.title} — منصة المبادرات`;
+      const root = document.getElementById('mi-print-root');
+      root.innerHTML = `
+        <header class="mi-print-head">
+          <div>
+            <h1>${escapeHtml(payload.title)}</h1>
+            ${payload.subtitle ? `<p class="mi-print-sub">${escapeHtml(payload.subtitle)}</p>` : ''}
+          </div>
+          <div class="mi-print-entity">
+            أمانة منطقة المدينة المنورة<br>
+            منصة مبادرات البنية التحتية<br>والشراكات المجتمعية
+          </div>
+        </header>
+        ${(payload.sections || []).map((s) => `
+          <section class="mi-print-section">
+            <h2>${escapeHtml(s.heading)}</h2>
+            ${s.html}
+          </section>`).join('')}
+        <footer class="mi-print-foot">
+          <span>أُنشئ في: ${escapeHtml(fmtDateTime(payload.generatedAt))} — ${escapeHtml(fmtHijri(payload.generatedAt))}</span>
+          <span>وثيقة آلية من منصة المبادرات — نسخة عرض ببيانات توضيحية</span>
+        </footer>`;
+    }
+  </script>
+</body>
+</html>

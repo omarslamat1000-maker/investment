@@ -1,0 +1,105 @@
+/* البوابة العامة index.html — البطل، الفرص، الحملات، خطوات المشاركة */
+
+/* البطل: أرضية خضراء عميقة بنقش أقواس متكررة */
+.mi-hero {
+  position: relative;
+  background:
+    radial-gradient(120% 90% at 50% -10%, rgba(201, 162, 39, 0.16), transparent 55%),
+    var(--mi-green-950);
+  color: #E9F0EC;
+  padding: clamp(6rem, 14vh, 9rem) clamp(1rem, 5vw, 4rem) clamp(3rem, 8vh, 5rem);
+  overflow: hidden;
+}
+.mi-hero::before {
+  /* صف أقواس معمارية يشكل أفق المدينة أسفل البطل */
+  content: '';
+  position: absolute; bottom: -2px; left: 0; right: 0; height: 72px;
+  background:
+    radial-gradient(28px 42px at 36px 100%, var(--mi-bg) 98%, transparent 100%) repeat-x;
+  background-size: 72px 72px;
+  opacity: 1;
+  pointer-events: none;
+}
+.mi-hero__inner { max-width: 62rem; margin: 0 auto; text-align: center; position: relative; }
+.mi-hero__eyebrow {
+  display: inline-block; color: var(--mi-gold-200);
+  font-size: var(--mi-fs-sm); font-weight: 700; letter-spacing: 0.02em;
+  border: 1px solid rgba(201, 162, 39, 0.4); border-radius: 999px;
+  padding: 0.25rem 1rem; margin-bottom: var(--mi-sp-4);
+}
+.mi-hero h1 {
+  font-size: var(--mi-fs-hero); color: #fff;
+  margin-bottom: var(--mi-sp-4); line-height: 1.4;
+}
+.mi-hero h1 em { font-style: normal; color: var(--mi-gold-500); }
+.mi-hero__lead { max-width: 44rem; margin: 0 auto var(--mi-sp-5); color: rgba(233, 240, 236, 0.85); font-size: var(--mi-fs-lg); }
+.mi-hero__cta { display: flex; gap: var(--mi-sp-3); justify-content: center; flex-wrap: wrap; }
+
+.mi-hero-stats {
+  display: flex; gap: var(--mi-sp-5); justify-content: center; flex-wrap: wrap;
+  margin-top: var(--mi-sp-6);
+}
+.mi-hero-stat { text-align: center; min-width: 8rem; }
+.mi-hero-stat b { display: block; font: 700 var(--mi-fs-2xl) var(--mi-font-display); color: var(--mi-gold-500); }
+.mi-hero-stat span { color: rgba(233, 240, 236, 0.75); font-size: var(--mi-fs-sm); }
+
+/* أقسام البوابة */
+.mi-portal-section { padding: var(--mi-sp-8) clamp(1rem, 5vw, 4rem); max-width: 74rem; margin: 0 auto; }
+.mi-portal-section > h2 { text-align: center; }
+.mi-portal-section > .mi-section-lead { text-align: center; color: var(--mi-muted); max-width: 40rem; margin: 0 auto var(--mi-sp-6); }
+
+/* بطاقات الفرص */
+.mi-opportunities-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr)); gap: var(--mi-sp-4); }
+.mi-opportunity-card {
+  position: relative;
+  background: var(--mi-surface); border: 1px solid var(--mi-line);
+  border-radius: var(--mi-radius-lg); padding: var(--mi-sp-5);
+  display: flex; flex-direction: column; gap: var(--mi-sp-2);
+  transition: transform var(--mi-transition), box-shadow var(--mi-transition);
+}
+.mi-opportunity-card:hover { transform: translateY(-3px); box-shadow: var(--mi-shadow-lg); }
+.mi-opportunity-card__arch {
+  width: 22px; height: 27px; border: 3px solid var(--mi-gold-500);
+  border-radius: var(--mi-arch-radius); margin-bottom: var(--mi-sp-1);
+}
+.mi-opportunity-card .mi-tag--priority { position: absolute; top: var(--mi-sp-4); inset-inline-end: var(--mi-sp-4); }
+.mi-opportunity-card h3 { margin: 0; }
+.mi-opportunity-card__meta { color: var(--mi-muted); font-size: var(--mi-fs-xs); margin: 0; }
+.mi-opportunity-card__desc { font-size: var(--mi-fs-sm); flex: 1; }
+.mi-opportunity-card__facts { display: flex; flex-direction: column; gap: 2px; font-size: var(--mi-fs-xs); color: var(--mi-ink-soft); }
+.mi-opportunity-card__models { display: flex; flex-wrap: wrap; gap: var(--mi-sp-1); }
+.mi-opportunity-card .mi-btn { align-self: flex-start; margin-top: var(--mi-sp-2); }
+
+/* كيف تشارك — رحلة البوابات للجمهور */
+.mi-journey { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: var(--mi-sp-4); counter-reset: journey; }
+.mi-journey-step { text-align: center; padding: var(--mi-sp-4); }
+.mi-journey-step .mi-gate__arch { width: 44px; height: 52px; margin: 0 auto var(--mi-sp-3); border-color: var(--mi-green-500); background: var(--mi-green-100); }
+.mi-journey-step h3 { font-size: var(--mi-fs-md); }
+.mi-journey-step p { font-size: var(--mi-fs-sm); color: var(--mi-muted); margin: 0; }
+
+/* الحملات */
+.mi-campaigns { display: grid; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); gap: var(--mi-sp-4); }
+.mi-campaign {
+  background: linear-gradient(135deg, var(--mi-green-900), var(--mi-green-700));
+  color: #E9F0EC; border-radius: var(--mi-radius-lg); padding: var(--mi-sp-5);
+}
+.mi-campaign h3 { color: var(--mi-gold-200); }
+.mi-campaign .mi-muted { color: rgba(233, 240, 236, 0.7); }
+
+/* تذييل البوابة */
+.mi-public-footer {
+  background: var(--mi-green-950); color: rgba(233, 240, 236, 0.75);
+  padding: var(--mi-sp-6) clamp(1rem, 5vw, 4rem);
+  text-align: center; font-size: var(--mi-fs-sm);
+}
+.mi-public-footer a { color: var(--mi-gold-200); }
+
+/* صفحة الفرصة والتقديم */
+.mi-page-plain { max-width: 52rem; margin: 0 auto; padding: var(--mi-sp-6) var(--mi-sp-4) var(--mi-sp-8); }
+.mi-page-plain--wide { max-width: 64rem; }
+.mi-page-head-bar {
+  background: var(--mi-green-950); padding: var(--mi-sp-3) clamp(1rem, 5vw, 4rem);
+  display: flex; align-items: center; justify-content: space-between; gap: var(--mi-sp-3);
+}
+.mi-page-head-bar .mi-brand-text b { font-size: var(--mi-fs-sm); }
+.mi-page-head-bar a.mi-back { color: var(--mi-gold-200); font-size: var(--mi-fs-sm); text-decoration: none; }

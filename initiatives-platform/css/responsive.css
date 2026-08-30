@@ -1,0 +1,41 @@
+/* الاستجابة — يُحمَّل أخيرًا ليعلو على قواعد التخطيط */
+@media (max-width: 1024px) {
+  .mi-dash-grid, .mi-detail-grid, .mi-settings-grid { grid-template-columns: 1fr; }
+  .mi-gate-track--compact { display: none; }
+}
+
+@media (max-width: 860px) {
+  .mi-shell { grid-template-columns: 1fr; }
+  .mi-sidebar {
+    position: fixed; inset-inline-start: 0; top: 0; bottom: 0;
+    width: min(78vw, 17rem); z-index: 60;
+    transform: translateX(100%);
+    transition: transform 220ms ease;
+    height: 100vh;
+  }
+  [dir="rtl"] .mi-sidebar { transform: translateX(100%); }
+  body.mi-sidebar-open .mi-sidebar { transform: translateX(0); }
+  body.mi-sidebar-open::after {
+    content: ''; position: fixed; inset: 0;
+    background: rgba(5, 42, 32, 0.5); z-index: 50;
+  }
+  .mi-menu-btn { display: inline-flex; }
+  .mi-main { padding: var(--mi-sp-4); }
+  .mi-topbar { padding: var(--mi-sp-2) var(--mi-sp-4); }
+  .mi-detail-actions { position: static; }
+}
+
+@media (max-width: 640px) {
+  .mi-kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .mi-hero-stats { gap: var(--mi-sp-4); }
+  .mi-hero-stat { min-width: 6.5rem; }
+  .mi-hero-stat b { font-size: var(--mi-fs-xl); }
+  .mi-wiz-trail { flex-direction: column; }
+  .mi-dl__row { grid-template-columns: 1fr; gap: 2px; }
+  .mi-gate__name { display: none; }
+  .mi-health-row { flex-wrap: wrap; }
+  .mi-hbar { grid-template-columns: 6.5rem 1fr 3.4rem; }
+  .mi-public-nav { display: none; }
+  .mi-form-row { grid-template-columns: 1fr; }
+  .mi-hero { padding-top: 5rem; }
+}

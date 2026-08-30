@@ -1,0 +1,34 @@
+// بيانات مرجعية ثابتة: الوحدات التنظيمية والمستخدمون التجريبيون والحملات
+export const ORG_UNITS = [
+  { id: 'ou-projects', name: 'وكالة التعمير والمشاريع' },
+  { id: 'ou-services', name: 'وكالة الخدمات' },
+  { id: 'ou-invest', name: 'وكالة الاستثمار والإيرادات' },
+  { id: 'ou-community', name: 'إدارة الشراكة المجتمعية' },
+  { id: 'ou-pmo', name: 'مكتب إدارة المبادرات' }
+];
+
+export const DEMO_USERS = [
+  { id: 'u-admin', name: 'م. عبدالله الحربي', role: 'admin', orgUnitId: 'ou-pmo', email: 'admin@amana.example' },
+  { id: 'u-pmo', name: 'أ. ريم الجهني', role: 'pmo', orgUnitId: 'ou-pmo', email: 'pmo@amana.example' },
+  { id: 'u-rev1', name: 'د. سالم الأنصاري', role: 'reviewer', orgUnitId: 'ou-projects', email: 'rev1@amana.example' },
+  { id: 'u-rev2', name: 'م. هند العمري', role: 'reviewer', orgUnitId: 'ou-services', email: 'rev2@amana.example' },
+  { id: 'u-exec', name: 'م. فهد المطيري', role: 'executor', orgUnitId: 'ou-projects', email: 'exec@amana.example' },
+  { id: 'u-partner', name: 'أ. ناصر الزهراني', role: 'partner', orgUnitId: null, email: 'partner@example.com' }
+];
+
+export const DEMO_CAMPAIGNS = [
+  {
+    id: 'cmp-green-madinah',
+    title: 'حملة «المدينة تُزهر» للتشجير المجتمعي',
+    summary: 'حملة موسمية لتبنّي مواقع التشجير والتظليل في الأحياء السكنية بمشاركة القطاع الخاص والمتطوعين.',
+    startDate: '2026-09-01', endDate: '2026-12-31',
+    targetInitiatives: 20, categoryFocus: ['greening', 'shading', 'parks'], status: 'active'
+  },
+  {
+    id: 'cmp-safe-paths',
+    title: 'حملة «طرق آمنة لمدارسنا»',
+    summary: 'تحسين ممرات المشاة والسلامة المرورية حول المدارس عبر شراكات مع شركات المقاولات المحلية.',
+    startDate: '2026-08-15', endDate: '2027-01-31',
+    targetInitiatives: 12, categoryFocus: ['sidewalks', 'safety', 'lighting'], status: 'active'
+  }
+];
