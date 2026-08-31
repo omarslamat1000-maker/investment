@@ -15,3 +15,23 @@
 .mi-legend-dot--need { border: 2px dashed var(--mi-gold-500); background: transparent !important; border-radius: 3px !important; }
 .mi-map-info { padding: var(--mi-sp-3) var(--mi-sp-2); font-size: var(--mi-fs-sm); min-height: 3.4rem; display: flex; flex-direction: column; gap: var(--mi-sp-1); align-items: flex-start; }
 .mi-map-info .mi-btn { margin-top: var(--mi-sp-1); }
+
+/* منتقي الموقع التفاعلي (Leaflet) */
+.mi-picker-toolbar { display: flex; gap: var(--mi-sp-2); align-items: center; flex-wrap: wrap; margin-bottom: var(--mi-sp-3); }
+.mi-picker-sep { flex: 1; }
+.mi-picker-map { height: min(52vh, 420px); border-radius: var(--mi-radius); overflow: hidden; border: 1px solid var(--mi-line); direction: ltr; }
+.mi-picker-measure { padding: var(--mi-sp-2) 0 0; font-size: var(--mi-fs-sm); min-height: 2rem; }
+.mi-picker-hint { color: var(--mi-muted); }
+
+/* حقل الموقع في النماذج ومعاينة الهندسة المحفوظة */
+.mi-geo-field {
+  display: flex; align-items: center; gap: var(--mi-sp-2); flex-wrap: wrap;
+  border: 1px dashed var(--mi-line); border-radius: var(--mi-radius);
+  padding: var(--mi-sp-2) var(--mi-sp-3);
+}
+.mi-geo-field[data-has="yes"] { border-style: solid; border-color: var(--mi-green-300); background: var(--mi-green-100); }
+.mi-geo-field__label { flex: 1; font-size: var(--mi-fs-sm); font-weight: 700; color: var(--mi-ink-soft); }
+.mi-geo-host { height: 240px; border-radius: var(--mi-radius); overflow: hidden; border: 1px solid var(--mi-line); direction: ltr; }
+.mi-geo-host--empty { display: grid; place-items: center; color: var(--mi-muted); font-size: var(--mi-fs-sm); background: var(--mi-surface-2); direction: rtl; }
+.mi-geo-caption { margin: var(--mi-sp-2) 0 0; font-size: var(--mi-fs-sm); color: var(--mi-green-800); }
+.mi-geo-preview .leaflet-control-attribution { font-size: 9px; }

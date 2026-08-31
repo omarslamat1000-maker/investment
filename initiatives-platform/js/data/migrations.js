@@ -29,6 +29,15 @@ export const MIGRATIONS = [
         }
       }
     }
+  },
+  {
+    version: 2,
+    describe: 'مخزن المحافظ portfolios لتجميع المبادرات والحملات تحت هدف واحد',
+    run(db) {
+      if (!db.objectStoreNames.contains('portfolios')) {
+        db.createObjectStore('portfolios', { keyPath: 'id' });
+      }
+    }
   }
 ];
 

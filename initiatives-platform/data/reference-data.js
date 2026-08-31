@@ -23,13 +23,15 @@ export const DEMO_CAMPAIGNS = [
     title: 'حملة «المدينة تُزهر» للتشجير المجتمعي',
     summary: 'حملة موسمية لتبنّي مواقع التشجير والتظليل في الأحياء السكنية بمشاركة القطاع الخاص والمتطوعين.',
     startDate: '2026-09-01', endDate: '2026-12-31',
-    targetInitiatives: 20, categoryFocus: ['greening', 'shading', 'parks'], status: 'active'
+    targetInitiatives: 20, categoryFocus: ['greening', 'shading', 'parks'], status: 'active',
+    portfolioId: 'pf-madinah-proposed'
   },
   {
     id: 'cmp-safe-paths',
     title: 'حملة «طرق آمنة لمدارسنا»',
     summary: 'تحسين ممرات المشاة والسلامة المرورية حول المدارس عبر شراكات مع شركات المقاولات المحلية.',
     startDate: '2026-08-15', endDate: '2027-01-31',
-    targetInitiatives: 12, categoryFocus: ['sidewalks', 'safety', 'lighting'], status: 'active'
+    targetInitiatives: 12, categoryFocus: ['sidewalks', 'safety', 'lighting'], status: 'active',
+    portfolioId: 'pf-madinah-proposed'
   }
 ];

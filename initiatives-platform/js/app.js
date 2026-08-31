@@ -26,11 +26,13 @@ import { renderMap } from './modules/map/map-view.js';
 import { renderReports } from './modules/reports/reports-view.js';
 import { renderSettings } from './modules/settings/settings-view.js';
 import { renderUsers } from './modules/users/users-view.js';
+import { renderPortfolios } from './modules/portfolios/portfolios-view.js';
 
 // perm: الصلاحية اللازمة لظهور الرابط — بدونها يظهر للجميع
 const NAV = [
   { path: 'dashboard', label: 'لوحة المتابعة', icon: '◫' },
   { path: 'initiatives', label: 'المبادرات', icon: '▤', perm: 'initiatives.view' },
+  { path: 'portfolios', label: 'المحافظ', icon: '▦', perm: 'portfolios.view' },
   { path: 'needs', label: 'الاحتياجات', icon: '◇', perm: 'needs.view' },
   { path: 'partners', label: 'الشركاء', icon: '◔', perm: 'partners.view' },
   { path: 'reviews', label: 'المراجعات', icon: '✎', perm: 'reviews.view' },
@@ -153,6 +155,7 @@ async function boot() {
   route('dashboard', () => renderDashboard(m()), 'لوحة المتابعة');
   route('initiatives', () => renderInitiativesList(m()), 'سجل المبادرات');
   route('initiatives/:id', (p) => renderInitiativeDetails(m(), p.id), 'تفاصيل المبادرة');
+  route('portfolios', () => renderPortfolios(m()), 'محافظ المبادرات');
   route('needs', () => renderNeeds(m()), 'الاحتياجات');
   route('partners', () => renderPartners(m()), 'الشركاء');
   route('reviews', () => renderReviews(m()), 'المراجعات');

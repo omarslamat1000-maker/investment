@@ -1,7 +1,7 @@
 // اختبارات تكامل: اتساق البيانات التجريبية مع النماذج والمراجع
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { DEMO_INITIATIVES, DEMO_INITIATIVE_PARTNERS, DEMO_MILESTONES, DEMO_BENEFITS, DEMO_RISKS, DEMO_DECISIONS, DEMO_REVIEWS, DEMO_QUALITY_CHECKS } from '../../data/demo-initiatives.js';
+import { DEMO_INITIATIVES, DEMO_PROPOSED_INITIATIVES, DEMO_PORTFOLIOS, DEMO_INITIATIVE_PARTNERS, DEMO_MILESTONES, DEMO_BENEFITS, DEMO_RISKS, DEMO_DECISIONS, DEMO_REVIEWS, DEMO_QUALITY_CHECKS } from '../../data/demo-initiatives.js';
 import { DEMO_NEEDS } from '../../data/demo-needs.js';
 import { DEMO_PARTNERS } from '../../data/demo-partners.js';
 import { validateInitiative } from '../../js/domain/initiative-model.js';
@@ -62,5 +62,30 @@ test('تغطية دورة الحياة: توجد مبادرات في التنف�
   const statuses = new Set(DEMO_INITIATIVES.map((i) => i.status));
   for (const s of ['execution', 'benefits', 'closed', 'rejected', 'submitted']) {
     assert.ok(statuses.has(s), `لا مبادرة بحالة ${s}`);
+  }
+});
+
+test('محفظة المبادرات المقترحة: 14 مبادرة صالحة كلها مرتبطة بمحفظة موجودة', () => {
+  assert.equal(DEMO_PROPOSED_INITIATIVES.length, 14);
+  const pfIds = new Set(DEMO_PORTFOLIOS.map((p) => p.id));
+  const ids = new Set();
+  for (const ini of DEMO_PROPOSED_INITIATIVES) {
+    const r = validateInitiative(ini);
+    assert.equal(r.valid, true, `${ini.id}: ${JSON.stringify(r.errors)}`);
+    assert.ok(pfIds.has(ini.portfolioId), `${ini.id}: محفظة غير موجودة`);
+    assert.ok(!iniIds.has(ini.id), `${ini.id}: يتعارض مع مبادرة أساسية`);
+    ids.add(ini.id);
+  }
+  assert.equal(ids.size, 14);
+});
+
+test('هندسة المواقع التجريبية سليمة البنية', () => {
+  const withGeo = DEMO_INITIATIVES.filter((i) => i.geometry);
+  assert.ok(withGeo.length >= 2, 'يلزم مثالان على الأقل بهندسة');
+  for (const i of withGeo) {
+    assert.ok(['point', 'line', 'polygon'].includes(i.geometry.type), i.id);
+    assert.ok(i.geometry.coords.every((c) => Array.isArray(c) && c.length === 2), i.id);
+    if (i.geometry.type === 'polygon') assert.ok(i.geometry.coords.length >= 3, i.id);
+    if (i.geometry.type === 'line') assert.ok(i.geometry.coords.length >= 2, i.id);
   }
 });

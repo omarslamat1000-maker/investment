@@ -61,12 +61,15 @@ export function percent(part, total) {
   return round((part / total) * 100, 1);
 }
 
-// تنسيق الأرقام والعملة بالعربية
-export function fmtNumber(n, locale = 'ar-SA') {
+// تنسيق الأرقام والعملة — نمط أرقام موحد (لاتيني 0-9) عبر كامل المنصة
+// مطابق لأرقام التواريخ (nu-latn في date-time.js) والمعرفات الرسمية
+export const NUMBER_LOCALE = 'ar-SA-u-nu-latn';
+
+export function fmtNumber(n, locale = NUMBER_LOCALE) {
   return new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(Number(n) || 0);
 }
 
-export function fmtMoney(n, locale = 'ar-SA') {
+export function fmtMoney(n, locale = NUMBER_LOCALE) {
   const v = Number(n) || 0;
   if (Math.abs(v) >= 1_000_000) return `${fmtNumber(round(v / 1_000_000, 2), locale)} مليون ريال`;
   if (Math.abs(v) >= 1_000) return `${fmtNumber(round(v / 1_000, 1), locale)} ألف ريال`;

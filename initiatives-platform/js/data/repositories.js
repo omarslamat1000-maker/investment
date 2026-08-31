@@ -89,7 +89,8 @@ export const repos = {
   notifications: makeRepo('notifications'),
   auditLogs: makeRepo('auditLogs'),
   settings: makeRepo('settings'),
-  savedViews: makeRepo('savedViews')
+  savedViews: makeRepo('savedViews'),
+  portfolios: makeRepo('portfolios', { auditLabel: 'محفظة' })
 };
 
 export async function latestAuditLogs(limit = 30) {

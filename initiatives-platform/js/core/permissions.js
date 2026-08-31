@@ -12,23 +12,23 @@ const MATRIX = {
     'benefits.view', 'benefits.edit', 'risks.view', 'risks.edit',
     'execution.view', 'execution.edit', 'quality.view', 'quality.edit',
     'reports.view', 'reports.export', 'settings.view', 'backup.run',
-    'users.view'
+    'users.view', 'portfolios.view', 'portfolios.manage'
   ],
   reviewer: [
     'initiatives.view', 'needs.view', 'partners.view',
     'reviews.view', 'reviews.create', 'decisions.view',
-    'gates.view', 'benefits.view', 'risks.view', 'reports.view'
+    'gates.view', 'benefits.view', 'risks.view', 'reports.view', 'portfolios.view'
   ],
   executor: [
     'initiatives.view', 'execution.view', 'execution.edit',
     'quality.view', 'quality.edit', 'risks.view', 'risks.edit',
-    'benefits.view', 'reports.view'
+    'benefits.view', 'reports.view', 'portfolios.view'
   ],
   partner: [
-    'initiatives.view', 'needs.view', 'execution.view', 'benefits.view', 'reports.view'
+    'initiatives.view', 'needs.view', 'execution.view', 'benefits.view', 'reports.view', 'portfolios.view'
   ],
   viewer: [
-    'initiatives.view', 'needs.view', 'partners.view', 'benefits.view', 'reports.view', 'gates.view'
+    'initiatives.view', 'needs.view', 'partners.view', 'benefits.view', 'reports.view', 'gates.view', 'portfolios.view'
   ]
 };
 
@@ -99,6 +99,11 @@ export const ACTION_CATALOG = [
     { id: 'risks.edit', label: 'إدارة المخاطر' },
     { id: 'quality.view', label: 'عرض فحوص الجودة' },
     { id: 'quality.edit', label: 'تسجيل فحص جودة' }
+  ] },
+  { group: 'المحافظ والشهادات', actions: [
+    { id: 'portfolios.view', label: 'عرض المحافظ' },
+    { id: 'portfolios.manage', label: 'إدارة المحافظ وتجميع المبادرات' },
+    { id: 'certificates.manage', label: 'تحرير بيانات شهادات الإنجاز' }
   ] },
   { group: 'التقارير والنظام', actions: [
     { id: 'reports.view', label: 'عرض التقارير' },

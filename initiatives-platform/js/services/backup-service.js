@@ -7,7 +7,8 @@ import { getUserName } from '../core/state.js';
 import { importRecords } from './import-service.js';
 
 export const BACKUP_APP_NAME = 'منصة مبادرات البنية التحتية والشراكات المجتمعية';
-export const BACKUP_SCHEMA_VERSION = 1;
+export const BACKUP_SCHEMA_VERSION = 2; // v2: portfolios وحقول قالب التعريف
+export const BACKUP_MIN_SCHEMA_VERSION = 1; // النسخ الأقدم المقبولة للاستعادة
 
 export async function buildBackup() {
   const records = {};
@@ -49,8 +50,10 @@ export function validateBackup(payload) {
     if (payload.applicationName !== BACKUP_APP_NAME) {
       errors.push('النسخة لا تخص هذه المنصة — اسم التطبيق غير مطابق');
     }
-    if (payload.schemaVersion !== BACKUP_SCHEMA_VERSION) {
-      errors.push(`إصدار المخطط ${payload.schemaVersion} غير مدعوم (المتوقع ${BACKUP_SCHEMA_VERSION})`);
+    if (!Number.isInteger(payload.schemaVersion) ||
+      payload.schemaVersion < BACKUP_MIN_SCHEMA_VERSION ||
+      payload.schemaVersion > BACKUP_SCHEMA_VERSION) {
+      errors.push(`إصدار المخطط ${payload.schemaVersion} غير مدعوم (المقبول ${BACKUP_MIN_SCHEMA_VERSION} حتى ${BACKUP_SCHEMA_VERSION})`);
     }
     if (!payload.records || typeof payload.records !== 'object') {
       errors.push('النسخة لا تحتوي على سجلات');

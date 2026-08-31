@@ -11,6 +11,8 @@ import { getRole } from '../../core/state.js';
 import { can } from '../../core/permissions.js';
 import { openModal } from '../../ui/modal.js';
 import { toastSuccess, toastError } from '../../ui/toast.js';
+import { openLocationPicker } from '../../ui/location-picker.js';
+import { measureLabel } from '../../core/geo.js';
 
 export async function renderNeeds(container) {
   const needs = await repos.needs.getAll();
@@ -63,6 +65,13 @@ export async function renderNeeds(container) {
             <div class="mi-form-field"><label>المستفيدون</label><input class="mi-input" name="beneficiaries" type="number" min="0" value="${need.beneficiaries ?? ''}" ${editable ? '' : raw('readonly')}></div>
           </div>
           <div class="mi-form-field"><label>الأثر المتوقع</label><textarea class="mi-input" name="expectedImpact" rows="2" ${editable ? '' : raw('readonly')}>${need.expectedImpact}</textarea></div>
+          <div class="mi-form-field">
+            <label>الموقع على الخريطة</label>
+            <div class="mi-geo-field" data-has="${need.geometry ? 'yes' : 'no'}">
+              <span class="mi-geo-field__label" data-geo-label>${need.geometry ? raw(escapeHtml(measureLabel(need.geometry))) : 'لم يُحدد بعد'}</span>
+              ${editable ? raw('<button type="button" class="mi-btn mi-btn--primary mi-btn--sm" data-act="pick-geo">تحديد / تعديل الموقع</button>') : ''}
+            </div>
+          </div>
         </form>`,
       footerHtml: html`
         <button class="mi-btn mi-btn--ghost" data-act="cancel">إغلاق</button>
@@ -70,11 +79,27 @@ export async function renderNeeds(container) {
         ${existing && existing.status === 'draft' && can(role, 'needs.publish') ? raw('<button class="mi-btn mi-btn--gold" data-act="publish">نشر للشراكة</button>') : ''}`
     });
 
+    // هندسة الموقع تُحفظ في متغير محلي حتى الضغط على حفظ
+    let pendingGeometry = need.geometry || null;
+    dialog.querySelector('[data-act="pick-geo"]')?.addEventListener('click', () => {
+      openLocationPicker({
+        initial: pendingGeometry,
+        onConfirm(geometry) {
+          pendingGeometry = geometry;
+          const label = dialog.querySelector('[data-geo-label]');
+          if (label) label.textContent = measureLabel(geometry);
+        }
+      });
+    });
+
     dialog.querySelector('[data-act="cancel"]').addEventListener('click', close);
     dialog.querySelector('[data-act="save"]')?.addEventListener('click', async () => {
       const form = dialog.querySelector('#mi-need-form');
       const record = sanitizeNeed({
         ...need,
+        geometry: pendingGeometry,
+        lat: pendingGeometry?.coords?.[0]?.[0] ?? need.lat,
+        lng: pendingGeometry?.coords?.[0]?.[1] ?? need.lng,
         title: form.title.value, description: form.description.value,
         category: form.category.value, district: form.district.value,
         priority: form.priority.value,

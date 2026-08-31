@@ -1,6 +1,7 @@
-// الاستيراد وتهيئة البيانات التجريبية — يزرع البيانات عند أول تشغيل فقط
+// الاستيراد وتهيئة البيانات التجريبية — زرع كامل عند أول تشغيل،
+// وزرع تكميلي (top-up) عند رفع SEED_VERSION كي تصل الإضافات للمستخدمين القدامى دون مساس ببياناتهم
 import { dataProvider } from '../data/data-provider.js';
-import { DEMO_INITIATIVES, DEMO_INITIATIVE_PARTNERS, DEMO_MILESTONES, DEMO_BENEFITS, DEMO_RISKS, DEMO_KPIS, DEMO_REVIEWS, DEMO_DECISIONS, DEMO_QUALITY_CHECKS } from '../../data/demo-initiatives.js';
+import { DEMO_INITIATIVES, DEMO_PROPOSED_INITIATIVES, DEMO_PORTFOLIOS, DEMO_INITIATIVE_PARTNERS, DEMO_MILESTONES, DEMO_BENEFITS, DEMO_RISKS, DEMO_KPIS, DEMO_REVIEWS, DEMO_DECISIONS, DEMO_QUALITY_CHECKS } from '../../data/demo-initiatives.js';
 import { DEMO_NEEDS } from '../../data/demo-needs.js';
 import { DEMO_PARTNERS } from '../../data/demo-partners.js';
 import { ORG_UNITS, DEMO_USERS, DEMO_CAMPAIGNS } from '../../data/reference-data.js';
@@ -8,21 +9,34 @@ import { nowIso } from '../core/date-time.js';
 import { hashPassword, DEFAULT_PASSWORD } from './auth-service.js';
 
 const SEED_FLAG_ID = 'seed-status';
+export const SEED_VERSION = 2; // v2: المحفظة + المبادرات المقترحة + المواقع الجغرافية
+
+const stamp = (r) => ({ createdAt: nowIso(), updatedAt: nowIso(), ...r });
 
 export async function seedDemoDataIfEmpty() {
   const flag = await dataProvider.get('settings', SEED_FLAG_ID);
-  if (flag?.seeded) return false;
-  const count = await dataProvider.count('initiatives');
-  if (count > 0) return false;
+  const version = flag?.version || (flag?.seeded ? 1 : 0);
+  if (version >= SEED_VERSION) return false;
 
-  const stamp = (r) => ({ createdAt: nowIso(), updatedAt: nowIso(), ...r });
+  if (version === 0) {
+    const count = await dataProvider.count('initiatives');
+    if (count === 0) await fullSeed();
+  } else {
+    await topUpToV2();
+  }
+  await dataProvider.put('settings', { id: SEED_FLAG_ID, seeded: true, version: SEED_VERSION, at: nowIso() });
+  return true;
+}
+
+async function fullSeed() {
   const defaultHash = await hashPassword(DEFAULT_PASSWORD);
   await dataProvider.bulkPut('organizationalUnits', ORG_UNITS.map(stamp));
   await dataProvider.bulkPut('users', DEMO_USERS.map((u) => stamp({ ...u, passwordHash: defaultHash })));
   await dataProvider.bulkPut('campaigns', DEMO_CAMPAIGNS.map(stamp));
   await dataProvider.bulkPut('partners', DEMO_PARTNERS.map(stamp));
   await dataProvider.bulkPut('infrastructureNeeds', DEMO_NEEDS.map(stamp));
-  await dataProvider.bulkPut('initiatives', DEMO_INITIATIVES.map(stamp));
+  await dataProvider.bulkPut('portfolios', DEMO_PORTFOLIOS.map(stamp));
+  await dataProvider.bulkPut('initiatives', [...DEMO_INITIATIVES, ...DEMO_PROPOSED_INITIATIVES].map(stamp));
   await dataProvider.bulkPut('initiativePartners', DEMO_INITIATIVE_PARTNERS.map(stamp));
   await dataProvider.bulkPut('milestones', DEMO_MILESTONES.map(stamp));
   await dataProvider.bulkPut('benefits', DEMO_BENEFITS.map(stamp));
@@ -31,8 +45,33 @@ export async function seedDemoDataIfEmpty() {
   await dataProvider.bulkPut('reviews', DEMO_REVIEWS.map(stamp));
   await dataProvider.bulkPut('decisions', DEMO_DECISIONS.map(stamp));
   await dataProvider.bulkPut('qualityChecks', DEMO_QUALITY_CHECKS.map(stamp));
-  await dataProvider.put('settings', { id: SEED_FLAG_ID, seeded: true, at: nowIso() });
-  return true;
+}
+
+// v1 → v2: يضيف الجديد فقط ولا يلمس تعديلات المستخدم على السجلات القائمة
+async function topUpToV2() {
+  const existingPortfolios = await dataProvider.getAll('portfolios');
+  if (!existingPortfolios.length) {
+    await dataProvider.bulkPut('portfolios', DEMO_PORTFOLIOS.map(stamp));
+  }
+  const initiatives = await dataProvider.getAll('initiatives');
+  const existingIds = new Set(initiatives.map((i) => i.id));
+  const fresh = DEMO_PROPOSED_INITIATIVES.filter((p) => !existingIds.has(p.id));
+  if (fresh.length) await dataProvider.bulkPut('initiatives', fresh.map(stamp));
+
+  // ربط الحملات القائمة بالمحفظة وإضافة الهندسة للمبادرات المرجعية إن لم تُعدل
+  const campaigns = await dataProvider.getAll('campaigns');
+  for (const c of campaigns) {
+    const seedCampaign = DEMO_CAMPAIGNS.find((d) => d.id === c.id);
+    if (seedCampaign?.portfolioId && !c.portfolioId) {
+      await dataProvider.put('campaigns', { ...c, portfolioId: seedCampaign.portfolioId, updatedAt: nowIso() });
+    }
+  }
+  for (const seedIni of DEMO_INITIATIVES.filter((i) => i.geometry)) {
+    const current = initiatives.find((i) => i.id === seedIni.id);
+    if (current && !current.geometry) {
+      await dataProvider.put('initiatives', { ...current, geometry: seedIni.geometry, updatedAt: nowIso() });
+    }
+  }
 }
 
 // استيراد نسخة احتياطية (كائن مفكوك مسبقًا) — يتحقق منها backup-service قبل الوصول هنا

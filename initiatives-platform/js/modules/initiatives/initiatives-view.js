@@ -4,7 +4,11 @@ import { html, raw, escapeHtml } from '../../core/sanitizer.js';
 import { sectionHeader, statusBadge, gateTrackHtml, definitionList, progressBar, healthBadge, emptyState } from '../../ui/components.js';
 import { renderTable } from '../../ui/table.js';
 import { statusLabel, allowedTransitions, transitionMeta } from '../../domain/workflow.js';
-import { categoryLabel, historyEntry } from '../../domain/initiative-model.js';
+import { categoryLabel, historyEntry, costBandLabel, durationBandLabel, readinessLabel } from '../../domain/initiative-model.js';
+import { openLocationPicker, renderGeometryPreview } from '../../ui/location-picker.js';
+import { pickInitiativeImage } from '../../services/image-service.js';
+import { measureLabel } from '../../core/geo.js';
+import { getCertTemplate, saveCertTemplate, renderCertificateCanvas, downloadCanvasPng } from '../../services/certificate-service.js';
 import { weightedScore, scoreBand, criteriaWithScores } from '../../domain/scoring.js';
 import { nextGateForStatus, buildChecklist, gateReadiness } from '../../domain/stage-gates.js';
 import { initiativeHealth } from '../../domain/initiative-health.js';
@@ -87,13 +91,14 @@ export async function renderInitiativeDetails(container, id) {
     return;
   }
 
-  const [links, partners, milestones, benefits, risks, decisions, reviews, checklists, quality] = await Promise.all([
+  const [links, partners, milestones, benefits, risks, decisions, reviews, checklists, quality, portfolios] = await Promise.all([
     repos.initiativePartners.byInitiative(id), repos.partners.getAll(),
     repos.milestones.byInitiative(id), repos.benefits.byInitiative(id),
     repos.risks.byInitiative(id), repos.decisions.byInitiative(id),
     repos.reviews.byInitiative(id), repos.gateChecklists.byInitiative(id),
-    repos.qualityChecks.byInitiative(id)
+    repos.qualityChecks.byInitiative(id), repos.portfolios.getAll()
   ]);
+  const portfolio = initiative.portfolioId ? portfolios.find((p) => p.id === initiative.portfolioId) : null;
 
   const role = getRole();
   const score = weightedScore(initiative.scores);
@@ -126,13 +131,43 @@ export async function renderInitiativeDetails(container, id) {
     ${raw(gateTrackHtml(initiative.status))}
 
     <div class="mi-detail-grid">
+      <section class="mi-card mi-card--span mi-detail-media">
+        <div class="mi-detail-media__image">
+          ${initiative.imageDataUrl
+    ? raw(`<img class="mi-initiative-image" src="${initiative.imageDataUrl}" alt="صورة مبادرة ${escapeHtml(initiative.title)}">`)
+    : raw('<div class="mi-initiative-image mi-initiative-image--empty" aria-hidden="true">🖼<span>لا صورة للمبادرة</span></div>')}
+          ${can(role, 'initiatives.edit') ? raw(`
+            <div class="mi-detail-media__tools">
+              <button class="mi-btn mi-btn--ghost mi-btn--sm" data-act="image">${initiative.imageDataUrl ? 'تغيير الصورة' : 'إضافة صورة'}</button>
+              ${initiative.imageDataUrl ? '<button class="mi-btn mi-btn--ghost mi-btn--sm" data-act="image-remove">إزالة الصورة</button>' : ''}
+            </div>`) : ''}
+        </div>
+        <div class="mi-detail-media__map">
+          ${initiative.geometry?.coords?.length ? raw(`
+            <div class="mi-geo-host" data-geo></div>
+            <p class="mi-geo-caption"><b>${escapeHtml(measureLabel(initiative.geometry))}</b></p>`) : raw('<div class="mi-geo-host mi-geo-host--empty">لم يُحدد موقع جغرافي على الخريطة</div>')}
+          ${can(role, 'initiatives.edit') ? raw(`
+            <div class="mi-detail-media__tools">
+              <button class="mi-btn mi-btn--ghost mi-btn--sm" data-act="geo">${initiative.geometry ? 'تعديل الموقع' : 'تحديد الموقع على الخريطة'}</button>
+            </div>`) : ''}
+        </div>
+      </section>
+
       <section class="mi-card mi-card--span">
-        <h3>بطاقة المبادرة</h3>
+        <h3>بطاقة المبادرة (قالب التعريف المعتمد)</h3>
+        ${initiative.problem ? raw(`<h4 class="mi-subhead">المشكلة أو الاحتياج</h4><p class="mi-summary">${escapeHtml(initiative.problem)}</p>`) : ''}
+        <h4 class="mi-subhead">الوصف والحل المقترح</h4>
         <p class="mi-summary">${initiative.summary}</p>
+        ${initiative.expectedImpact ? raw(`<h4 class="mi-subhead">الأثر المتوقع</h4><p class="mi-summary">${escapeHtml(initiative.expectedImpact)}</p>`) : ''}
         ${raw(definitionList([
     ['نطاق العمل', initiative.scope || '—'],
+    ['المحفظة', portfolio ? portfolio.title : '—'],
     ['مقدّم المبادرة', `${initiative.submitterName}${initiative.submitterEntity ? ' — ' + initiative.submitterEntity : ''}`],
     ['الوحدة المشرفة', initiative.ownerName || '—'],
+    ['الفئات المستفيدة', initiative.beneficiaryGroups || '—'],
+    ['التكلفة التقديرية', initiative.costBand ? costBandLabel(initiative.costBand) : '—'],
+    ['المدة التقديرية', initiative.durationBand ? durationBandLabel(initiative.durationBand) : '—'],
+    ['مستوى الجاهزية عند التقديم', initiative.readinessLevel ? readinessLabel(initiative.readinessLevel) : '—'],
     ['الميزانية', fmtMoney(initiative.budget)],
     ['المنصرف', fmtMoney(initiative.spent)],
     ['المستفيدون المقدَّرون', initiative.beneficiaries ? fmtNumber(initiative.beneficiaries) : '—'],
@@ -250,9 +285,50 @@ export async function renderInitiativeDetails(container, id) {
 
     <div class="mi-detail-actions">
       <button class="mi-btn mi-btn--ghost" data-act="print">تقرير طباعة</button>
+      ${initiative.status === 'closed' ? raw('<button class="mi-btn mi-btn--gold" data-act="certificate">شهادة الإنجاز 🏅</button>') : ''}
       ${raw(transitions.map((t) => html`
         <button class="mi-btn ${t.to === 'rejected' ? 'mi-btn--danger' : 'mi-btn--primary'}" data-transition="${t.to}">${t.label}</button>`).join(''))}
     </div>`;
+
+  // معاينة الموقع الجغرافي المحفوظ
+  const geoHost = container.querySelector('[data-geo]');
+  if (geoHost) renderGeometryPreview(geoHost, initiative.geometry);
+
+  // إدارة صورة المبادرة
+  container.querySelector('[data-act="image"]')?.addEventListener('click', async () => {
+    try {
+      const dataUrl = await pickInitiativeImage();
+      if (!dataUrl) return;
+      await repos.initiatives.update(id, { imageDataUrl: dataUrl });
+      toastSuccess('حُفظت صورة المبادرة');
+      renderInitiativeDetails(container, id);
+    } catch (err) { toastError(err.message); }
+  });
+  container.querySelector('[data-act="image-remove"]')?.addEventListener('click', async () => {
+    await repos.initiatives.update(id, { imageDataUrl: null });
+    toastSuccess('أُزيلت الصورة');
+    renderInitiativeDetails(container, id);
+  });
+
+  // تحديد/تعديل الموقع الجغرافي
+  container.querySelector('[data-act="geo"]')?.addEventListener('click', () => {
+    openLocationPicker({
+      initial: initiative.geometry,
+      async onConfirm(geometry) {
+        await repos.initiatives.update(id, {
+          geometry,
+          lat: geometry.coords[0][0],
+          lng: geometry.coords[0][1]
+        });
+        toastSuccess(`ثُبّت الموقع — ${measureLabel(geometry)}`);
+        renderInitiativeDetails(container, id);
+      }
+    });
+  });
+
+  // شهادة الإنجاز (للمبادرات المغلقة)
+  container.querySelector('[data-act="certificate"]')?.addEventListener('click', () =>
+    openCertificateModal(initiative, links, partners, role));
 
   // فتح قائمة تحقق البوابة
   container.querySelector('[data-act="open-checklist"]')?.addEventListener('click', async () => {
@@ -356,4 +432,75 @@ export async function renderInitiativeDetails(container, id) {
       statusHistory: [...(ini.statusHistory || []), entry]
     });
   }
+}
+
+// نافذة شهادة الإنجاز: معاينة فاخرة + تنزيل PNG للجميع، وتحرير البيانات لمدير النظام فقط
+async function openCertificateModal(initiative, links, partners, role) {
+  const template = await getCertTemplate();
+  const partnerNames = links
+    .map((l) => partners.find((p) => p.id === l.partnerId)?.name)
+    .filter(Boolean);
+  const recipientNames = partnerNames.length
+    ? partnerNames
+    : [initiative.submitterEntity || initiative.submitterName || 'شركاء المبادرة'];
+
+  const canEdit = can(role, 'certificates.manage') || role === 'admin';
+
+  const { dialog, close } = openModal({
+    title: `شهادة إنجاز — ${initiative.title}`,
+    wide: true,
+    bodyHtml: html`
+      <div class="mi-cert-preview" aria-label="معاينة الشهادة"><p class="mi-muted">جارٍ تجهيز الشهادة…</p></div>
+      ${canEdit ? raw(`
+      <details class="mi-cert-edit">
+        <summary>تحرير بيانات الشهادة (مدير النظام)</summary>
+        <form class="mi-form" id="mi-cert-form">
+          <div class="mi-form-row">
+            <div class="mi-form-field"><label>اسم الموقّع</label><input class="mi-input" name="signatoryName" value="${escapeHtml(template.signatoryName)}"></div>
+            <div class="mi-form-field"><label>صفة الموقّع</label><input class="mi-input" name="signatoryTitle" value="${escapeHtml(template.signatoryTitle)}"></div>
+          </div>
+          <div class="mi-form-field"><label>عبارة التقديم</label><input class="mi-input" name="appreciationText" value="${escapeHtml(template.appreciationText)}"></div>
+          <div class="mi-form-field"><label>نص التقدير</label><textarea class="mi-input" name="bodyText" rows="3">${escapeHtml(template.bodyText)}</textarea></div>
+          <button type="button" class="mi-btn mi-btn--primary mi-btn--sm" data-act="save-template">حفظ وتحديث المعاينة</button>
+        </form>
+      </details>`) : ''}`,
+    footerHtml: html`
+      <button class="mi-btn mi-btn--ghost" data-act="close">إغلاق</button>
+      <button class="mi-btn mi-btn--gold" data-act="download" disabled>تنزيل الشهادة كصورة</button>`
+  });
+
+  const preview = dialog.querySelector('.mi-cert-preview');
+  const downloadBtn = dialog.querySelector('[data-act="download"]');
+  let currentCanvas = null;
+
+  async function draw(tmpl) {
+    try {
+      currentCanvas = await renderCertificateCanvas({ initiative, recipientNames, template: tmpl });
+      preview.innerHTML = '';
+      currentCanvas.className = 'mi-cert-canvas';
+      preview.appendChild(currentCanvas);
+      downloadBtn.disabled = false;
+    } catch (err) {
+      console.error('تعذر رسم الشهادة', err);
+      preview.innerHTML = '<p class="mi-alert mi-alert--error">تعذر تجهيز الشهادة</p>';
+    }
+  }
+  draw(template);
+
+  dialog.querySelector('[data-act="close"]').addEventListener('click', close);
+  dialog.querySelector('[data-act="download"]').addEventListener('click', () => {
+    if (currentCanvas) downloadCanvasPng(currentCanvas, `شهادة-${initiative.id}.png`);
+  });
+  dialog.querySelector('[data-act="save-template"]')?.addEventListener('click', async () => {
+    const form = dialog.querySelector('#mi-cert-form');
+    const patch = {
+      signatoryName: form.signatoryName.value.trim(),
+      signatoryTitle: form.signatoryTitle.value.trim(),
+      appreciationText: form.appreciationText.value.trim(),
+      bodyText: form.bodyText.value.trim()
+    };
+    const saved = await saveCertTemplate(patch);
+    toastSuccess('حُفظت بيانات الشهادة');
+    draw(saved);
+  });
 }

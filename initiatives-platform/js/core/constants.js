@@ -1,6 +1,6 @@
 // الثوابت المرجعية لمنصة المبادرات — مصدر الحقيقة الوحيد للمعرّفات والتسميات
 export const DB_NAME = 'madinah-initiatives-platform-db';
-export const DB_VERSION = 1;
+export const DB_VERSION = 2; // v2: مخزن المحافظ portfolios
 
 export const STORAGE_PREFIX = 'madinahInitiativesPlatform:';
 export const CHANNELS = {
@@ -15,7 +15,7 @@ export const OBJECT_STORES = [
   'campaigns', 'reviews', 'decisions', 'gateChecklists', 'kpis', 'benefits',
   'risks', 'milestones', 'deliverables', 'qualityChecks', 'changeRequests',
   'comments', 'attachments', 'users', 'organizationalUnits', 'notifications',
-  'auditLogs', 'settings', 'savedViews'
+  'auditLogs', 'settings', 'savedViews', 'portfolios'
 ];
 
 // حالات المبادرة عبر دورة الحياة
@@ -101,6 +101,28 @@ export const RISK_LEVELS = [
 export const DISTRICTS = [
   'المنطقة المركزية', 'قباء', 'العوالي', 'الحرة الشرقية', 'الحرة الغربية',
   'العيون', 'سيد الشهداء', 'الملك فهد', 'النخيل', 'الرانوناء', 'العزيزية', 'الجرف'
+];
+
+// نطاقات قالب تعريف المبادرة (من النموذج المعتمد)
+export const COST_BANDS = [
+  { id: 'lt1m', label: 'أقل من مليون ريال' },
+  { id: '1to5m', label: '1–5 ملايين ريال' },
+  { id: '5to20m', label: '5–20 مليون ريال' },
+  { id: 'gt20m', label: 'أكثر من 20 مليون ريال' },
+  { id: 'tbd', label: 'غير محددة' }
+];
+export const DURATION_BANDS = [
+  { id: 'lt3m', label: 'أقل من 3 أشهر' },
+  { id: '3to6m', label: '3–6 أشهر' },
+  { id: '6to12m', label: '6–12 شهرًا' },
+  { id: 'gt1y', label: 'أكثر من سنة' }
+];
+export const READINESS_LEVELS = [
+  { id: 'idea', label: 'فكرة' },
+  { id: 'sited', label: 'موقع محدد' },
+  { id: 'studied', label: 'دراسة متوفرة' },
+  { id: 'designed', label: 'تصميم متوفر' },
+  { id: 'ready', label: 'جاهزة للتنفيذ' }
 ];
 
 export const ID_PREFIXES = {

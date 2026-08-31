@@ -1,6 +1,6 @@
 /* الاستجابة — يُحمَّل أخيرًا ليعلو على قواعد التخطيط */
 @media (max-width: 1024px) {
-  .mi-dash-grid, .mi-detail-grid, .mi-settings-grid { grid-template-columns: 1fr; }
+  .mi-dash-grid, .mi-detail-grid, .mi-settings-grid, .mi-detail-media { grid-template-columns: 1fr; }
   .mi-gate-track--compact { display: none; }
 }
 

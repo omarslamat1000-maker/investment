@@ -1,7 +1,7 @@
 // اختبارات تكامل النسخ الاحتياطي: التحقق من المخطط والاسم والمجموع
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { validateBackup, BACKUP_APP_NAME, BACKUP_SCHEMA_VERSION } from '../../js/services/backup-service.js';
+import { validateBackup, BACKUP_APP_NAME, BACKUP_SCHEMA_VERSION, BACKUP_MIN_SCHEMA_VERSION } from '../../js/services/backup-service.js';
 import { checksum } from '../../js/core/utils.js';
 
 function goodPayload() {
@@ -32,6 +32,12 @@ test('إصدار مخطط غير مدعوم يُرفض', () => {
   const p = goodPayload();
   p.schemaVersion = 99;
   assert.equal(validateBackup(p).valid, false);
+});
+
+test('نسخة بإصدار أقدم مدعوم (v1) تُقبل للاستعادة', () => {
+  const p = goodPayload();
+  p.schemaVersion = BACKUP_MIN_SCHEMA_VERSION;
+  assert.equal(validateBackup(p).valid, true);
 });
 
 test('عبث بالسجلات يكسر مجموع التحقق', () => {

@@ -141,3 +141,45 @@
 .mi-benefits-summary { margin-bottom: var(--mi-sp-4); }
 
 .mi-boot-error { max-width: 32rem; margin: 15vh auto; text-align: center; }
+
+/* وسائط تفاصيل المبادرة: الصورة + الخريطة */
+.mi-detail-media { display: grid; grid-template-columns: 1fr 1fr; gap: var(--mi-sp-4); }
+.mi-initiative-image { width: 100%; height: 240px; object-fit: cover; border-radius: var(--mi-radius); border: 1px solid var(--mi-line); }
+.mi-initiative-image--empty {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: var(--mi-sp-2); background: var(--mi-surface-2); color: var(--mi-muted);
+  font-size: 2rem;
+}
+.mi-initiative-image--empty span { font-size: var(--mi-fs-sm); }
+.mi-detail-media__tools { display: flex; gap: var(--mi-sp-2); margin-top: var(--mi-sp-2); flex-wrap: wrap; }
+
+/* حقل الصورة في النماذج */
+.mi-image-field { display: flex; align-items: center; gap: var(--mi-sp-3); flex-wrap: wrap; }
+.mi-image-thumb { width: 140px; height: 96px; object-fit: cover; border-radius: var(--mi-radius); border: 1px solid var(--mi-line); }
+.mi-image-empty { width: 140px; height: 96px; display: grid; place-items: center; font-size: 1.6rem; background: var(--mi-surface-2); border-radius: var(--mi-radius); color: var(--mi-muted); }
+.mi-image-field__actions { display: flex; flex-direction: column; gap: var(--mi-sp-1); }
+
+/* بطاقات المحافظ */
+.mi-portfolio-list { display: flex; flex-direction: column; gap: var(--mi-sp-4); }
+.mi-portfolio-card__head { display: flex; justify-content: space-between; gap: var(--mi-sp-4); flex-wrap: wrap; align-items: flex-start; }
+.mi-portfolio-goal { color: var(--mi-muted); font-size: var(--mi-fs-sm); margin: 0; max-width: 42rem; }
+.mi-portfolio-card__stats { display: flex; gap: var(--mi-sp-4); flex-wrap: wrap; font-size: var(--mi-fs-sm); color: var(--mi-ink-soft); }
+.mi-portfolio-card__stats b { color: var(--mi-green-800); font-family: var(--mi-font-display); }
+.mi-portfolio-campaigns { font-size: var(--mi-fs-sm); color: var(--mi-muted); margin: var(--mi-sp-2) 0; display: flex; gap: var(--mi-sp-1); flex-wrap: wrap; align-items: center; }
+.mi-tag--gold { background: var(--mi-gold-100); color: var(--mi-gold-700); border-color: transparent; }
+.mi-portfolio-members { margin-top: var(--mi-sp-2); }
+.mi-portfolio-member {
+  display: flex; align-items: center; gap: var(--mi-sp-3);
+  padding: var(--mi-sp-2) var(--mi-sp-2); border-radius: var(--mi-radius);
+  cursor: pointer; border-bottom: 1px dashed var(--mi-line);
+}
+.mi-portfolio-member:hover, .mi-portfolio-member:focus-visible { background: var(--mi-surface-2); }
+.mi-portfolio-member__title { flex: 1; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mi-portfolio-actions { display: flex; gap: var(--mi-sp-2); margin-top: var(--mi-sp-3); flex-wrap: wrap; }
+
+/* الشهادة */
+.mi-cert-preview { background: var(--mi-surface-2); border-radius: var(--mi-radius); padding: var(--mi-sp-2); text-align: center; }
+.mi-cert-canvas { width: 100%; height: auto; border-radius: 6px; box-shadow: var(--mi-shadow); }
+.mi-cert-edit { margin-top: var(--mi-sp-3); border: 1px dashed var(--mi-line); border-radius: var(--mi-radius); padding: var(--mi-sp-2) var(--mi-sp-3); font-size: var(--mi-fs-sm); }
+.mi-cert-edit summary { cursor: pointer; font-weight: 700; color: var(--mi-gold-700); }
+.mi-cert-edit form { margin-top: var(--mi-sp-3); }

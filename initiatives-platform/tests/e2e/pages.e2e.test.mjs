@@ -30,6 +30,8 @@ after(() => { server?.kill(); });
 const PAGES = [
   { path: '/', marker: 'بنيةٌ تحتية يبنيها' },
   { path: '/index.html', marker: 'قدّم مبادرتك' },
+  { path: '/index.html', marker: 'مبادرات جارٍ العمل عليها' },
+  { path: '/index.html', marker: 'مبادرات أُنجزت وتحققت منافعها' },
   { path: '/app.html', marker: 'mi-app' },
   { path: '/login.html', marker: 'تسجيل الدخول' },
   { path: '/submit.html', marker: 'قدّم مبادرتك' },

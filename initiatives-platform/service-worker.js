@@ -1,8 +1,8 @@
 // Service Worker لمنصة المبادرات — نطاقه ./ داخل مجلد المنصة فقط
 // أسماء التخزين ببادئة مستقلة كي لا تتعارض مع أي تطبيق آخر في المستودع
 const CACHE_PREFIX = 'madinah-initiatives-platform-';
-const STATIC_CACHE = CACHE_PREFIX + 'static-v2';
-const RUNTIME_CACHE = CACHE_PREFIX + 'runtime-v2';
+const STATIC_CACHE = CACHE_PREFIX + 'static-v3';
+const RUNTIME_CACHE = CACHE_PREFIX + 'runtime-v3';
 
 const PRECACHE = [
   './',
@@ -77,7 +77,24 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // الموارد: التخزين أولًا مع تحديث بالخلفية
+  // شيفرة وأنماط المنصة (js/css/manifest): الشبكة أولًا كي تصل التحديثات فورًا،
+  // مع الرجوع للتخزين دون اتصال
+  if (/\.(js|mjs|css|webmanifest)$/.test(url.pathname)) {
+    event.respondWith(
+      fetch(request)
+        .then((res) => {
+          if (res.ok) {
+            const copy = res.clone();
+            caches.open(RUNTIME_CACHE).then((c) => c.put(request, copy));
+          }
+          return res;
+        })
+        .catch(() => caches.match(request))
+    );
+    return;
+  }
+
+  // بقية الموارد (صور وأيقونات): التخزين أولًا مع تحديث بالخلفية
   event.respondWith(
     caches.match(request).then((cached) => {
       const network = fetch(request)

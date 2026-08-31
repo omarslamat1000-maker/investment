@@ -1,9 +1,9 @@
 // نموذج المبادرة — الهيكل المعياري، الإنشاء، وقواعد التحقق
 import { required, minLength, maxLength, isPositiveNumber, isDateYmd, oneOf, validate, isEmail, isSaudiPhone } from '../core/validation.js';
-import { CATEGORIES, DISTRICTS, STATUSES } from '../core/constants.js';
+import { CATEGORIES, DISTRICTS, STATUSES, COST_BANDS, DURATION_BANDS, READINESS_LEVELS } from '../core/constants.js';
 import { sanitizeRecord } from '../core/sanitizer.js';
 
-export const INITIATIVE_TEXT_FIELDS = ['title', 'summary', 'scope', 'location', 'submitterName', 'submitterEntity', 'notes'];
+export const INITIATIVE_TEXT_FIELDS = ['title', 'summary', 'scope', 'location', 'submitterName', 'submitterEntity', 'notes', 'problem', 'beneficiaryGroups', 'expectedImpact'];
 
 export function newInitiative(overrides = {}) {
   return {
@@ -32,6 +32,17 @@ export function newInitiative(overrides = {}) {
     beneficiaries: null, // عدد المستفيدين المقدَّر
     notes: '',
     statusHistory: [],   // [{from,to,at,by,decisionId}]
+    // حقول قالب تعريف المبادرة المعتمد
+    problem: '',            // المشكلة أو الاحتياج
+    beneficiaryGroups: '',  // الفئات المستفيدة
+    expectedImpact: '',     // الأثر المتوقع ومؤشر قياسه
+    costBand: '',           // نطاق التكلفة التقديرية
+    durationBand: '',       // المدة التقديرية
+    readinessLevel: '',     // مستوى الجاهزية
+    // الموقع الجغرافي المرسوم: { type: point|line|polygon, coords, lengthM, areaM2 }
+    geometry: null,
+    imageDataUrl: null,     // صورة المبادرة (مضغوطة)
+    portfolioId: null,      // المحفظة الأم إن وجدت
     ...overrides
   };
 }
@@ -62,9 +73,16 @@ export function validateInitiative(record) {
     beneficiaries: [(v) => isPositiveNumber(v, 'عدد المستفيدين')],
     startDate: [(v) => isDateYmd(v, 'تاريخ البداية')],
     endDate: [(v) => isDateYmd(v, 'تاريخ النهاية')],
-    status: [(v) => oneOf(v, Object.keys(STATUSES), 'الحالة')]
+    status: [(v) => oneOf(v, Object.keys(STATUSES), 'الحالة')],
+    costBand: [(v) => oneOf(v, COST_BANDS.map((b) => b.id), 'نطاق التكلفة')],
+    durationBand: [(v) => oneOf(v, DURATION_BANDS.map((b) => b.id), 'المدة التقديرية')],
+    readinessLevel: [(v) => oneOf(v, READINESS_LEVELS.map((b) => b.id), 'مستوى الجاهزية')]
   });
 }
+
+export function costBandLabel(id) { return COST_BANDS.find((b) => b.id === id)?.label || '—'; }
+export function durationBandLabel(id) { return DURATION_BANDS.find((b) => b.id === id)?.label || '—'; }
+export function readinessLabel(id) { return READINESS_LEVELS.find((b) => b.id === id)?.label || '—'; }
 
 export function sanitizeInitiative(record) {
   return sanitizeRecord(record, INITIATIVE_TEXT_FIELDS);

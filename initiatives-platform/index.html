@@ -30,6 +30,8 @@
     </a>
     <nav class="mi-public-nav" aria-label="روابط البوابة">
       <a href="#mi-opportunities">الفرص المطروحة</a>
+      <a href="#mi-running">جارٍ تنفيذها</a>
+      <a href="#mi-completed">أُنجزت</a>
       <a href="#mi-how">كيف تشارك؟</a>
       <a href="./partner-portal.html">بوابة الشركاء</a>
       <a class="mi-btn mi-btn--gold" href="./app.html">دخول المنصة</a>
@@ -58,6 +60,18 @@
       <h2>فرصٌ تنتظر شريكًا</h2>
       <p class="mi-section-lead">احتياجات بنية تحتية اعتمدتها الأمانة وطرحتها لتتبناها جهة أو مجموعة — تمويلًا أو تنفيذًا أو تشغيلًا.</p>
       <div class="mi-opportunities-grid" id="mi-needs-grid"></div>
+    </section>
+
+    <section class="mi-portal-section mi-portal-section--tinted" id="mi-running">
+      <h2>مبادرات جارٍ العمل عليها</h2>
+      <p class="mi-section-lead">شفافية كاملة: ما ينفَّذ الآن في أحياء المدينة ونسب إنجازه.</p>
+      <div class="mi-progress-grid" id="mi-running-grid"></div>
+    </section>
+
+    <section class="mi-portal-section" id="mi-completed">
+      <h2>مبادرات أُنجزت وتحققت منافعها</h2>
+      <p class="mi-section-lead">ما اكتمل تنفيذه واجتاز بوابة المنافع — بأرقام معلنة.</p>
+      <div class="mi-progress-grid" id="mi-completed-grid"></div>
     </section>
 
     <section class="mi-portal-section" id="mi-campaigns-section">
@@ -108,7 +122,7 @@
     import { APP_CONFIG } from './js/config.example.js';
     import { initDataProvider } from './js/data/data-provider.js';
     import { seedDemoDataIfEmpty } from './js/services/import-service.js';
-    import { renderPortalStats, renderPublishedNeeds, renderCampaigns } from './js/modules/public-portal/portal-view.js';
+    import { renderPortalStats, renderPublishedNeeds, renderCampaigns, renderRunningInitiatives, renderCompletedInitiatives } from './js/modules/public-portal/portal-view.js';
 
     (async () => {
       await initDataProvider(APP_CONFIG);
@@ -116,6 +130,8 @@
       await Promise.all([
         renderPortalStats(document.getElementById('mi-portal-stats')),
         renderPublishedNeeds(document.getElementById('mi-needs-grid')),
+        renderRunningInitiatives(document.getElementById('mi-running-grid')),
+        renderCompletedInitiatives(document.getElementById('mi-completed-grid')),
         renderCampaigns(document.getElementById('mi-campaigns'))
       ]);
     })().catch((err) => console.error('تعذر تحميل بيانات البوابة', err));
