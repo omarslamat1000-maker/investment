@@ -148,6 +148,11 @@ async function boot() {
     location.replace('./login.html');
     return;
   }
+  // حساب الجهة الشريكة: نطاقه بوابة الشركاء فقط — اطلاع على بياناته ومتابعة مبادراته
+  if (session.role === 'partner') {
+    location.replace('./partner-portal.html');
+    return;
+  }
   setRole(session.role);
   setUserName(session.name);
   // تجاوزات صلاحيات الحساب (سماح/منع) تُطبق فوق مصفوفة الدور

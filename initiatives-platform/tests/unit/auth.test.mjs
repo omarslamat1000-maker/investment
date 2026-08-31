@@ -80,3 +80,18 @@ test('حسابات العرض: أسماء دخول فريدة صالحة وأد�
   // خريطة الترقية تغطي كل حسابات العرض
   for (const u of DEMO_USERS) assert.equal(DEFAULT_USERNAMES[u.id], u.username);
 });
+
+test('حسابات الشركاء: كل حساب مرتبط بجهة شريكة موجودة ودوره partner', async () => {
+  const { DEMO_PARTNERS } = await import('../../data/demo-partners.js');
+  const partnerIds = new Set(DEMO_PARTNERS.map((p) => p.id));
+  const partnerAccounts = DEMO_USERS.filter((u) => u.partnerId);
+  assert.ok(partnerAccounts.length >= 8, 'يلزم حساب لكل جهة شريكة');
+  for (const u of partnerAccounts) {
+    assert.equal(u.role, 'partner', u.id);
+    assert.ok(partnerIds.has(u.partnerId), `${u.id}: جهة غير موجودة ${u.partnerId}`);
+  }
+  // كل جهة شريكة لها حساب واحد بالضبط (شخص واحد لكل جهة)
+  const byPartner = new Set(partnerAccounts.map((u) => u.partnerId));
+  assert.equal(byPartner.size, partnerAccounts.length, 'جهة مرتبطة بأكثر من حساب');
+  assert.equal(byPartner.size, DEMO_PARTNERS.length, 'جهات بلا حسابات');
+});

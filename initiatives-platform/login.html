@@ -72,6 +72,10 @@
           <li><code>executor</code> — مشرف تنفيذ</li>
           <li><code>partner</code> — شريك</li>
         </ul>
+        <p class="mi-muted">حسابات الجهات الشريكة (تدخل بوابة الشركاء وترى جهتها فقط):
+          <code>waha</code>، <code>suqya</code>، <code>noor</code>، <code>darbak</code>،
+          <code>masarat</code>، <code>omran</code>، <code>emaar</code>، <code>yanabea</code>
+        </p>
       </details>
 
       <p class="mi-login-back"><a href="./index.html">← العودة إلى البوابة العامة</a></p>
@@ -108,6 +112,11 @@
           loginForm.hidden = true;
           changeForm.hidden = false;
           document.getElementById('mi-new-password').focus();
+          return;
+        }
+        // حسابات الجهات الشريكة: وجهتها بوابة الشركاء فقط (اطلاع ومتابعة)
+        if (s?.role === 'partner') {
+          location.replace('./partner-portal.html');
           return;
         }
         location.replace('./app.html');
