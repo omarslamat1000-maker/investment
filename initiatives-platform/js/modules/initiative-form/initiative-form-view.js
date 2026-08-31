@@ -212,11 +212,42 @@ export function renderInitiativeForm(container, { onDone }) {
     }
   ];
 
+  function buildRecord(data, status) {
+    const sites = (data.sites || []).map((s, i) => ({ ...s, name: s.name || `الموقع ${i + 1}` }));
+    const { lat, lng } = firstLatLng(sites);
+    return { sites, lat, lng, status };
+  }
+
   createWizard(container, steps, {
-    submitLabel: 'إرسال المبادرة',
+    submitLabel: 'إرسال المبادرة للمراجعة',
+    // حفظ كمسودة من أي خطوة — يتطلب اسم المبادرة فقط
+    async onDraft(data) {
+      if (!data.title || data.title.trim().length < 8) {
+        toastError('لحفظ المسودة: اكتب اسم المبادرة أولًا (8 أحرف على الأقل)');
+        return;
+      }
+      const { sites, lat, lng } = buildRecord(data, 'draft');
+      const draft = sanitizeInitiative(newInitiative({
+        title: data.title, summary: data.summary || '', problem: data.problem || '',
+        category: data.category || 'rehab', district: data.district || 'المنطقة المركزية',
+        location: data.location || '', sites, lat, lng,
+        imageDataUrl: data.imageDataUrl || null,
+        beneficiaryGroups: data.beneficiaryGroups || '',
+        beneficiaries: data.beneficiaries ? Number(data.beneficiaries) : null,
+        expectedImpact: data.expectedImpact || '',
+        costBand: data.costBand || '', durationBand: data.durationBand || '',
+        readinessLevel: data.readinessLevel || '',
+        budget: data.budget ? Number(data.budget) : null,
+        fundingModel: data.fundingModel || '', notes: data.notes || '',
+        submitterName: data.submitterName || '', submitterEntity: data.submitterEntity || '',
+        submitterEmail: data.submitterEmail || '', submitterPhone: data.submitterPhone || '',
+        channel: 'public', status: 'draft'
+      }));
+      const saved = await repos.initiatives.create(draft);
+      toastSuccess(`حُفظت المسودة برقم ${saved.id} — يمكنك استكمالها لاحقًا من سجل المبادرات`);
+    },
     async onSubmit(data) {
-      const sites = (data.sites || []).map((s, i) => ({ ...s, name: s.name || `الموقع ${i + 1}` }));
-      const { lat, lng } = firstLatLng(sites);
+      const { sites, lat, lng } = buildRecord(data, 'draft');
       const record = sanitizeInitiative(newInitiative({
         title: data.title,
         summary: data.summary,
@@ -241,14 +272,19 @@ export function renderInitiativeForm(container, { onDone }) {
         submitterEmail: data.submitterEmail,
         submitterPhone: data.submitterPhone,
         channel: 'public',
-        status: 'submitted'
+        status: 'draft'
       }));
-      record.statusHistory = [historyEntry('draft', 'submitted', record.submitterName)];
       const check = validateInitiative(record);
       if (!check.valid) { toastError(Object.values(check.errors)[0]); return; }
-      const saved = await repos.initiatives.create(record);
-      await notify('مبادرة جديدة مقدمة', `${saved.title} — ${saved.id}`, 'info');
-      onDone(saved);
+      // المسار الرسمي: إنشاء كمسودة ثم التقديم (يسجَّل الانتقال ويُخطَر المشرفون)
+      try {
+        const saved = await repos.initiatives.create(record);
+        const submitted = await repos.initiatives.transition(saved.id, 'submitted', { by: record.submitterName });
+        await notify('مبادرة جديدة مقدمة', `${saved.title} — ${saved.id}`, 'info');
+        onDone(submitted || saved);
+      } catch (err) {
+        toastError(err.message);
+      }
     }
   });
 }

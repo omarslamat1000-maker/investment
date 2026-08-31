@@ -39,7 +39,7 @@
   </main>
 
   <script type="module">
-    import { APP_CONFIG } from './js/config.example.js';
+    import { APP_CONFIG, isCloudMode } from './js/config.js';
     import { initDataProvider } from './js/data/data-provider.js';
     import { seedDemoDataIfEmpty } from './js/services/import-service.js';
     import { renderInitiativeForm } from './js/modules/initiative-form/initiative-form-view.js';
@@ -49,6 +49,22 @@
       await initDataProvider(APP_CONFIG);
       await seedDemoDataIfEmpty();
       const wizardBox = document.getElementById('mi-wizard');
+
+      // في وضع السحابة: التقديم يتطلب حساب جهة مسجلًا (سياسات RLS تفرض ذلك أيضًا)
+      if (isCloudMode()) {
+        const { restoreCloudSession } = await import('./js/services/auth-service.js');
+        const session = await restoreCloudSession();
+        if (!session || session.mustChangePassword) {
+          wizardBox.innerHTML = html`
+            <div class="mi-empty">
+              <div class="mi-empty__mark" aria-hidden="true">◈</div>
+              <h2>تسجيل الدخول مطلوب</h2>
+              <p class="mi-muted">تقديم المبادرات متاح لممثلي الجهات المسجلين — سجّل الدخول بحساب جهتك ثم عد لهذه الصفحة.</p>
+              <a class="mi-btn mi-btn--primary" href="./login.html">تسجيل الدخول</a>
+            </div>`;
+          return;
+        }
+      }
       renderInitiativeForm(wizardBox, {
         onDone(saved) {
           wizardBox.hidden = true;

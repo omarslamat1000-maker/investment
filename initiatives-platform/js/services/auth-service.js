@@ -5,6 +5,7 @@ import { dataProvider } from '../data/data-provider.js';
 import { setSession, clearSession, getSession, setRole, setUserName } from '../core/state.js';
 import { ROLES } from '../core/constants.js';
 import { nowIso } from '../core/date-time.js';
+import { isCloudMode } from '../config.js';
 
 export const DEFAULT_PASSWORD = 'Admin@123';
 
@@ -34,6 +35,7 @@ export function isValidUsername(username) {
 
 // ترقية حسابات زُرعت قبل إضافة المصادقة: تُكمل username/passwordHash/active
 export async function ensureAuthSeed() {
+  if (isCloudMode()) return; // الحسابات السحابية تُدار في Supabase حصريًا
   const users = await dataProvider.getAll('users');
   const defaultHash = await hashPassword(DEFAULT_PASSWORD);
   for (const user of users) {
@@ -57,8 +59,81 @@ export async function findUserByUsername(username) {
   return users.find((u) => normalizeUsername(u.username) === uname) || null;
 }
 
+// ————— وضع السحابة: مصادقة Supabase الحقيقية —————
+async function buildCloudSession(client, authUser) {
+  const { data: profile, error } = await client
+    .from('profiles')
+    .select('*, organizations(name_ar, code)')
+    .eq('id', authUser.id)
+    .maybeSingle();
+  if (error || !profile) return { ok: false, error: 'تعذر قراءة الملف الشخصي — تواصل مع مدير النظام' };
+  if (!profile.is_active) {
+    await client.auth.signOut();
+    return { ok: false, error: 'الحساب موقوف — تواصل مع مدير النظام' };
+  }
+  const session = {
+    userId: authUser.id,
+    name: profile.full_name || authUser.email,
+    username: authUser.email,
+    role: profile.role,
+    grants: profile.overrides?.grants || [],
+    denies: profile.overrides?.denies || [],
+    organizationId: profile.organization_id,
+    organizationName: profile.organizations?.name_ar || null,
+    organizationCode: profile.organizations?.code || null,
+    mustChangePassword: Boolean(profile.must_change_password),
+    cloud: true,
+    at: nowIso()
+  };
+  setSession(session);
+  setRole(profile.role);
+  setUserName(session.name);
+  return { ok: true, session };
+}
+
+async function cloudLogin(email, password) {
+  const { getSupabase } = await import('../data/supabase-client.js');
+  const client = await getSupabase();
+  const { data, error } = await client.auth.signInWithPassword({
+    email: normalizeUsername(email), password
+  });
+  if (error) {
+    const msg = /credentials/i.test(error.message)
+      ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة'
+      : error.message;
+    return { ok: false, error: msg };
+  }
+  return buildCloudSession(client, data.user);
+}
+
+// استعادة جلسة سحابية قائمة (عند فتح التطبيق) — تعيد الجلسة أو null
+export async function restoreCloudSession() {
+  if (!isCloudMode()) return null;
+  const { getSupabase } = await import('../data/supabase-client.js');
+  const client = await getSupabase();
+  const { data } = await client.auth.getSession();
+  if (!data?.session?.user) { clearSession(); return null; }
+  const existing = getSession();
+  if (existing?.userId === data.session.user.id) return existing;
+  const result = await buildCloudSession(client, data.session.user);
+  return result.ok ? result.session : null;
+}
+
+// تغيير كلمة المرور (أول دخول أو لاحقًا) في وضع السحابة
+export async function cloudChangePassword(newPassword) {
+  const { getSupabase } = await import('../data/supabase-client.js');
+  const client = await getSupabase();
+  const { error } = await client.auth.updateUser({ password: newPassword });
+  if (error) return { ok: false, error: error.message };
+  await client.rpc('clear_password_flag');
+  const session = getSession();
+  if (session) setSession({ ...session, mustChangePassword: false });
+  return { ok: true };
+}
+
 // تسجيل الدخول: يعيد { ok, user?, error }
 export async function login(username, password) {
+  if (isCloudMode()) return cloudLogin(username, password);
   const user = await findUserByUsername(username);
   if (!user) return { ok: false, error: 'اسم المستخدم أو كلمة المرور غير صحيحة' };
   if (user.active === false) return { ok: false, error: 'الحساب موقوف — تواصل مع مدير النظام' };
@@ -83,6 +158,12 @@ export async function login(username, password) {
 
 export function logout() {
   clearSession();
+  if (isCloudMode()) {
+    import('../data/supabase-client.js')
+      .then(({ getSupabase }) => getSupabase())
+      .then((client) => client.auth.signOut())
+      .catch(() => { /* الجلسة المحلية أُزيلت على أي حال */ });
+  }
 }
 
 export function isLoggedIn() {

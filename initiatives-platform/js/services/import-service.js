@@ -14,6 +14,9 @@ export const SEED_VERSION = 3; // v3: التدرج الهرمي (حملات ← 
 const stamp = (r) => ({ createdAt: nowIso(), updatedAt: nowIso(), ...r });
 
 export async function seedDemoDataIfEmpty() {
+  // وضع السحابة: البيانات حقيقية في Supabase — لا زرع تجريبيًا إطلاقًا
+  const { isCloudMode } = await import('../config.js');
+  if (isCloudMode()) return false;
   const flag = await dataProvider.get('settings', SEED_FLAG_ID);
   const version = flag?.version || (flag?.seeded ? 1 : 0);
   if (version >= SEED_VERSION) return false;

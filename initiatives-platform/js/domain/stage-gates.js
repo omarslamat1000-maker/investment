@@ -70,7 +70,7 @@ export function gateReadiness(checklist) {
 
 // موقع المبادرة على مسار البوابات: passed | current | upcoming لكل بوابة
 export function gateTrack(status) {
-  const reached = { draft: -1, submitted: -1, screening: 0, study: 1, approval: 2, readiness: 3, execution: 4, benefits: 4, closed: 5, rejected: -1, onHold: 2 };
+  const reached = { draft: -1, submitted: -1, returned: -1, screening: 0, study: 1, approval: 2, readiness: 3, execution: 4, benefits: 4, closed: 5, rejected: -1, onHold: 2 };
   const idx = reached[status] ?? -1;
   return GATES.map((g, i) => ({
     ...g,

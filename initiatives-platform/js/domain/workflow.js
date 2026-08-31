@@ -4,8 +4,11 @@ import { can } from '../core/permissions.js';
 
 // كل انتقال: من → إلى، الفعل المطلوب، وهل يتطلب قرار بوابة
 export const TRANSITIONS = [
-  { from: 'draft',     to: 'submitted', label: 'تقديم المبادرة',      action: 'initiatives.create' },
-  { from: 'submitted', to: 'screening', label: 'بدء الفرز',           action: 'initiatives.transition' },
+  { from: 'draft',     to: 'submitted', label: 'تقديم المبادرة',      action: 'initiatives.submit' },
+  { from: 'submitted', to: 'screening', label: 'بدء المراجعة',        action: 'initiatives.transition' },
+  { from: 'screening', to: 'returned',  label: 'إعادة للاستكمال',     action: 'decisions.create', requiresReason: true },
+  { from: 'study',     to: 'returned',  label: 'إعادة للاستكمال',     action: 'decisions.create', requiresReason: true },
+  { from: 'returned',  to: 'submitted', label: 'إعادة الإرسال بعد الاستكمال', action: 'initiatives.submit' },
   { from: 'screening', to: 'study',     label: 'اجتياز بوابة الفرز',  action: 'decisions.create', gate: 'G0' },
   { from: 'screening', to: 'rejected',  label: 'اعتذار عند الفرز',    action: 'decisions.create', gate: 'G0' },
   { from: 'study',     to: 'approval',  label: 'اجتياز بوابة الجدوى', action: 'decisions.create', gate: 'G1' },
@@ -39,7 +42,7 @@ export function statusColor(status) {
 }
 
 // ترتيب الحالة في مسار دورة الحياة (للفرز والعرض)
-const ORDER = ['draft', 'submitted', 'screening', 'study', 'approval', 'readiness', 'execution', 'benefits', 'closed'];
+const ORDER = ['draft', 'submitted', 'returned', 'screening', 'study', 'approval', 'readiness', 'execution', 'benefits', 'closed'];
 export function statusOrder(status) {
   const i = ORDER.indexOf(status);
   return i === -1 ? ORDER.length : i;

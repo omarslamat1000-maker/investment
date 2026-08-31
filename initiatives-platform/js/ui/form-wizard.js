@@ -2,7 +2,8 @@
 import { escapeHtml } from '../core/sanitizer.js';
 
 // steps: [{ id, title, render(container, data), validate(data) => {valid, errors} , collect(container, data) }]
-export function createWizard(container, steps, { onSubmit, submitLabel = 'إرسال' }) {
+// onDraft (اختياري): يظهر زر «حفظ كمسودة» في كل الخطوات
+export function createWizard(container, steps, { onSubmit, onDraft = null, submitLabel = 'إرسال' }) {
   let current = 0;
   const data = {};
 
@@ -20,6 +21,7 @@ export function createWizard(container, steps, { onSubmit, submitLabel = 'إرس
       <div class="mi-wiz-errors" aria-live="assertive"></div>
       <div class="mi-wiz-nav">
         <button type="button" class="mi-btn mi-btn--ghost" data-act="back" ${current === 0 ? 'disabled' : ''}>السابق</button>
+        ${onDraft ? '<button type="button" class="mi-btn mi-btn--gold" data-act="draft">حفظ كمسودة</button>' : ''}
         <button type="button" class="mi-btn mi-btn--primary" data-act="next">${current === steps.length - 1 ? escapeHtml(submitLabel) : 'التالي'}</button>
       </div>`;
 
@@ -28,6 +30,10 @@ export function createWizard(container, steps, { onSubmit, submitLabel = 'إرس
     container.querySelector('[data-act="back"]').addEventListener('click', () => {
       collect();
       if (current > 0) { current--; draw(); }
+    });
+    container.querySelector('[data-act="draft"]')?.addEventListener('click', async () => {
+      collect();
+      await onDraft(data);
     });
     container.querySelector('[data-act="next"]').addEventListener('click', async () => {
       collect();

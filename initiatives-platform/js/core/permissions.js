@@ -3,8 +3,24 @@
 // تجاوزات المستخدم (سماح/منع لكل حساب) تُطبق فوق المصفوفة عبر setOverridesProvider
 const MATRIX = {
   admin: ['*'],
+  // المشرف على المبادرات: مراجعة كل المبادرات وإدارتها دون الاعتماد النهائي وإدارة المستخدمين
+  supervisor: [
+    'initiatives.view', 'initiatives.edit', 'initiatives.transition',
+    'needs.view', 'needs.create', 'needs.edit', 'needs.publish',
+    'partners.view', 'reviews.view', 'reviews.create',
+    'decisions.view', 'decisions.create', 'gates.view', 'gates.check',
+    'benefits.view', 'benefits.edit', 'risks.view', 'risks.edit',
+    'execution.view', 'execution.edit', 'quality.view', 'quality.edit',
+    'reports.view', 'reports.export', 'portfolios.view', 'portfolios.manage',
+    'comments.internal'
+  ],
+  // ممثل الجهة: مبادرات جهته فقط (العزل الفعلي تفرضه سياسات RLS في القاعدة)
+  agency_user: [
+    'initiatives.view', 'initiatives.create', 'initiatives.edit', 'initiatives.submit',
+    'gates.view', 'needs.view', 'reports.view', 'portfolios.view'
+  ],
   pmo: [
-    'initiatives.view', 'initiatives.create', 'initiatives.edit', 'initiatives.transition',
+    'initiatives.view', 'initiatives.create', 'initiatives.edit', 'initiatives.transition', 'initiatives.submit',
     'needs.view', 'needs.create', 'needs.edit', 'needs.publish',
     'partners.view', 'partners.create', 'partners.edit',
     'reviews.view', 'reviews.create', 'decisions.view', 'decisions.create',
@@ -69,7 +85,8 @@ export const ACTION_CATALOG = [
     { id: 'initiatives.view', label: 'عرض المبادرات' },
     { id: 'initiatives.create', label: 'إنشاء مبادرة' },
     { id: 'initiatives.edit', label: 'تعديل مبادرة' },
-    { id: 'initiatives.transition', label: 'نقل حالة مبادرة' }
+    { id: 'initiatives.transition', label: 'نقل حالة مبادرة' },
+    { id: 'initiatives.submit', label: 'تقديم مبادرة للمراجعة' }
   ] },
   { group: 'الاحتياجات', actions: [
     { id: 'needs.view', label: 'عرض الاحتياجات' },
@@ -111,7 +128,8 @@ export const ACTION_CATALOG = [
     { id: 'settings.view', label: 'الإعدادات' },
     { id: 'backup.run', label: 'النسخ الاحتياطي والاستعادة' },
     { id: 'users.view', label: 'عرض المستخدمين' },
-    { id: 'users.manage', label: 'إدارة المستخدمين والصلاحيات' }
+    { id: 'users.manage', label: 'إدارة المستخدمين والصلاحيات' },
+    { id: 'comments.internal', label: 'الملاحظات الداخلية (إشراف)' }
   ] }
 ];
 

@@ -21,6 +21,12 @@ function roleHas(role, action) {
 }
 
 export async function renderUsers(container) {
+  // وضع السحابة: إدارة الحسابات الفعلية عبر Supabase وEdge Function
+  const { isCloudMode } = await import('../../config.js');
+  if (isCloudMode()) {
+    const { renderCloudUsers } = await import('./cloud-users-view.js');
+    return renderCloudUsers(container);
+  }
   const myRole = getRole();
   if (!can(myRole, 'users.view')) {
     container.innerHTML = emptyState('لا تملك صلاحية الوصول',

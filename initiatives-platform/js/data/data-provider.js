@@ -1,23 +1,25 @@
 // طبقة توجيه البيانات — تختار المزوّد حسب الإعدادات وتبث حدث تغيّر بعد كل كتابة
 import { idbProvider } from './indexeddb-provider.js';
-import { supabaseProvider, configureSupabase, isSupabaseConfigured } from './supabase-provider.js';
 import { emit, EVENTS } from '../core/events.js';
 
 let provider = idbProvider;
 
 export async function initDataProvider(config) {
-  if (config.storageMode === 'supabase') {
-    configureSupabase(config);
-    if (isSupabaseConfigured()) {
-      provider = supabaseProvider;
-    } else {
-      console.warn('storageMode=supabase لكن الإعدادات ناقصة — تم الرجوع إلى IndexedDB');
-      provider = idbProvider;
-    }
+  if (config.storageMode === 'supabase' && config.supabaseUrl && config.supabaseAnonKey) {
+    const { cloudProvider } = await import('./cloud-provider.js');
+    provider = cloudProvider;
   } else {
+    if (config.storageMode === 'supabase') {
+      console.warn('storageMode=supabase لكن الإعدادات ناقصة — تم الرجوع إلى IndexedDB');
+    }
     provider = idbProvider;
   }
   return provider.name;
+}
+
+// هل يتولى المزوّد توليد معرفات هذا المخزن (الترقيم من القاعدة)؟
+export function providerAssignsIds(store) {
+  return Boolean(provider.assignsIds?.(store));
 }
 
 export function providerName() { return provider.name; }

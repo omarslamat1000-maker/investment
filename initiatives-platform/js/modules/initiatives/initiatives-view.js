@@ -46,13 +46,20 @@ export async function renderInitiativesList(container) {
     ${statuses.map((s) => `<button class="mi-chip" data-status="${escapeHtml(s)}" aria-pressed="false">${escapeHtml(statusLabel(s))} (${initiatives.filter((i) => i.status === s).length})</button>`).join('')}`;
 
   const host = container.querySelector('.mi-table-host');
+  const { isCloudMode } = await import('../../config.js');
+  const cloud = isCloudMode();
   const columns = [
     { key: 'id', label: 'المعرّف', width: '10rem' },
     { key: 'title', label: 'المبادرة' },
     { key: 'category', label: 'التصنيف', map: (r) => categoryLabel(r.category) },
     { key: 'district', label: 'الحي' },
     { key: 'status', label: 'الحالة', htmlMap: (r) => statusBadge(r.status), sortValue: (r) => r.status, map: (r) => statusLabel(r.status) },
-    { key: 'score', label: 'المفاضلة', map: (r) => { const s = weightedScore(r.scores); return s === null ? '—' : String(s); }, sortValue: (r) => weightedScore(r.scores) ?? -1 },
+    ...(cloud ? [
+      { key: 'currentStage', label: 'المرحلة الحالية', map: (r) => r.currentStage || '—' },
+      { key: 'progressPercentage', label: 'الإنجاز', map: (r) => `${fmtNumber(r.progressPercentage || 0)}٪`, sortValue: (r) => Number(r.progressPercentage) || 0 }
+    ] : [
+      { key: 'score', label: 'المفاضلة', map: (r) => { const s = weightedScore(r.scores); return s === null ? '—' : String(s); }, sortValue: (r) => weightedScore(r.scores) ?? -1 }
+    ]),
     { key: 'budget', label: 'الميزانية', map: (r) => fmtMoney(r.budget), sortValue: (r) => Number(r.budget) || 0 }
   ];
 
@@ -104,6 +111,10 @@ export async function renderInitiativeDetails(container, id) {
   const campaign = initiative.campaignId ? campaigns.find((c) => c.id === initiative.campaignId) : null;
 
   const role = getRole();
+  // قاعدة تحرير الجهة: بعد الإرسال تصبح المبادرة للقراءة فقط إلا عند الإعادة للاستكمال
+  // (سياسات RLS تفرض القاعدة نفسها في القاعدة — هذا للعرض فقط)
+  const canEditRec = can(role, 'initiatives.edit')
+    && (role !== 'agency_user' || ['draft', 'returned'].includes(initiative.status));
   const score = weightedScore(initiative.scores);
   const band = scoreBand(score);
   const health = initiativeHealth(initiative, { milestones, risks, benefits });
@@ -139,7 +150,7 @@ export async function renderInitiativeDetails(container, id) {
           ${initiative.imageDataUrl
     ? raw(`<img class="mi-initiative-image" src="${initiative.imageDataUrl}" alt="صورة مبادرة ${escapeHtml(initiative.title)}">`)
     : raw('<div class="mi-initiative-image mi-initiative-image--empty" aria-hidden="true">🖼<span>لا صورة للمبادرة</span></div>')}
-          ${can(role, 'initiatives.edit') ? raw(`
+          ${canEditRec ? raw(`
             <div class="mi-detail-media__tools">
               <button class="mi-btn mi-btn--ghost mi-btn--sm" data-act="image">${initiative.imageDataUrl ? 'تغيير الصورة' : 'إضافة صورة'}</button>
               ${initiative.imageDataUrl ? '<button class="mi-btn mi-btn--ghost mi-btn--sm" data-act="image-remove">إزالة الصورة</button>' : ''}
@@ -157,14 +168,14 @@ export async function renderInitiativeDetails(container, id) {
                 <div class="mi-site-row">
                   <span class="mi-site-row__name-text">◈ ${escapeHtml(s.name || 'موقع')}</span>
                   <span class="mi-site-row__measure">${escapeHtml(measureLabel(s.geometry))}</span>
-                  ${can(role, 'initiatives.edit') ? `
+                  ${canEditRec ? `
                     <button class="mi-btn mi-btn--ghost mi-btn--sm" data-edit-site="${escapeHtml(s.id)}">تعديل</button>
                     <button class="mi-btn mi-btn--ghost mi-btn--sm" data-del-site="${escapeHtml(s.id)}">حذف</button>` : ''}
                 </div>`).join('')}
             </div>`)
       : raw('<div class="mi-geo-host mi-geo-host--empty">لم تُحدد مواقع جغرافية على الخريطة</div>');
   })()}
-          ${can(role, 'initiatives.edit') ? raw(`
+          ${canEditRec ? raw(`
             <div class="mi-detail-media__tools">
               <button class="mi-btn mi-btn--ghost mi-btn--sm" data-act="add-site">إضافة موقع</button>
             </div>`) : ''}
@@ -302,6 +313,8 @@ export async function renderInitiativeDetails(container, id) {
       </section>
     </div>
 
+    <div class="mi-cloud-panels mi-detail-grid" data-cloud-panels hidden></div>
+
     <div class="mi-detail-actions">
       <button class="mi-btn mi-btn--ghost" data-act="print">تقرير طباعة</button>
       ${initiative.status === 'closed' ? raw('<button class="mi-btn mi-btn--gold" data-act="certificate">شهادة الإنجاز 🏅</button>') : ''}
@@ -312,6 +325,16 @@ export async function renderInitiativeDetails(container, id) {
   // معاينة كل مواقع المبادرة على خريطة واحدة
   const geoHost = container.querySelector('[data-geo]');
   if (geoHost) renderSitesPreview(geoHost, getSites(initiative));
+
+  // لوحات وضع السحابة: الحوكمة الرسمية، لوحة المشرف، الملاحظات، المرفقات
+  (async () => {
+    const { isCloudMode } = await import('../../config.js');
+    if (!isCloudMode() || !initiative._uuid) return;
+    const panelsHost = container.querySelector('[data-cloud-panels]');
+    panelsHost.hidden = false;
+    const { renderCloudPanels } = await import('./cloud-panels.js');
+    await renderCloudPanels(panelsHost, initiative, () => renderInitiativeDetails(container, id));
+  })().catch((err) => console.warn('تعذر تحميل لوحات السحابة', err));
 
   // إدارة صورة المبادرة
   container.querySelector('[data-act="image"]')?.addEventListener('click', async () => {
@@ -389,7 +412,7 @@ export async function renderInitiativeDetails(container, id) {
     });
   });
 
-  // تنفيذ الانتقالات
+  // تنفيذ الانتقالات — قرارات البوابات والإعادة تتطلب مسوغات، والبقية مباشرة
   container.querySelectorAll('[data-transition]').forEach((btn) => {
     btn.addEventListener('click', async () => {
       const to = btn.dataset.transition;
@@ -400,12 +423,14 @@ export async function renderInitiativeDetails(container, id) {
           { confirmLabel: 'متابعة بقرار مسبب', danger: true });
         if (!proceed) return;
       }
-      if (meta?.gate) {
+      if (meta?.gate || meta?.requiresReason) {
         openDecisionModal(container, initiative, meta, to);
       } else {
-        await applyTransition(initiative, to, null);
-        toastSuccess(`انتقلت المبادرة إلى: ${statusLabel(to)}`);
-        renderInitiativeDetails(container, id);
+        try {
+          await repos.initiatives.transition(initiative.id, to, { by: getUserName() });
+          toastSuccess(`انتقلت المبادرة إلى: ${statusLabel(to)}`);
+          renderInitiativeDetails(container, id);
+        } catch (err) { toastError(err.message); }
       }
     });
   });
@@ -449,36 +474,36 @@ export async function renderInitiativeDetails(container, id) {
   });
 
   async function openDecisionModal(host, ini, meta, to) {
+    const isReturn = to === 'returned';
     const { dialog, close } = openModal({
-      title: `قرار بوابة ${meta.gate} — ${meta.label}`,
+      title: meta.gate ? `قرار بوابة ${meta.gate} — ${meta.label}` : meta.label,
       bodyHtml: html`
         <div class="mi-form-field">
-          <label for="mi-dec-rationale">مسوّغات القرار</label>
+          <label for="mi-dec-rationale">${isReturn ? 'سبب الإعادة (يصل للجهة — إلزامي)' : 'مسوّغات القرار'}</label>
           <textarea id="mi-dec-rationale" class="mi-input" rows="4" placeholder="اكتب الأساس الذي بُني عليه القرار…"></textarea>
         </div>`,
       footerHtml: html`
         <button class="mi-btn mi-btn--ghost" data-act="cancel">إلغاء</button>
-        <button class="mi-btn mi-btn--primary" data-act="save">تسجيل القرار</button>`
+        <button class="mi-btn ${isReturn || to === 'rejected' ? 'mi-btn--danger' : 'mi-btn--primary'}" data-act="save">تسجيل القرار</button>`
     });
     dialog.querySelector('[data-act="cancel"]').addEventListener('click', close);
     dialog.querySelector('[data-act="save"]').addEventListener('click', async () => {
       const rationale = dialog.querySelector('#mi-dec-rationale').value.trim();
-      if (rationale.length < 10) { toastError('مسوّغات القرار مطلوبة (10 أحرف على الأقل)'); return; }
-      const outcome = to === 'rejected' ? 'reject' : to === 'onHold' ? 'hold' : 'pass';
-      const decision = await repos.decisions.create({ initiativeId: ini.id, gateId: meta.gate, outcome, rationale, by: getUserName(), at: new Date().toISOString() });
-      await applyTransition(ini, to, decision.id);
+      if (rationale.length < 10) { toastError('المسوّغات مطلوبة (10 أحرف على الأقل)'); return; }
+      const outcome = to === 'rejected' ? 'reject' : to === 'onHold' ? 'hold' : isReturn ? 'return' : 'pass';
+      try {
+        const decision = await repos.decisions.create({
+          initiativeId: ini.id, gateId: meta.gate || null, outcome, rationale,
+          by: getUserName(), at: new Date().toISOString()
+        });
+        await repos.initiatives.transition(ini.id, to, {
+          reason: rationale, by: getUserName(), decisionId: decision.id
+        });
+      } catch (err) { toastError(err.message); return; }
       close();
-      toastSuccess(`سُجّل قرار ${meta.gate} وانتقلت المبادرة إلى: ${statusLabel(to)}`);
-      notify(`قرار بوابة ${meta.gate}`, `${ini.title} — ${statusLabel(to)}`);
+      toastSuccess(`سُجّل القرار وانتقلت المبادرة إلى: ${statusLabel(to)}`);
+      notify(meta.gate ? `قرار بوابة ${meta.gate}` : meta.label, `${ini.title} — ${statusLabel(to)}`);
       renderInitiativeDetails(container, ini.id);
-    });
-  }
-
-  async function applyTransition(ini, to, decisionId) {
-    const entry = historyEntry(ini.status, to, getUserName(), decisionId);
-    await repos.initiatives.update(ini.id, {
-      status: to,
-      statusHistory: [...(ini.statusHistory || []), entry]
     });
   }
 }

@@ -1,5 +1,6 @@
 // المستودعات — واجهة كل كيان فوق dataProvider مع الطوابع الزمنية وسجل التدقيق
-import { dataProvider } from './data-provider.js';
+import { dataProvider, providerAssignsIds } from './data-provider.js';
+import { isCloudMode } from '../config.js';
 import { uid, officialId, sortBy } from '../core/utils.js';
 import { nowIso, currentYear } from '../core/date-time.js';
 import { ID_PREFIXES } from '../core/constants.js';
@@ -26,11 +27,12 @@ function makeRepo(store, { prefix = null, auditLabel = store } = {}) {
     byInitiative: (initiativeId) => dataProvider.byIndex(store, 'initiativeId', initiativeId),
 
     async create(data) {
-      const record = { ...data, createdAt: nowIso(), updatedAt: nowIso() };
-      if (!record.id) {
+      let record = { ...data, createdAt: nowIso(), updatedAt: nowIso() };
+      if (!record.id && !providerAssignsIds(store)) {
         record.id = prefix ? await nextOfficialId(store, prefix) : uid(store.slice(0, 4));
       }
-      await dataProvider.put(store, record);
+      const saved = await dataProvider.put(store, record);
+      record = saved && saved.id ? saved : record; // القاعدة قد تعيد السجل برقمه الرسمي
       await audit('إنشاء', auditLabel, record.id, record.title || record.name || '');
       return record;
     },
@@ -91,6 +93,26 @@ export const repos = {
   settings: makeRepo('settings'),
   savedViews: makeRepo('savedViews'),
   portfolios: makeRepo('portfolios', { auditLabel: 'محفظة' })
+};
+
+// انتقال حالة مبادرة — في السحابة عبر دالة القاعدة (المسار الوحيد)، ومحليًا بالتحديث المباشر
+repos.initiatives.transition = async function transition(id, toStatus, { reason = null, by = '', decisionId = null } = {}) {
+  if (isCloudMode()) {
+    const { cloudTransition } = await import('./cloud-provider.js');
+    const updated = await cloudTransition(id, toStatus, reason);
+    await audit('انتقال حالة', 'مبادرة', id, toStatus);
+    return updated;
+  }
+  const existing = await dataProvider.get('initiatives', id);
+  if (!existing) throw new Error(`المبادرة ${id} غير موجودة`);
+  const entry = { from: existing.status, to: toStatus, by, decisionId, reason, at: nowIso() };
+  const record = {
+    ...existing, id, status: toStatus, updatedAt: nowIso(),
+    statusHistory: [...(existing.statusHistory || []), entry]
+  };
+  await dataProvider.put('initiatives', record);
+  await audit('انتقال حالة', 'مبادرة', id, `${existing.status} ← ${toStatus}`);
+  return record;
 };
 
 export async function latestAuditLogs(limit = 30) {

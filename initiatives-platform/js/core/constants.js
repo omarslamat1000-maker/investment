@@ -22,6 +22,7 @@ export const OBJECT_STORES = [
 export const STATUSES = {
   draft:      { id: 'draft',      label: 'مسودة',            color: 'muted' },
   submitted:  { id: 'submitted',  label: 'مقدَّمة',           color: 'info' },
+  returned:   { id: 'returned',   label: 'معادة للاستكمال',  color: 'warn' },
   screening:  { id: 'screening',  label: 'قيد الفرز',        color: 'info' },
   study:      { id: 'study',      label: 'قيد الدراسة',      color: 'info' },
   approval:   { id: 'approval',   label: 'قيد الاعتماد',     color: 'warn' },
@@ -83,12 +84,14 @@ export const SCORING_CRITERIA = [
 
 // الأدوار والصلاحيات
 export const ROLES = {
-  admin:    { id: 'admin',    label: 'مدير النظام' },
-  pmo:      { id: 'pmo',      label: 'مكتب إدارة المبادرات' },
-  reviewer: { id: 'reviewer', label: 'عضو لجنة المراجعة' },
-  executor: { id: 'executor', label: 'مشرف تنفيذ' },
-  partner:  { id: 'partner',  label: 'شريك' },
-  viewer:   { id: 'viewer',   label: 'مطَّلع' }
+  admin:       { id: 'admin',       label: 'مدير النظام' },
+  supervisor:  { id: 'supervisor',  label: 'المشرف على المبادرات' },
+  agency_user: { id: 'agency_user', label: 'ممثل جهة' },
+  pmo:         { id: 'pmo',         label: 'مكتب إدارة المبادرات' },
+  reviewer:    { id: 'reviewer',    label: 'عضو لجنة المراجعة' },
+  executor:    { id: 'executor',    label: 'مشرف تنفيذ' },
+  partner:     { id: 'partner',     label: 'شريك' },
+  viewer:      { id: 'viewer',      label: 'مطَّلع' }
 };
 
 export const RISK_LEVELS = [

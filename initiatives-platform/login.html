@@ -31,7 +31,7 @@
 
       <form class="mi-form" id="mi-login-form" novalidate>
         <div class="mi-form-field">
-          <label for="mi-username">اسم المستخدم</label>
+          <label for="mi-username" id="mi-username-label">اسم المستخدم</label>
           <input class="mi-input" id="mi-username" name="username" dir="ltr" autocomplete="username" required autofocus>
         </div>
         <div class="mi-form-field">
@@ -45,7 +45,24 @@
         <button class="mi-btn mi-btn--primary mi-login-submit" type="submit">دخول</button>
       </form>
 
-      <details class="mi-login-hint">
+      <!-- خطوة إلزامية عند أول دخول: تعيين كلمة مرور جديدة -->
+      <form class="mi-form" id="mi-change-form" hidden novalidate>
+        <div class="mi-alert" style="background:var(--mi-gold-100);color:var(--mi-gold-700)">
+          هذا أول دخول لحسابك — عيّن كلمة مرور جديدة للمتابعة
+        </div>
+        <div class="mi-form-field">
+          <label for="mi-new-password">كلمة المرور الجديدة (8 أحرف على الأقل)</label>
+          <input class="mi-input" id="mi-new-password" type="password" dir="ltr" autocomplete="new-password" minlength="8" required>
+        </div>
+        <div class="mi-form-field">
+          <label for="mi-confirm-password">تأكيد كلمة المرور</label>
+          <input class="mi-input" id="mi-confirm-password" type="password" dir="ltr" autocomplete="new-password" required>
+        </div>
+        <div class="mi-login-error" role="alert" aria-live="assertive"></div>
+        <button class="mi-btn mi-btn--gold mi-login-submit" type="submit">حفظ والدخول</button>
+      </form>
+
+      <details class="mi-login-hint" id="mi-local-hint">
         <summary>حسابات العرض التوضيحي</summary>
         <p class="mi-muted">كلمة المرور لجميع الحسابات: <code>Admin@123</code></p>
         <ul>
@@ -62,18 +79,58 @@
   </main>
 
   <script type="module">
-    import { APP_CONFIG } from './js/config.example.js';
+    import { APP_CONFIG, isCloudMode } from './js/config.js';
     import { initDataProvider } from './js/data/data-provider.js';
     import { seedDemoDataIfEmpty } from './js/services/import-service.js';
-    import { login, ensureAuthSeed, isLoggedIn } from './js/services/auth-service.js';
+    import { login, ensureAuthSeed, isLoggedIn, restoreCloudSession, cloudChangePassword } from './js/services/auth-service.js';
+    import { getSession } from './js/core/state.js';
 
     (async () => {
       await initDataProvider(APP_CONFIG);
       await seedDemoDataIfEmpty();
       await ensureAuthSeed();
 
-      // مسجل دخول بالفعل؟ ادخل مباشرة
-      if (isLoggedIn()) { location.replace('./app.html'); return; }
+      const cloud = isCloudMode();
+      if (cloud) {
+        document.getElementById('mi-username-label').textContent = 'البريد الإلكتروني';
+        document.getElementById('mi-username').type = 'email';
+        document.getElementById('mi-username').placeholder = 'name@example.com';
+        document.getElementById('mi-local-hint').hidden = true;
+        await restoreCloudSession();
+      }
+
+      const changeForm = document.getElementById('mi-change-form');
+      const loginForm = document.getElementById('mi-login-form');
+
+      function proceed() {
+        const s = getSession();
+        if (cloud && s?.mustChangePassword) {
+          loginForm.hidden = true;
+          changeForm.hidden = false;
+          document.getElementById('mi-new-password').focus();
+          return;
+        }
+        location.replace('./app.html');
+      }
+
+      changeForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const err = changeForm.querySelector('.mi-login-error');
+        err.textContent = '';
+        const pw = document.getElementById('mi-new-password').value;
+        const confirm = document.getElementById('mi-confirm-password').value;
+        if (pw.length < 8) { err.textContent = 'كلمة المرور 8 أحرف على الأقل'; return; }
+        if (pw !== confirm) { err.textContent = 'كلمتا المرور غير متطابقتين'; return; }
+        const btn = changeForm.querySelector('.mi-login-submit');
+        btn.disabled = true;
+        const result = await cloudChangePassword(pw);
+        btn.disabled = false;
+        if (!result.ok) { err.textContent = result.error; return; }
+        location.replace('./app.html');
+      });
+
+      // مسجل دخول بالفعل؟ ادخل مباشرة (أو أكمل تغيير كلمة المرور)
+      if (isLoggedIn()) { proceed(); return; }
 
       const form = document.getElementById('mi-login-form');
       const errorBox = form.querySelector('.mi-login-error');
@@ -101,7 +158,9 @@
         try {
           const result = await login(username, password);
           if (result.ok) {
-            location.replace('./app.html');
+            proceed();
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'دخول';
           } else {
             errorBox.textContent = result.error;
             submitBtn.disabled = false;

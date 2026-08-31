@@ -1,5 +1,5 @@
 // نقطة تشغيل تطبيق الإدارة app.html — التهيئة، التخطيط، وتسجيل المسارات
-import { APP_CONFIG } from './config.example.js';
+import { APP_CONFIG } from './config.js';
 import { initDataProvider } from './data/data-provider.js';
 import { seedDemoDataIfEmpty } from './services/import-service.js';
 import { initNotifications, getNotifications, unreadCount, markAllRead } from './services/notification-service.js';
@@ -135,9 +135,16 @@ async function boot() {
   await initDataProvider(APP_CONFIG);
   await seedDemoDataIfEmpty();
 
-  // حارس الدخول: لا وصول لتطبيق الإدارة بلا جلسة
+  // في السحابة: استعادة جلسة Supabase القائمة قبل الحكم
+  const { isCloudMode } = await import('./config.js');
+  if (isCloudMode()) {
+    const { restoreCloudSession } = await import('./services/auth-service.js');
+    await restoreCloudSession();
+  }
+
+  // حارس الدخول: لا وصول لتطبيق الإدارة بلا جلسة (وإلزام تغيير كلمة المرور الأولى)
   const session = getSession();
-  if (!session) {
+  if (!session || session.mustChangePassword) {
     location.replace('./login.html');
     return;
   }
