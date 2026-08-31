@@ -1,102 +1,126 @@
-// خريطة المبادرات — لوحة SVG مبنية ذاتيًا (بلا مكتبات خارجية) بإسقاط خطي لإحداثيات المدينة
+// خريطة المبادرات — خريطة فعلية (Leaflet/OpenStreetMap) لمواقع المبادرات والاحتياجات
+// النقاط والخطوط والمساحات المرسومة في المنصة تظهر بمواقعها الحقيقية بألوان الحالة
 import { repos } from '../../data/repositories.js';
 import { html, raw, escapeHtml } from '../../core/sanitizer.js';
 import { sectionHeader, statusBadge } from '../../ui/components.js';
 import { statusLabel } from '../../domain/workflow.js';
 import { categoryLabel } from '../../domain/initiative-model.js';
+import { measureLabel } from '../../core/geo.js';
+import { loadLeaflet } from '../../ui/location-picker.js';
+import { fmtNumber } from '../../core/utils.js';
 import { navigate } from '../../router.js';
 
-// إطار المدينة المنورة التقريبي
-const BOUNDS = { minLat: 24.38, maxLat: 24.56, minLng: 39.50, maxLng: 39.70 };
-const W = 800; const H = 620;
+const MADINAH_CENTER = [24.468, 39.612];
 
-function project(lat, lng) {
-  const x = ((lng - BOUNDS.minLng) / (BOUNDS.maxLng - BOUNDS.minLng)) * W;
-  const y = H - ((lat - BOUNDS.minLat) / (BOUNDS.maxLat - BOUNDS.minLat)) * H;
-  return { x: Math.round(x), y: Math.round(y) };
-}
-
-const STATUS_DOT = {
+// لون كل حالة على الخريطة (متوافق مع شارات المنصة)
+const STATUS_COLOR = {
   execution: '#1E7A5F', benefits: '#C9A227', closed: '#4E8F7B',
   readiness: '#8A6D1F', approval: '#8A6D1F', study: '#5B6E66',
-  screening: '#5B6E66', submitted: '#5B6E66', draft: '#B8B29A',
-  rejected: '#A34242', onHold: '#B8B29A'
+  screening: '#5B6E66', submitted: '#5B6E66', draft: '#B8B29A', onHold: '#B8B29A'
 };
+const NEED_COLOR = '#C9A227';
+
+let currentMap = null; // خريطة الشاشة الحالية — تُزال قبل إعادة الإنشاء
 
 export async function renderMap(container) {
   const [initiatives, needs] = await Promise.all([repos.initiatives.getAll(), repos.needs.getAll()]);
-  const located = initiatives.filter((i) => i.lat && i.lng && i.status !== 'rejected');
-  const locatedNeeds = needs.filter((n) => n.lat && n.lng && n.status === 'published');
 
-  const landmarks = [
-    { name: 'المسجد النبوي', lat: 24.4672, lng: 39.6111 },
-    { name: 'مسجد قباء', lat: 24.4395, lng: 39.6168 },
-    { name: 'جبل أحد', lat: 24.5100, lng: 39.6130 }
-  ];
-
-  const pins = located.map((i) => {
-    const { x, y } = project(i.lat, i.lng);
-    return `<g class="mi-map-pin" data-id="${escapeHtml(i.id)}" transform="translate(${x} ${y})" tabindex="0" role="button" aria-label="${escapeHtml(i.title)}">
-      <circle r="11" fill="${STATUS_DOT[i.status] || '#5B6E66'}" stroke="#F6F8F5" stroke-width="2.5"/>
-      <title>${escapeHtml(i.title)} — ${escapeHtml(statusLabel(i.status))}</title>
-    </g>`;
-  }).join('');
-
-  const needPins = locatedNeeds.map((n) => {
-    const { x, y } = project(n.lat, n.lng);
-    return `<g class="mi-map-need" transform="translate(${x} ${y})">
-      <rect x="-8" y="-8" width="16" height="16" rx="3" fill="none" stroke="#C9A227" stroke-width="2.5" stroke-dasharray="4 3"/>
-      <title>احتياج مطروح: ${escapeHtml(n.title)}</title>
-    </g>`;
-  }).join('');
-
-  const marks = landmarks.map((l) => {
-    const { x, y } = project(l.lat, l.lng);
-    return `<g transform="translate(${x} ${y})" class="mi-map-landmark">
-      <path d="M0,-7 L4,3 L-4,3 Z" fill="currentColor" opacity="0.5"/>
-      <text y="18" text-anchor="middle">${escapeHtml(l.name)}</text>
-    </g>`;
-  }).join('');
+  const located = initiatives.filter((i) =>
+    i.status !== 'rejected' && (i.geometry?.coords?.length || (i.lat && i.lng)));
+  const locatedNeeds = needs.filter((n) =>
+    n.status === 'published' && (n.geometry?.coords?.length || (n.lat && n.lng)));
 
   container.innerHTML = html`
-    ${raw(sectionHeader('خريطة المبادرات', 'التوزيع الجغرافي للمبادرات والاحتياجات المطروحة داخل نطاق الأمانة'))}
+    ${raw(sectionHeader('خريطة المبادرات',
+    `خريطة فعلية لمواقع ${fmtNumber(located.length)} مبادرة و${fmtNumber(locatedNeeds.length)} احتياج مطروح داخل نطاق الأمانة — انقر أي موقع للتفاصيل`))}
     <div class="mi-card mi-map-card">
-      <svg class="mi-map" viewBox="0 0 ${String(W)} ${String(H)}" role="application" aria-label="خريطة توزيع المبادرات">
-        <rect width="${String(W)}" height="${String(H)}" class="mi-map-bg" rx="12"/>
-        <g class="mi-map-grid">${raw(gridLines())}</g>
-        ${raw(marks)}
-        ${raw(needPins)}
-        ${raw(pins)}
-      </svg>
+      <div class="mi-map-real" aria-label="خريطة مواقع المبادرات"></div>
       <div class="mi-map-legend">
         <span><i class="mi-legend-dot" style="background:#1E7A5F"></i> قيد التنفيذ</span>
         <span><i class="mi-legend-dot" style="background:#C9A227"></i> تحقق المنافع</span>
+        <span><i class="mi-legend-dot" style="background:#4E8F7B"></i> مغلقة</span>
         <span><i class="mi-legend-dot" style="background:#5B6E66"></i> قبل التنفيذ</span>
         <span><i class="mi-legend-dot mi-legend-dot--need"></i> احتياج مطروح</span>
       </div>
-      <div class="mi-map-info" aria-live="polite"></div>
+      <div class="mi-map-info" aria-live="polite"><span class="mi-muted">انقر موقعًا على الخريطة لعرض بطاقته</span></div>
     </div>`;
 
+  const mapEl = container.querySelector('.mi-map-real');
   const info = container.querySelector('.mi-map-info');
-  container.querySelectorAll('.mi-map-pin').forEach((pin) => {
-    const show = () => {
-      const ini = located.find((i) => i.id === pin.dataset.id);
-      if (!ini) return;
-      info.innerHTML = html`
-        <b>${ini.title}</b> ${raw(statusBadge(ini.status))}<br>
-        <small class="mi-muted">${ini.id} • ${categoryLabel(ini.category)} • حي ${ini.district}</small>
-        <a class="mi-btn mi-btn--ghost mi-btn--sm" href="#/initiatives/${ini.id}">فتح التفاصيل</a>`;
-    };
-    pin.addEventListener('click', show);
-    pin.addEventListener('focus', show);
-    pin.addEventListener('dblclick', () => navigate(`initiatives/${pin.dataset.id}`));
-    pin.addEventListener('keydown', (e) => { if (e.key === 'Enter') navigate(`initiatives/${pin.dataset.id}`); });
-  });
-}
 
-function gridLines() {
-  let out = '';
-  for (let x = 100; x < W; x += 100) out += `<line x1="${x}" y1="0" x2="${x}" y2="${H}"/>`;
-  for (let y = 100; y < H; y += 100) out += `<line x1="0" y1="${y}" x2="${W}" y2="${y}"/>`;
-  return out;
+  let L;
+  try { L = await loadLeaflet(); }
+  catch {
+    mapEl.classList.add('mi-geo-host--empty');
+    mapEl.textContent = 'تعذر تحميل الخريطة — تحقق من اتصال الشبكة ثم أعد فتح الصفحة';
+    return;
+  }
+  // الشاشة قد تتغير قبل اكتمال التحميل
+  if (!document.body.contains(mapEl)) return;
+
+  if (currentMap) { try { currentMap.remove(); } catch { /* أزيلت مسبقًا */ } }
+  const map = L.map(mapEl).setView(MADINAH_CENTER, 12);
+  currentMap = map;
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '© OpenStreetMap'
+  }).addTo(map);
+
+  const allLayers = [];
+
+  function showInitiative(ini) {
+    info.innerHTML = html`
+      <b>${ini.title}</b> ${raw(statusBadge(ini.status))}<br>
+      <small class="mi-muted">${ini.id} • ${categoryLabel(ini.category)} • حي ${ini.district}${ini.geometry ? raw(' • ' + escapeHtml(measureLabel(ini.geometry))) : ''}</small>
+      <a class="mi-btn mi-btn--ghost mi-btn--sm" href="#/initiatives/${ini.id}">فتح التفاصيل</a>`;
+  }
+
+  function showNeed(need) {
+    info.innerHTML = html`
+      <b>${need.title}</b> <span class="mi-tag mi-tag--gold">احتياج مطروح للشراكة</span><br>
+      <small class="mi-muted">${need.id} • ${categoryLabel(need.category)} • حي ${need.district}${need.geometry ? raw(' • ' + escapeHtml(measureLabel(need.geometry))) : ''}</small>
+      <a class="mi-btn mi-btn--ghost mi-btn--sm" href="./opportunity.html?id=${encodeURIComponent(need.id)}" target="_blank" rel="noopener">صفحة الفرصة</a>`;
+  }
+
+  // طبقة لكل مبادرة حسب هندستها: نقطة/خط/مساحة — أو نقطة من lat/lng القديمة
+  function layerFor(L2, record, color, dashed = false) {
+    const geometry = record.geometry;
+    const base = { color, weight: dashed ? 3 : 4, dashArray: dashed ? '6 5' : null };
+    if (geometry?.type === 'line' && geometry.coords.length >= 2) {
+      return L2.polyline(geometry.coords, base);
+    }
+    if (geometry?.type === 'polygon' && geometry.coords.length >= 3) {
+      return L2.polygon(geometry.coords, { ...base, fillColor: color, fillOpacity: 0.28 });
+    }
+    const latlng = geometry?.coords?.[0] || [record.lat, record.lng];
+    return L2.circleMarker(latlng, {
+      radius: 9, color: '#F6F8F5', weight: 2.5,
+      fillColor: color, fillOpacity: dashed ? 0.55 : 1,
+      dashArray: dashed ? '4 3' : null
+    });
+  }
+
+  for (const ini of located) {
+    const layer = layerFor(L, ini, STATUS_COLOR[ini.status] || '#5B6E66');
+    layer.addTo(map);
+    layer.on('click', () => showInitiative(ini));
+    layer.on('dblclick', () => navigate(`initiatives/${ini.id}`));
+    allLayers.push(layer);
+  }
+
+  for (const need of locatedNeeds) {
+    const layer = layerFor(L, need, NEED_COLOR, true);
+    layer.addTo(map);
+    layer.on('click', () => showNeed(need));
+    allLayers.push(layer);
+  }
+
+  // ملاءمة العرض لكل المواقع
+  setTimeout(() => {
+    map.invalidateSize();
+    if (allLayers.length) {
+      const group = L.featureGroup(allLayers);
+      map.fitBounds(group.getBounds(), { padding: [30, 30], maxZoom: 14 });
+    }
+  }, 120);
 }
