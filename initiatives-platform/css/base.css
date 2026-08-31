@@ -41,6 +41,9 @@ code {
   unicode-bidi: embed;
 }
 
+/* سمة hidden تتغلب دائمًا على أنماط العرض (flex/grid) */
+[hidden] { display: none !important; }
+
 .mi-muted { color: var(--mi-muted); }
 .mi-subhead { margin-top: var(--mi-sp-5); font-size: var(--mi-fs-md); }
 
