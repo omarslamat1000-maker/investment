@@ -25,7 +25,7 @@ import { confirmModal, openModal } from '../../ui/modal.js';
 import { toastSuccess, toastError } from '../../ui/toast.js';
 import { notify } from '../../services/notification-service.js';
 import { downloadCsv } from '../../services/export-service.js';
-import { openPrintReport } from '../../services/print-service.js';
+import { openReportViewer } from '../../ui/report-viewer.js';
 import { toHtmlTable } from '../../services/export-service.js';
 
 export async function renderInitiativesList(container) {
@@ -412,7 +412,7 @@ export async function renderInitiativeDetails(container, id) {
 
   // تقرير الطباعة
   container.querySelector('[data-act="print"]')?.addEventListener('click', () => {
-    openPrintReport({
+    openReportViewer({
       title: `تقرير مبادرة — ${initiative.title}`,
       subtitle: `${initiative.id} • ${categoryLabel(initiative.category)} • حي ${initiative.district}`,
       kpis: [

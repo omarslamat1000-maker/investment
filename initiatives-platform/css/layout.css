@@ -52,6 +52,14 @@
 .mi-grants { display: flex; flex-wrap: wrap; gap: var(--mi-sp-1); }
 
 .mi-report-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); gap: var(--mi-sp-4); }
+.mi-report-card { display: flex; flex-direction: column; gap: var(--mi-sp-1); }
+.mi-report-card p { flex: 1; }
+.mi-report-card__arch {
+  width: 20px; height: 24px;
+  border: 3px solid var(--mi-gold-500);
+  border-radius: var(--mi-arch-radius);
+  margin-bottom: var(--mi-sp-1);
+}
 .mi-report-card__actions { display: flex; gap: var(--mi-sp-2); }
 
 .mi-filters { display: flex; gap: var(--mi-sp-2); flex-wrap: wrap; margin-bottom: var(--mi-sp-4); }

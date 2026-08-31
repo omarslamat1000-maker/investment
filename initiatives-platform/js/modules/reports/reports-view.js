@@ -10,7 +10,7 @@ import { exposure, exposureLevel } from '../../domain/risks.js';
 import { partnerTypeLabel } from '../../domain/partner-model.js';
 import { fmtMoney, fmtNumber, sum, sortBy, groupBy } from '../../core/utils.js';
 import { fmtDate } from '../../core/date-time.js';
-import { openPrintReport } from '../../services/print-service.js';
+import { openReportViewer } from '../../ui/report-viewer.js';
 import { toHtmlTable, downloadCsv } from '../../services/export-service.js';
 import { getRole } from '../../core/state.js';
 import { can } from '../../core/permissions.js';
@@ -27,14 +27,15 @@ export async function renderReports(container) {
   ];
 
   container.innerHTML = html`
-    ${raw(sectionHeader('التقارير', 'تقارير جاهزة للطباعة A4 أو التصدير CSV'))}
+    ${raw(sectionHeader('التقارير', 'تُبنى لحظيًا من بيانات المنصة — عرض فاخر داخل المنصة ثم طباعة A4 أو حفظ PDF أو تنزيل ملف مستقل أو CSV'))}
     <div class="mi-report-grid">
       ${raw(REPORTS.map((r) => html`
         <section class="mi-card mi-report-card">
+          <span class="mi-report-card__arch" aria-hidden="true"></span>
           <h3>${r.title}</h3>
           <p class="mi-muted">${r.desc}</p>
           <div class="mi-report-card__actions">
-            <button class="mi-btn mi-btn--primary" data-print="${r.id}">طباعة</button>
+            <button class="mi-btn mi-btn--primary" data-print="${r.id}">عرض وطباعة</button>
             ${can(role, 'reports.export') ? raw(`<button class="mi-btn mi-btn--ghost" data-csv="${r.id}">CSV</button>`) : ''}
           </div>
         </section>`).join(''))}
@@ -65,7 +66,7 @@ export async function renderReports(container) {
       ];
       if (mode === 'csv') { downloadCsv(rows, cols, 'portfolio-report.csv'); toastSuccess('صُدّر التقرير'); return; }
       const active = initiatives.filter((i) => isActive(i.status) && i.status !== 'draft');
-      openPrintReport({
+      openReportViewer({
         title: 'تقرير المحفظة الشامل',
         subtitle: 'الصورة الكاملة لمحفظة مبادرات البنية التحتية والشراكات المجتمعية',
         kpis: [
@@ -98,7 +99,7 @@ export async function renderReports(container) {
         { key: 'rationale', label: 'المسوغات' }
       ];
       if (mode === 'csv') { downloadCsv(rows, cols, 'governance-report.csv'); toastSuccess('صُدّر التقرير'); return; }
-      openPrintReport({
+      openReportViewer({
         title: 'تقرير الحوكمة والقرارات',
         subtitle: 'القرارات الرسمية الصادرة عند البوابات المرحلية بمسوغاتها',
         kpis: [
@@ -127,7 +128,7 @@ export async function renderReports(container) {
       const avg = measured.length
         ? Math.round(measured.reduce((a, b) => a + Math.min(realizationPercent(b), 100), 0) / measured.length)
         : null;
-      openPrintReport({
+      openReportViewer({
         title: 'تقرير تحقق المنافع',
         subtitle: 'المستهدف مقابل المتحقق — جوهر مساءلة الشراكات المجتمعية',
         kpis: [
@@ -152,7 +153,7 @@ export async function renderReports(container) {
       ];
       if (mode === 'csv') { downloadCsv(rows, cols, 'risks-report.csv'); toastSuccess('صُدّر التقرير'); return; }
       const open = rows.filter((r) => r.status === 'open');
-      openPrintReport({
+      openReportViewer({
         title: 'تقرير المخاطر',
         subtitle: 'سجل المخاطر مرتبًا بالتعرض (الاحتمالية × الأثر) مع خطط الاستجابة',
         kpis: [
@@ -180,7 +181,7 @@ export async function renderReports(container) {
         { key: 'rating', label: 'التقييم', map: (r) => r.rating ? `${r.rating}/5` : 'جديد' }
       ];
       if (mode === 'csv') { downloadCsv(rows, cols, 'partners-report.csv'); toastSuccess('صُدّر التقرير'); return; }
-      openPrintReport({
+      openReportViewer({
         title: 'تقرير الشركاء',
         subtitle: 'مساهمات جهات القطاع الخاص وغير الربحي والمجتمع عبر المبادرات',
         kpis: [
