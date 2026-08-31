@@ -4,10 +4,11 @@ import { html, raw, escapeHtml } from '../../core/sanitizer.js';
 import { sectionHeader, statusBadge, gateTrackHtml, definitionList, progressBar, healthBadge, emptyState } from '../../ui/components.js';
 import { renderTable } from '../../ui/table.js';
 import { statusLabel, allowedTransitions, transitionMeta } from '../../domain/workflow.js';
-import { categoryLabel, historyEntry, costBandLabel, durationBandLabel, readinessLabel } from '../../domain/initiative-model.js';
-import { openLocationPicker, renderGeometryPreview } from '../../ui/location-picker.js';
+import { categoryLabel, historyEntry, costBandLabel, durationBandLabel, readinessLabel, getSites, firstLatLng } from '../../domain/initiative-model.js';
+import { openLocationPicker, renderSitesPreview } from '../../ui/location-picker.js';
 import { pickInitiativeImage } from '../../services/image-service.js';
-import { measureLabel } from '../../core/geo.js';
+import { measureLabel, sitesSummaryLabel } from '../../core/geo.js';
+import { uid } from '../../core/utils.js';
 import { getCertTemplate, saveCertTemplate, renderCertificateCanvas, downloadCanvasPng } from '../../services/certificate-service.js';
 import { weightedScore, scoreBand, criteriaWithScores } from '../../domain/scoring.js';
 import { nextGateForStatus, buildChecklist, gateReadiness } from '../../domain/stage-gates.js';
@@ -98,7 +99,9 @@ export async function renderInitiativeDetails(container, id) {
     repos.reviews.byInitiative(id), repos.gateChecklists.byInitiative(id),
     repos.qualityChecks.byInitiative(id), repos.portfolios.getAll()
   ]);
+  const campaigns = await repos.campaigns.getAll();
   const portfolio = initiative.portfolioId ? portfolios.find((p) => p.id === initiative.portfolioId) : null;
+  const campaign = initiative.campaignId ? campaigns.find((c) => c.id === initiative.campaignId) : null;
 
   const role = getRole();
   const score = weightedScore(initiative.scores);
@@ -143,12 +146,27 @@ export async function renderInitiativeDetails(container, id) {
             </div>`) : ''}
         </div>
         <div class="mi-detail-media__map">
-          ${initiative.geometry?.coords?.length ? raw(`
+          ${(() => {
+    const sites = getSites(initiative);
+    return sites.length
+      ? raw(`
             <div class="mi-geo-host" data-geo></div>
-            <p class="mi-geo-caption"><b>${escapeHtml(measureLabel(initiative.geometry))}</b></p>`) : raw('<div class="mi-geo-host mi-geo-host--empty">لم يُحدد موقع جغرافي على الخريطة</div>')}
+            <p class="mi-geo-caption"><b>${escapeHtml(sitesSummaryLabel(sites))}</b></p>
+            <div class="mi-sites-list">
+              ${sites.map((s) => `
+                <div class="mi-site-row">
+                  <span class="mi-site-row__name-text">◈ ${escapeHtml(s.name || 'موقع')}</span>
+                  <span class="mi-site-row__measure">${escapeHtml(measureLabel(s.geometry))}</span>
+                  ${can(role, 'initiatives.edit') ? `
+                    <button class="mi-btn mi-btn--ghost mi-btn--sm" data-edit-site="${escapeHtml(s.id)}">تعديل</button>
+                    <button class="mi-btn mi-btn--ghost mi-btn--sm" data-del-site="${escapeHtml(s.id)}">حذف</button>` : ''}
+                </div>`).join('')}
+            </div>`)
+      : raw('<div class="mi-geo-host mi-geo-host--empty">لم تُحدد مواقع جغرافية على الخريطة</div>');
+  })()}
           ${can(role, 'initiatives.edit') ? raw(`
             <div class="mi-detail-media__tools">
-              <button class="mi-btn mi-btn--ghost mi-btn--sm" data-act="geo">${initiative.geometry ? 'تعديل الموقع' : 'تحديد الموقع على الخريطة'}</button>
+              <button class="mi-btn mi-btn--ghost mi-btn--sm" data-act="add-site">إضافة موقع</button>
             </div>`) : ''}
         </div>
       </section>
@@ -162,6 +180,7 @@ export async function renderInitiativeDetails(container, id) {
         ${raw(definitionList([
     ['نطاق العمل', initiative.scope || '—'],
     ['المحفظة', portfolio ? portfolio.title : '—'],
+    ['الحملة الموسمية', campaign ? campaign.title : '—'],
     ['مقدّم المبادرة', `${initiative.submitterName}${initiative.submitterEntity ? ' — ' + initiative.submitterEntity : ''}`],
     ['الوحدة المشرفة', initiative.ownerName || '—'],
     ['الفئات المستفيدة', initiative.beneficiaryGroups || '—'],
@@ -290,9 +309,9 @@ export async function renderInitiativeDetails(container, id) {
         <button class="mi-btn ${t.to === 'rejected' ? 'mi-btn--danger' : 'mi-btn--primary'}" data-transition="${t.to}">${t.label}</button>`).join(''))}
     </div>`;
 
-  // معاينة الموقع الجغرافي المحفوظ
+  // معاينة كل مواقع المبادرة على خريطة واحدة
   const geoHost = container.querySelector('[data-geo]');
-  if (geoHost) renderGeometryPreview(geoHost, initiative.geometry);
+  if (geoHost) renderSitesPreview(geoHost, getSites(initiative));
 
   // إدارة صورة المبادرة
   container.querySelector('[data-act="image"]')?.addEventListener('click', async () => {
@@ -310,21 +329,44 @@ export async function renderInitiativeDetails(container, id) {
     renderInitiativeDetails(container, id);
   });
 
-  // تحديد/تعديل الموقع الجغرافي
-  container.querySelector('[data-act="geo"]')?.addEventListener('click', () => {
+  // إدارة مواقع المبادرة المتعددة
+  async function saveSites(sites) {
+    const { lat, lng } = firstLatLng(sites);
+    // geometry القديمة تُلغى بعد التحول لنظام المواقع
+    await repos.initiatives.update(id, { sites, geometry: null, lat, lng });
+    renderInitiativeDetails(container, id);
+  }
+  container.querySelector('[data-act="add-site"]')?.addEventListener('click', () => {
     openLocationPicker({
-      initial: initiative.geometry,
+      initial: null,
       async onConfirm(geometry) {
-        await repos.initiatives.update(id, {
-          geometry,
-          lat: geometry.coords[0][0],
-          lng: geometry.coords[0][1]
-        });
-        toastSuccess(`ثُبّت الموقع — ${measureLabel(geometry)}`);
-        renderInitiativeDetails(container, id);
+        const sites = [...getSites(initiative).map((s) => ({ ...s })),
+        { id: uid('site'), name: `الموقع ${getSites(initiative).length + 1}`, geometry }];
+        await saveSites(sites);
+        toastSuccess(`أُضيف موقع — ${measureLabel(geometry)}`);
       }
     });
   });
+  container.querySelectorAll('[data-edit-site]').forEach((btn) => btn.addEventListener('click', () => {
+    const sites = getSites(initiative).map((s) => ({ ...s }));
+    const site = sites.find((s) => s.id === btn.dataset.editSite);
+    if (!site) return;
+    openLocationPicker({
+      initial: site.geometry,
+      async onConfirm(geometry) {
+        site.geometry = geometry;
+        await saveSites(sites);
+        toastSuccess(`حُدّث الموقع — ${measureLabel(geometry)}`);
+      }
+    });
+  }));
+  container.querySelectorAll('[data-del-site]').forEach((btn) => btn.addEventListener('click', async () => {
+    const sure = await confirmModal('حذف موقع', 'سيُحذف هذا الموقع من مواقع المبادرة. متابعة؟', { confirmLabel: 'حذف', danger: true });
+    if (!sure) return;
+    const sites = getSites(initiative).filter((s) => s.id !== btn.dataset.delSite).map((s) => ({ ...s }));
+    await saveSites(sites);
+    toastSuccess('حُذف الموقع');
+  }));
 
   // شهادة الإنجاز (للمبادرات المغلقة)
   container.querySelector('[data-act="certificate"]')?.addEventListener('click', () =>
@@ -372,7 +414,14 @@ export async function renderInitiativeDetails(container, id) {
   container.querySelector('[data-act="print"]')?.addEventListener('click', () => {
     openPrintReport({
       title: `تقرير مبادرة — ${initiative.title}`,
-      subtitle: `${initiative.id} • ${categoryLabel(initiative.category)} • حي ${initiative.district} • الحالة: ${statusLabel(initiative.status)}`,
+      subtitle: `${initiative.id} • ${categoryLabel(initiative.category)} • حي ${initiative.district}`,
+      kpis: [
+        { label: 'الحالة', value: statusLabel(initiative.status) },
+        { label: 'الميزانية', value: fmtMoney(initiative.budget) },
+        { label: 'المنصرف', value: fmtMoney(initiative.spent) },
+        { label: 'المستفيدون', value: initiative.beneficiaries ? fmtNumber(initiative.beneficiaries) : '—' },
+        { label: 'المواقع', value: fmtNumber(getSites(initiative).length) }
+      ],
       generatedAt: new Date().toISOString(),
       sections: [
         { heading: 'الوصف', html: `<p>${escapeHtml(initiative.summary)}</p>` },

@@ -1,31 +1,100 @@
-/* أنماط تقارير الطباعة A4 — تُستخدم في print.html */
+/* تقارير فاخرة A4 — إطار أخضر عميق وذهبي بهوية أقواس المنصة */
+body.mi-print-body { background: #E8ECE7; }
+
 .mi-print-page {
-  max-width: 210mm; margin: 0 auto; padding: var(--mi-sp-5);
-  background: #fff; color: #1a1a1a;
+  max-width: 210mm; margin: var(--mi-sp-4) auto;
+  background: #FBF9F2; color: #1C2B27;
+  border: 10px solid var(--mi-green-900);
+  outline: 1px solid var(--mi-gold-500);
+  outline-offset: -16px;
+  padding: 14mm 12mm 10mm;
+  box-shadow: var(--mi-shadow-lg);
+  position: relative;
 }
+
+/* صف أقواس ذهبية أعلى التقرير */
+.mi-print-arches {
+  display: flex; justify-content: center; gap: 14px;
+  margin-bottom: var(--mi-sp-3);
+}
+.mi-print-arches i {
+  width: 18px; height: 22px; display: block;
+  border: 2.5px solid var(--mi-gold-200);
+  border-radius: 999px 999px 4px 4px;
+}
+.mi-print-arches i:nth-child(4) { border-color: var(--mi-gold-500); border-width: 3px; }
+
 .mi-print-head {
-  display: flex; justify-content: space-between; align-items: flex-start;
-  border-bottom: 3px solid var(--mi-green-900); padding-bottom: var(--mi-sp-3);
+  text-align: center;
+  border-bottom: 3px double var(--mi-gold-500);
+  padding-bottom: var(--mi-sp-4);
   margin-bottom: var(--mi-sp-4);
 }
-.mi-print-head h1 { font-size: 1.3rem; margin: 0; }
-.mi-print-head .mi-print-entity { text-align: left; font-size: var(--mi-fs-xs); color: var(--mi-muted); }
-.mi-print-sub { color: var(--mi-muted); font-size: var(--mi-fs-sm); margin: 0 0 var(--mi-sp-2); }
+.mi-print-entity-name {
+  font: 700 1.05rem var(--mi-font-display);
+  color: var(--mi-green-900); margin: 0;
+}
+.mi-print-entity-sub { color: var(--mi-muted); font-size: 0.72rem; margin: 2px 0 10px; }
+.mi-print-head h1 {
+  font: 700 1.7rem var(--mi-font-display);
+  color: var(--mi-gold-700); margin: 0 0 4px;
+}
+.mi-print-sub { color: #3C4F47; font-size: 0.85rem; margin: 0; }
+
+/* شريط المؤشرات البارزة حسب غرض التقرير */
+.mi-print-kpis {
+  display: flex; flex-wrap: wrap; gap: var(--mi-sp-2);
+  justify-content: center;
+  margin: 0 0 var(--mi-sp-5);
+}
+.mi-print-kpi {
+  min-width: 8.5rem; text-align: center;
+  border: 1px solid var(--mi-gold-200);
+  border-top: 3px solid var(--mi-gold-500);
+  border-radius: 8px; padding: 8px 14px;
+  background: #fff;
+}
+.mi-print-kpi b {
+  display: block; font: 700 1.25rem var(--mi-font-display);
+  color: var(--mi-green-900);
+}
+.mi-print-kpi span { font-size: 0.7rem; color: var(--mi-muted); }
+
 .mi-print-section { margin-bottom: var(--mi-sp-5); break-inside: avoid; }
 .mi-print-section h2 {
-  font-size: 1.05rem; border-inline-start: 4px solid var(--mi-gold-500);
-  padding-inline-start: var(--mi-sp-2); margin-bottom: var(--mi-sp-2);
+  font: 700 1rem var(--mi-font-display);
+  color: var(--mi-green-900);
+  border-inline-start: 4px solid var(--mi-gold-500);
+  padding-inline-start: var(--mi-sp-2);
+  margin: 0 0 var(--mi-sp-2);
 }
-.mi-print-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
-.mi-print-table th { background: var(--mi-green-100); border: 1px solid var(--mi-line); padding: 6px 8px; text-align: right; }
-.mi-print-table td { border: 1px solid var(--mi-line); padding: 5px 8px; }
-.mi-print-foot { margin-top: var(--mi-sp-5); font-size: var(--mi-fs-xs); color: var(--mi-muted); border-top: 1px solid var(--mi-line); padding-top: var(--mi-sp-2); display: flex; justify-content: space-between; }
-.mi-print-toolbar { display: flex; gap: var(--mi-sp-2); justify-content: center; padding: var(--mi-sp-4); }
+.mi-print-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; background: #fff; }
+.mi-print-table th {
+  background: var(--mi-green-900); color: #F5EDD4;
+  border: 1px solid var(--mi-green-900);
+  padding: 6px 8px; text-align: right; font-weight: 700;
+}
+.mi-print-table td { border: 1px solid #D8E0DB; padding: 5px 8px; vertical-align: top; }
+.mi-print-table tbody tr:nth-child(even) td { background: #F4F6F1; }
+
+.mi-print-foot {
+  margin-top: var(--mi-sp-5); padding-top: var(--mi-sp-2);
+  border-top: 3px double var(--mi-gold-500);
+  font-size: 0.68rem; color: var(--mi-muted);
+  display: flex; justify-content: space-between; gap: var(--mi-sp-3); flex-wrap: wrap;
+}
+
+.mi-print-toolbar {
+  display: flex; gap: var(--mi-sp-2); justify-content: center;
+  padding: var(--mi-sp-4); flex-wrap: wrap;
+  position: sticky; top: 0; background: #E8ECE7; z-index: 5;
+}
 
 @media print {
-  @page { size: A4; margin: 14mm 12mm; }
-  body { background: #fff !important; }
+  @page { size: A4; margin: 8mm; }
+  body, body.mi-print-body { background: #fff !important; }
   .mi-print-toolbar { display: none !important; }
-  .mi-print-page { padding: 0; max-width: none; }
+  .mi-print-page { margin: 0; max-width: none; box-shadow: none; }
   .mi-print-table tr { break-inside: avoid; }
+  .mi-print-kpi { border-top-color: var(--mi-gold-500); }
 }

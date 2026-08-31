@@ -4,8 +4,8 @@ import { repos } from '../../data/repositories.js';
 import { html, raw, escapeHtml } from '../../core/sanitizer.js';
 import { sectionHeader, statusBadge } from '../../ui/components.js';
 import { statusLabel } from '../../domain/workflow.js';
-import { categoryLabel } from '../../domain/initiative-model.js';
-import { measureLabel } from '../../core/geo.js';
+import { categoryLabel, getSites } from '../../domain/initiative-model.js';
+import { measureLabel, sitesSummaryLabel } from '../../core/geo.js';
 import { loadLeaflet } from '../../ui/location-picker.js';
 import { fmtNumber } from '../../core/utils.js';
 import { navigate } from '../../router.js';
@@ -25,14 +25,14 @@ let currentMap = null; // خريطة الشاشة الحالية — تُزال 
 export async function renderMap(container) {
   const [initiatives, needs] = await Promise.all([repos.initiatives.getAll(), repos.needs.getAll()]);
 
-  const located = initiatives.filter((i) =>
-    i.status !== 'rejected' && (i.geometry?.coords?.length || (i.lat && i.lng)));
+  const located = initiatives.filter((i) => i.status !== 'rejected' && getSites(i).length);
+  const totalSites = located.reduce((a, i) => a + getSites(i).length, 0);
   const locatedNeeds = needs.filter((n) =>
     n.status === 'published' && (n.geometry?.coords?.length || (n.lat && n.lng)));
 
   container.innerHTML = html`
     ${raw(sectionHeader('خريطة المبادرات',
-    `خريطة فعلية لمواقع ${fmtNumber(located.length)} مبادرة و${fmtNumber(locatedNeeds.length)} احتياج مطروح داخل نطاق الأمانة — انقر أي موقع للتفاصيل`))}
+    `خريطة فعلية لـ ${fmtNumber(totalSites)} موقعًا تتبع ${fmtNumber(located.length)} مبادرة، و${fmtNumber(locatedNeeds.length)} احتياجًا مطروحًا — انقر أي موقع للتفاصيل`))}
     <div class="mi-card mi-map-card">
       <div class="mi-map-real" aria-label="خريطة مواقع المبادرات"></div>
       <div class="mi-map-legend">
@@ -68,10 +68,11 @@ export async function renderMap(container) {
 
   const allLayers = [];
 
-  function showInitiative(ini) {
+  function showInitiative(ini, site) {
+    const sites = getSites(ini);
     info.innerHTML = html`
-      <b>${ini.title}</b> ${raw(statusBadge(ini.status))}<br>
-      <small class="mi-muted">${ini.id} • ${categoryLabel(ini.category)} • حي ${ini.district}${ini.geometry ? raw(' • ' + escapeHtml(measureLabel(ini.geometry))) : ''}</small>
+      <b>${ini.title}</b> ${raw(statusBadge(ini.status))}${site?.name && sites.length > 1 ? raw(` <span class="mi-tag">${escapeHtml(site.name)}</span>`) : ''}<br>
+      <small class="mi-muted">${ini.id} • ${categoryLabel(ini.category)} • حي ${ini.district} • ${sitesSummaryLabel(sites)}</small>
       <a class="mi-btn mi-btn--ghost mi-btn--sm" href="#/initiatives/${ini.id}">فتح التفاصيل</a>`;
   }
 
@@ -82,9 +83,8 @@ export async function renderMap(container) {
       <a class="mi-btn mi-btn--ghost mi-btn--sm" href="./opportunity.html?id=${encodeURIComponent(need.id)}" target="_blank" rel="noopener">صفحة الفرصة</a>`;
   }
 
-  // طبقة لكل مبادرة حسب هندستها: نقطة/خط/مساحة — أو نقطة من lat/lng القديمة
-  function layerFor(L2, record, color, dashed = false) {
-    const geometry = record.geometry;
+  // طبقة لكل هندسة: نقطة/خط/مساحة
+  function layerFor(L2, geometry, fallbackLatLng, color, dashed = false) {
     const base = { color, weight: dashed ? 3 : 4, dashArray: dashed ? '6 5' : null };
     if (geometry?.type === 'line' && geometry.coords.length >= 2) {
       return L2.polyline(geometry.coords, base);
@@ -92,7 +92,7 @@ export async function renderMap(container) {
     if (geometry?.type === 'polygon' && geometry.coords.length >= 3) {
       return L2.polygon(geometry.coords, { ...base, fillColor: color, fillOpacity: 0.28 });
     }
-    const latlng = geometry?.coords?.[0] || [record.lat, record.lng];
+    const latlng = geometry?.coords?.[0] || fallbackLatLng;
     return L2.circleMarker(latlng, {
       radius: 9, color: '#F6F8F5', weight: 2.5,
       fillColor: color, fillOpacity: dashed ? 0.55 : 1,
@@ -100,16 +100,20 @@ export async function renderMap(container) {
     });
   }
 
+  // كل مواقع كل مبادرة — الموقع الواحد طبقة مستقلة قابلة للنقر
   for (const ini of located) {
-    const layer = layerFor(L, ini, STATUS_COLOR[ini.status] || '#5B6E66');
-    layer.addTo(map);
-    layer.on('click', () => showInitiative(ini));
-    layer.on('dblclick', () => navigate(`initiatives/${ini.id}`));
-    allLayers.push(layer);
+    const color = STATUS_COLOR[ini.status] || '#5B6E66';
+    for (const site of getSites(ini)) {
+      const layer = layerFor(L, site.geometry, [ini.lat, ini.lng], color);
+      layer.addTo(map);
+      layer.on('click', () => showInitiative(ini, site));
+      layer.on('dblclick', () => navigate(`initiatives/${ini.id}`));
+      allLayers.push(layer);
+    }
   }
 
   for (const need of locatedNeeds) {
-    const layer = layerFor(L, need, NEED_COLOR, true);
+    const layer = layerFor(L, need.geometry, [need.lat, need.lng], NEED_COLOR, true);
     layer.addTo(map);
     layer.on('click', () => showNeed(need));
     allLayers.push(layer);

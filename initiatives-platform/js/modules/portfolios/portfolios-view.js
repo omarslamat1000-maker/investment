@@ -1,16 +1,17 @@
-// محافظ المبادرات — تجميع أكثر من مبادرة (وحملات موسمية) تحت هدف واحد
+// محافظ المبادرات — تدرج هرمي: محفظة ← حملات موسمية (كل حملة تضم مبادرات) ← مبادرات مباشرة
+// وكل مبادرة بدورها تضم موقعًا أو أكثر (تُدار من صفحة المبادرة)
 import { repos } from '../../data/repositories.js';
 import { html, raw, escapeHtml } from '../../core/sanitizer.js';
 import { sectionHeader, statusBadge, emptyState, progressBar } from '../../ui/components.js';
-import { statusLabel, statusOrder, isActive } from '../../domain/workflow.js';
-import { categoryLabel } from '../../domain/initiative-model.js';
-import { fmtMoney, fmtNumber, sum, sortBy, percent } from '../../core/utils.js';
+import { statusLabel, statusOrder } from '../../domain/workflow.js';
+import { categoryLabel, getSites } from '../../domain/initiative-model.js';
+import { fmtMoney, fmtNumber, sum, sortBy, percent, uid } from '../../core/utils.js';
+import { fmtDate } from '../../core/date-time.js';
 import { getRole } from '../../core/state.js';
 import { can } from '../../core/permissions.js';
 import { openModal, confirmModal } from '../../ui/modal.js';
 import { toastSuccess, toastError } from '../../ui/toast.js';
 import { navigate } from '../../router.js';
-import { uid } from '../../core/utils.js';
 
 export async function renderPortfolios(container) {
   const role = getRole();
@@ -24,30 +25,54 @@ export async function renderPortfolios(container) {
   const manage = can(role, 'portfolios.manage');
 
   container.innerHTML = html`
-    ${raw(sectionHeader('محافظ المبادرات', 'تجميع المبادرات والحملات الموسمية تحت هدف واحد قابل للمتابعة',
+    ${raw(sectionHeader('محافظ المبادرات',
+    'التدرج الهرمي: المحفظة تضم حملات موسمية ومبادرات، والحملة تضم أكثر من مبادرة، والمبادرة تضم أكثر من موقع',
     manage ? '<button class="mi-btn mi-btn--primary" data-act="new">محفظة جديدة</button>' : ''))}
     <div class="mi-portfolio-list"></div>`;
 
   const list = container.querySelector('.mi-portfolio-list');
+
+  // صف مبادرة داخل الشجرة
+  const memberRow = (i, depth) => html`
+    <div class="mi-portfolio-member" data-id="${i.id}" data-depth="${String(depth)}" tabindex="0" role="button" aria-label="فتح ${i.title}">
+      <span class="mi-tree-branch" aria-hidden="true">${depth === 2 ? '└' : '◈'}</span>
+      <span class="mi-portfolio-member__title">${i.title}</span>
+      <small class="mi-muted">${categoryLabel(i.category)}${getSites(i).length ? raw(` • ${escapeHtml(fmtNumber(getSites(i).length))} ${getSites(i).length === 1 ? 'موقع' : 'مواقع'}`) : ''}</small>
+      ${raw(statusBadge(i.status))}
+      ${manage ? raw(`<button class="mi-btn mi-btn--ghost mi-btn--sm" data-unlink="${escapeHtml(i.id)}" title="إخراج من المحفظة/الحملة">✕</button>`) : ''}
+    </div>`;
+
   if (!portfolios.length) {
-    list.innerHTML = emptyState('لا محافظ بعد', 'أنشئ محفظة لتجميع المبادرات ذات الهدف المشترك',
+    list.innerHTML = emptyState('لا محافظ بعد', 'أنشئ محفظة لتجميع الحملات والمبادرات ذات الهدف المشترك',
       manage ? '<button class="mi-btn mi-btn--primary" data-act="new-empty">إنشاء محفظة</button>' : '');
     list.querySelector('[data-act="new-empty"]')?.addEventListener('click', () => openPortfolioModal(null));
   } else {
     list.innerHTML = sortBy(portfolios, (p) => p.createdAt).map((p) => {
       const members = initiatives.filter((i) => i.portfolioId === p.id);
-      const memberCampaigns = campaigns.filter((c) => c.portfolioId === p.id);
+      const pCampaigns = campaigns.filter((c) => c.portfolioId === p.id);
+      const direct = sortBy(members.filter((i) => !i.campaignId), (i) => statusOrder(i.status));
       const closed = members.filter((i) => i.status === 'closed').length;
       const running = members.filter((i) => i.status === 'execution').length;
       const value = sum(members.filter((i) => i.status !== 'rejected'), (i) => i.budget);
       const donePct = members.length ? percent(closed, members.length) : 0;
-      const memberRows = sortBy(members, (i) => statusOrder(i.status)).map((i) => html`
-        <div class="mi-portfolio-member" data-id="${i.id}" tabindex="0" role="button" aria-label="فتح ${i.title}">
-          <span class="mi-portfolio-member__title">${i.title}</span>
-          <small class="mi-muted">${categoryLabel(i.category)} • ${i.district}</small>
-          ${raw(statusBadge(i.status))}
-          ${manage ? raw(`<button class="mi-btn mi-btn--ghost mi-btn--sm" data-unlink="${escapeHtml(i.id)}" title="إخراج من المحفظة">✕</button>`) : ''}
-        </div>`).join('');
+
+      const campaignBlocks = pCampaigns.map((c) => {
+        const cMembers = sortBy(members.filter((i) => i.campaignId === c.id), (i) => statusOrder(i.status));
+        return html`
+          <details class="mi-campaign-node" open>
+            <summary>
+              <span class="mi-campaign-node__flag" aria-hidden="true">⚑</span>
+              <b>${c.title}</b>
+              <span class="mi-tag mi-tag--gold">${c.status === 'active' ? 'حملة نشطة' : 'حملة منتهية'}</span>
+              <small class="mi-muted">${fmtNumber(cMembers.length)} مبادرة${c.startDate ? raw(` • ${escapeHtml(fmtDate(c.startDate))} ← ${escapeHtml(fmtDate(c.endDate))}`) : ''}</small>
+              ${manage ? raw(`<span class="mi-campaign-node__tools">
+                <button class="mi-btn mi-btn--ghost mi-btn--sm" data-edit-campaign="${escapeHtml(c.id)}">تعديل</button>
+                <button class="mi-btn mi-btn--ghost mi-btn--sm" data-del-campaign="${escapeHtml(c.id)}">حذف</button>
+              </span>`) : ''}
+            </summary>
+            ${cMembers.length ? raw(cMembers.map((i) => memberRow(i, 2)).join('')) : raw('<p class="mi-muted mi-tree-empty">لا مبادرات في الحملة بعد — أضفها من زر «إضافة مبادرات»</p>')}
+          </details>`;
+      }).join('');
 
       return html`
         <section class="mi-card mi-portfolio-card" data-portfolio="${p.id}">
@@ -57,6 +82,7 @@ export async function renderPortfolios(container) {
               <p class="mi-portfolio-goal">${p.goal || ''}</p>
             </div>
             <div class="mi-portfolio-card__stats">
+              <span><b>${fmtNumber(pCampaigns.length)}</b> حملة</span>
               <span><b>${fmtNumber(members.length)}</b> مبادرة</span>
               <span><b>${fmtNumber(running)}</b> قيد التنفيذ</span>
               <span><b>${fmtNumber(closed)}</b> مغلقة</span>
@@ -64,11 +90,23 @@ export async function renderPortfolios(container) {
             </div>
           </header>
           ${members.length ? raw(progressBar(donePct, `نسبة الإقفال في ${p.title}`)) : ''}
-          ${memberCampaigns.length ? raw(`<div class="mi-portfolio-campaigns">حملات موسمية تابعة: ${memberCampaigns.map((c) => `<span class="mi-tag mi-tag--gold">${escapeHtml(c.title)}</span>`).join(' ')}</div>`) : ''}
-          <div class="mi-portfolio-members">${raw(memberRows || '<p class="mi-muted">لا مبادرات في المحفظة بعد</p>')}</div>
+
+          <div class="mi-portfolio-tree">
+            ${raw(campaignBlocks)}
+            <details class="mi-campaign-node mi-campaign-node--direct" ${direct.length ? raw('open') : ''}>
+              <summary>
+                <span class="mi-campaign-node__flag" aria-hidden="true">▤</span>
+                <b>مبادرات مباشرة في المحفظة</b>
+                <small class="mi-muted">${fmtNumber(direct.length)} مبادرة خارج الحملات</small>
+              </summary>
+              ${direct.length ? raw(direct.map((i) => memberRow(i, 2)).join('')) : raw('<p class="mi-muted mi-tree-empty">لا مبادرات مباشرة</p>')}
+            </details>
+          </div>
+
           ${manage ? raw(`
             <div class="mi-portfolio-actions">
-              <button class="mi-btn mi-btn--ghost mi-btn--sm" data-add="${escapeHtml(p.id)}">إضافة مبادرات</button>
+              <button class="mi-btn mi-btn--primary mi-btn--sm" data-add="${escapeHtml(p.id)}">إضافة مبادرات</button>
+              <button class="mi-btn mi-btn--ghost mi-btn--sm" data-new-campaign="${escapeHtml(p.id)}">حملة جديدة</button>
               <button class="mi-btn mi-btn--ghost mi-btn--sm" data-edit="${escapeHtml(p.id)}">تعديل المحفظة</button>
               <button class="mi-btn mi-btn--ghost mi-btn--sm" data-remove="${escapeHtml(p.id)}">حذف</button>
             </div>`) : ''}
@@ -87,46 +125,74 @@ export async function renderPortfolios(container) {
   list.querySelectorAll('[data-unlink]').forEach((btn) => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
-      await repos.initiatives.update(btn.dataset.unlink, { portfolioId: null });
+      await repos.initiatives.update(btn.dataset.unlink, { portfolioId: null, campaignId: null });
       toastSuccess('أُخرجت المبادرة من المحفظة');
       renderPortfolios(container);
     });
   });
 
-  list.querySelectorAll('[data-edit]').forEach((btn) => {
-    btn.addEventListener('click', () => openPortfolioModal(portfolios.find((p) => p.id === btn.dataset.edit)));
-  });
+  list.querySelectorAll('[data-edit]').forEach((btn) =>
+    btn.addEventListener('click', () => openPortfolioModal(portfolios.find((p) => p.id === btn.dataset.edit))));
 
   list.querySelectorAll('[data-remove]').forEach((btn) => {
     btn.addEventListener('click', async () => {
       const p = portfolios.find((x) => x.id === btn.dataset.remove);
       const members = initiatives.filter((i) => i.portfolioId === p.id);
+      const pCampaigns = campaigns.filter((c) => c.portfolioId === p.id);
       const sure = await confirmModal('حذف المحفظة',
-        `ستُحذف محفظة «${p.title}» وتبقى مبادراتها (${members.length}) دون محفظة. متابعة؟`,
+        `ستُحذف محفظة «${p.title}» وتبقى مبادراتها (${members.length}) وحملاتها (${pCampaigns.length}) دون محفظة. متابعة؟`,
         { confirmLabel: 'حذف', danger: true });
       if (!sure) return;
-      for (const i of members) await repos.initiatives.update(i.id, { portfolioId: null });
-      const linked = campaigns.filter((c) => c.portfolioId === p.id);
-      for (const c of linked) await repos.campaigns.update(c.id, { portfolioId: null });
+      for (const i of members) await repos.initiatives.update(i.id, { portfolioId: null, campaignId: null });
+      for (const c of pCampaigns) await repos.campaigns.update(c.id, { portfolioId: null });
       await repos.portfolios.remove(p.id);
       toastSuccess('حُذفت المحفظة');
       renderPortfolios(container);
     });
   });
 
+  // إدارة الحملات
+  list.querySelectorAll('[data-new-campaign]').forEach((btn) =>
+    btn.addEventListener('click', (e) => { e.preventDefault(); openCampaignModal(null, btn.dataset.newCampaign); }));
+  list.querySelectorAll('[data-edit-campaign]').forEach((btn) =>
+    btn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); const c = campaigns.find((x) => x.id === btn.dataset.editCampaign); openCampaignModal(c, c.portfolioId); }));
+  list.querySelectorAll('[data-del-campaign]').forEach((btn) =>
+    btn.addEventListener('click', async (e) => {
+      e.preventDefault(); e.stopPropagation();
+      const c = campaigns.find((x) => x.id === btn.dataset.delCampaign);
+      const cMembers = initiatives.filter((i) => i.campaignId === c.id);
+      const sure = await confirmModal('حذف الحملة',
+        `ستُحذف حملة «${c.title}» وتبقى مبادراتها (${cMembers.length}) داخل المحفظة كمبادرات مباشرة. متابعة؟`,
+        { confirmLabel: 'حذف', danger: true });
+      if (!sure) return;
+      for (const i of cMembers) await repos.initiatives.update(i.id, { campaignId: null });
+      await repos.campaigns.remove(c.id);
+      toastSuccess('حُذفت الحملة');
+      renderPortfolios(container);
+    }));
+
+  // إضافة مبادرات إلى المحفظة مباشرة أو إلى حملة داخلها
   list.querySelectorAll('[data-add]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const p = portfolios.find((x) => x.id === btn.dataset.add);
-      const candidates = initiatives.filter((i) => !i.portfolioId && i.status !== 'rejected');
-      if (!candidates.length) { toastError('لا مبادرات متاحة خارج المحافظ'); return; }
+      const pCampaigns = campaigns.filter((c) => c.portfolioId === p.id);
+      const candidates = initiatives.filter((i) => i.status !== 'rejected' && (!i.portfolioId || (i.portfolioId === p.id && !i.campaignId)));
+      if (!candidates.length) { toastError('لا مبادرات متاحة للإضافة'); return; }
       const { dialog, close } = openModal({
         title: `إضافة مبادرات إلى: ${p.title}`,
         bodyHtml: html`
+          <div class="mi-form-field">
+            <label>الوجهة داخل المحفظة</label>
+            <select class="mi-input" id="mi-add-dest">
+              <option value="">المحفظة مباشرة (خارج الحملات)</option>
+              ${raw(pCampaigns.map((c) => `<option value="${escapeHtml(c.id)}">حملة: ${escapeHtml(c.title)}</option>`).join(''))}
+            </select>
+          </div>
           <div class="mi-checklist">
             ${raw(candidates.map((i) => `
               <label class="mi-check-item">
                 <input type="checkbox" value="${escapeHtml(i.id)}">
-                <span>${escapeHtml(i.title)} <small class="mi-muted">(${escapeHtml(statusLabel(i.status))})</small></span>
+                <span>${escapeHtml(i.title)} <small class="mi-muted">(${escapeHtml(statusLabel(i.status))}${i.portfolioId === p.id ? ' — في المحفظة حاليًا' : ''})</small></span>
               </label>`).join(''))}
           </div>`,
         footerHtml: html`
@@ -135,11 +201,12 @@ export async function renderPortfolios(container) {
       });
       dialog.querySelector('[data-act="cancel"]').addEventListener('click', close);
       dialog.querySelector('[data-act="save"]').addEventListener('click', async () => {
-        const ids = [...dialog.querySelectorAll('input:checked')].map((c) => c.value);
+        const ids = [...dialog.querySelectorAll('.mi-checklist input:checked')].map((c) => c.value);
         if (!ids.length) { toastError('حدد مبادرة واحدة على الأقل'); return; }
-        for (const id of ids) await repos.initiatives.update(id, { portfolioId: p.id });
+        const campaignId = dialog.querySelector('#mi-add-dest').value || null;
+        for (const id of ids) await repos.initiatives.update(id, { portfolioId: p.id, campaignId });
         close();
-        toastSuccess(`أُضيفت ${fmtNumber(ids.length)} مبادرة إلى المحفظة`);
+        toastSuccess(`أُضيفت ${fmtNumber(ids.length)} مبادرة ${campaignId ? 'إلى الحملة' : 'إلى المحفظة'}`);
         renderPortfolios(container);
       });
     });
@@ -154,7 +221,7 @@ export async function renderPortfolios(container) {
           <div class="mi-form-field"><label>اسم المحفظة</label>
             <input class="mi-input" name="title" value="${p.title}" placeholder="مثال: محفظة المبادرات المقترحة لأمانة منطقة المدينة المنورة"></div>
           <div class="mi-form-field"><label>الهدف الجامع</label>
-            <input class="mi-input" name="goal" value="${p.goal}" placeholder="الهدف الواحد الذي تجتمع تحته المبادرات"></div>
+            <input class="mi-input" name="goal" value="${p.goal}" placeholder="الهدف الواحد الذي تجتمع تحته الحملات والمبادرات"></div>
           <div class="mi-form-field"><label>الوصف</label>
             <textarea class="mi-input" name="description" rows="3">${p.description}</textarea></div>
         </form>`,
@@ -172,6 +239,56 @@ export async function renderPortfolios(container) {
       else await repos.portfolios.create(record);
       close();
       toastSuccess('حُفظت المحفظة');
+      renderPortfolios(container);
+    });
+  }
+
+  function openCampaignModal(existing, portfolioId) {
+    const c = existing || {
+      id: uid('cmp'), title: '', summary: '', startDate: '', endDate: '',
+      targetInitiatives: null, categoryFocus: [], status: 'active', portfolioId
+    };
+    const { dialog, close } = openModal({
+      title: existing ? 'تعديل الحملة' : 'حملة موسمية جديدة',
+      bodyHtml: html`
+        <form class="mi-form" id="mi-cmp-form">
+          <div class="mi-form-field"><label>اسم الحملة</label>
+            <input class="mi-input" name="title" value="${c.title}" placeholder="مثال: حملة «المدينة تُزهر» للتشجير المجتمعي"></div>
+          <div class="mi-form-field"><label>الوصف</label>
+            <textarea class="mi-input" name="summary" rows="2">${c.summary || ''}</textarea></div>
+          <div class="mi-form-row">
+            <div class="mi-form-field"><label>تاريخ البداية</label>
+              <input class="mi-input" name="startDate" type="date" value="${c.startDate || ''}"></div>
+            <div class="mi-form-field"><label>تاريخ النهاية</label>
+              <input class="mi-input" name="endDate" type="date" value="${c.endDate || ''}"></div>
+            <div class="mi-form-field"><label>الحالة</label>
+              <select class="mi-input" name="status">
+                <option value="active" ${c.status === 'active' ? raw('selected') : ''}>نشطة</option>
+                <option value="done" ${c.status === 'done' ? raw('selected') : ''}>منتهية</option>
+              </select></div>
+          </div>
+        </form>`,
+      footerHtml: html`
+        <button class="mi-btn mi-btn--ghost" data-act="cancel">إلغاء</button>
+        <button class="mi-btn mi-btn--primary" data-act="save">حفظ الحملة</button>`
+    });
+    dialog.querySelector('[data-act="cancel"]').addEventListener('click', close);
+    dialog.querySelector('[data-act="save"]').addEventListener('click', async () => {
+      const form = dialog.querySelector('#mi-cmp-form');
+      const title = form.title.value.trim();
+      if (title.length < 8) { toastError('اسم الحملة مطلوب (8 أحرف على الأقل)'); return; }
+      const record = {
+        ...c, title,
+        summary: form.summary.value.trim(),
+        startDate: form.startDate.value || null,
+        endDate: form.endDate.value || null,
+        status: form.status.value,
+        portfolioId
+      };
+      if (existing) await repos.campaigns.update(c.id, record);
+      else await repos.campaigns.create(record);
+      close();
+      toastSuccess('حُفظت الحملة');
       renderPortfolios(container);
     });
   }

@@ -9,7 +9,7 @@ import { nowIso } from '../core/date-time.js';
 import { hashPassword, DEFAULT_PASSWORD } from './auth-service.js';
 
 const SEED_FLAG_ID = 'seed-status';
-export const SEED_VERSION = 2; // v2: المحفظة + المبادرات المقترحة + المواقع الجغرافية
+export const SEED_VERSION = 3; // v3: التدرج الهرمي (حملات ← مبادرات ← مواقع متعددة)
 
 const stamp = (r) => ({ createdAt: nowIso(), updatedAt: nowIso(), ...r });
 
@@ -22,7 +22,8 @@ export async function seedDemoDataIfEmpty() {
     const count = await dataProvider.count('initiatives');
     if (count === 0) await fullSeed();
   } else {
-    await topUpToV2();
+    if (version < 2) await topUpToV2();
+    if (version < 3) await topUpToV3();
   }
   await dataProvider.put('settings', { id: SEED_FLAG_ID, seeded: true, version: SEED_VERSION, at: nowIso() });
   return true;
@@ -70,6 +71,29 @@ async function topUpToV2() {
     const current = initiatives.find((i) => i.id === seedIni.id);
     if (current && !current.geometry) {
       await dataProvider.put('initiatives', { ...current, geometry: seedIni.geometry, updatedAt: nowIso() });
+    }
+  }
+}
+
+// v2 → v3: التدرج الهرمي — مواقع متعددة وربط الحملات، دون مساس بتعديلات المستخدم
+async function topUpToV3() {
+  const initiatives = await dataProvider.getAll('initiatives');
+  const seedById = new Map(
+    [...DEMO_INITIATIVES, ...DEMO_PROPOSED_INITIATIVES].map((i) => [i.id, i])
+  );
+  for (const current of initiatives) {
+    const seed = seedById.get(current.id);
+    if (!seed) continue;
+    const patch = {};
+    // تحويل الهندسة المفردة إلى مواقع متعددة (فقط إن لم يعدّل المستخدم المواقع)
+    if (seed.sites?.length && !(current.sites?.length)) {
+      patch.sites = seed.sites;
+      patch.geometry = null;
+    }
+    if (seed.campaignId && !current.campaignId) patch.campaignId = seed.campaignId;
+    if (seed.portfolioId && !current.portfolioId) patch.portfolioId = seed.portfolioId;
+    if (Object.keys(patch).length) {
+      await dataProvider.put('initiatives', { ...current, ...patch, updatedAt: nowIso() });
     }
   }
 }

@@ -58,6 +58,39 @@ test('توحيد الأرقام: fmtNumber يخرج أرقامًا لاتيني�
   assert.match(out, /12/);
 });
 
+test('ملخص المواقع المتعددة يجمع الأطوال والمساحات', async () => {
+  const { sitesSummary, sitesSummaryLabel } = await import('../../js/core/geo.js');
+  const sites = [
+    { name: 'أ', geometry: { type: 'line', coords: [[24.47, 39.61], [24.48, 39.61]] } },
+    { name: 'ب', geometry: { type: 'line', coords: [[24.48, 39.61], [24.49, 39.61]] } },
+    { name: 'ج', geometry: { type: 'polygon', coords: [[24.470, 39.610], [24.471, 39.610], [24.471, 39.611]] } },
+    { name: 'د', geometry: { type: 'point', coords: [[24.47, 39.61]] } }
+  ];
+  const s = sitesSummary(sites);
+  assert.equal(s.count, 4);
+  assert.equal(s.lines, 2);
+  assert.equal(s.polygons, 1);
+  assert.equal(s.points, 1);
+  assert.ok(Math.abs(s.totalLengthM - 2 * 111.195 * 10) < 30, `طول مجمع ${s.totalLengthM}`);
+  assert.ok(s.totalAreaM2 > 0);
+  const label = sitesSummaryLabel(sites);
+  assert.match(label, /4 مواقع/);
+  assert.equal(sitesSummaryLabel([]), 'لا مواقع محددة');
+});
+
+test('getSites: توافق خلفي مع geometry وlat/lng القديمة', async () => {
+  const { getSites, firstLatLng } = await import('../../js/domain/initiative-model.js');
+  assert.equal(getSites({ sites: [{ id: 'x', geometry: { type: 'point', coords: [[24, 39]] } }] }).length, 1);
+  const legacyGeo = getSites({ geometry: { type: 'line', coords: [[24, 39], [25, 39]] } });
+  assert.equal(legacyGeo.length, 1);
+  assert.equal(legacyGeo[0].geometry.type, 'line');
+  const legacyPoint = getSites({ lat: 24.5, lng: 39.6 });
+  assert.equal(legacyPoint[0].geometry.type, 'point');
+  assert.equal(getSites({}).length, 0);
+  assert.deepEqual(firstLatLng(legacyPoint), { lat: 24.5, lng: 39.6 });
+  assert.deepEqual(firstLatLng([]), { lat: null, lng: null });
+});
+
 test('مركز الهندسة هو متوسط النقاط', () => {
   const c = geometryCenter({ type: 'line', coords: [[24, 39], [26, 41]] });
   assert.deepEqual(c, { lat: 25, lng: 40 });

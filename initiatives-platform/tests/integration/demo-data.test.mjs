@@ -8,6 +8,7 @@ import { validateInitiative } from '../../js/domain/initiative-model.js';
 import { validateNeed } from '../../js/domain/infrastructure-need-model.js';
 import { validatePartner } from '../../js/domain/partner-model.js';
 import { STATUSES, GATES } from '../../js/core/constants.js';
+import { DEMO_CAMPAIGNS } from '../../data/reference-data.js';
 
 const iniIds = new Set(DEMO_INITIATIVES.map((i) => i.id));
 const partnerIds = new Set(DEMO_PARTNERS.map((p) => p.id));
@@ -79,13 +80,36 @@ test('محفظة المبادرات المقترحة: 14 مبادرة صالحة
   assert.equal(ids.size, 14);
 });
 
-test('هندسة المواقع التجريبية سليمة البنية', () => {
-  const withGeo = DEMO_INITIATIVES.filter((i) => i.geometry);
-  assert.ok(withGeo.length >= 2, 'يلزم مثالان على الأقل بهندسة');
-  for (const i of withGeo) {
-    assert.ok(['point', 'line', 'polygon'].includes(i.geometry.type), i.id);
-    assert.ok(i.geometry.coords.every((c) => Array.isArray(c) && c.length === 2), i.id);
-    if (i.geometry.type === 'polygon') assert.ok(i.geometry.coords.length >= 3, i.id);
-    if (i.geometry.type === 'line') assert.ok(i.geometry.coords.length >= 2, i.id);
+test('مواقع المبادرات التجريبية سليمة البنية ومنها متعددة المواقع', () => {
+  const withSites = DEMO_INITIATIVES.filter((i) => i.sites?.length);
+  assert.ok(withSites.length >= 3, 'يلزم ثلاثة أمثلة على الأقل بمواقع');
+  assert.ok(withSites.some((i) => i.sites.length >= 2), 'يلزم مثال بمواقع متعددة');
+  for (const i of withSites) {
+    const ids = new Set(i.sites.map((s) => s.id));
+    assert.equal(ids.size, i.sites.length, `${i.id}: معرفات مواقع مكررة`);
+    for (const s of i.sites) {
+      assert.ok(s.name, `${i.id}/${s.id}: موقع بلا اسم`);
+      assert.ok(['point', 'line', 'polygon'].includes(s.geometry.type), `${i.id}/${s.id}`);
+      assert.ok(s.geometry.coords.every((c) => Array.isArray(c) && c.length === 2), `${i.id}/${s.id}`);
+      if (s.geometry.type === 'polygon') assert.ok(s.geometry.coords.length >= 3, `${i.id}/${s.id}`);
+      if (s.geometry.type === 'line') assert.ok(s.geometry.coords.length >= 2, `${i.id}/${s.id}`);
+    }
+  }
+});
+
+test('التدرج الهرمي: كل مبادرة في حملة تتبع محفظة الحملة نفسها', () => {
+  const all = [...DEMO_INITIATIVES, ...DEMO_PROPOSED_INITIATIVES];
+  const campaignById = new Map(DEMO_CAMPAIGNS.map((c) => [c.id, c]));
+  const withCampaign = all.filter((i) => i.campaignId);
+  assert.ok(withCampaign.length >= 6, 'يلزم أمثلة كافية لمبادرات داخل حملات');
+  for (const i of withCampaign) {
+    const c = campaignById.get(i.campaignId);
+    assert.ok(c, `${i.id}: حملة غير موجودة ${i.campaignId}`);
+    assert.equal(i.portfolioId, c.portfolioId, `${i.id}: محفظة المبادرة لا تطابق محفظة حملتها`);
+  }
+  // كل حملة تضم أكثر من مبادرة (شرط التدرج)
+  for (const c of DEMO_CAMPAIGNS) {
+    const members = all.filter((i) => i.campaignId === c.id);
+    assert.ok(members.length >= 2, `الحملة ${c.id} تضم أقل من مبادرتين`);
   }
 });

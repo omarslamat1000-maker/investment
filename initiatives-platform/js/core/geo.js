@@ -73,6 +73,41 @@ export function measureLabel(geometry) {
   return `نطاق بمساحة ${area}`;
 }
 
+// ملخص مجمّع لمواقع متعددة: sites = [{ name, geometry }]
+export function sitesSummary(sites = []) {
+  const summary = { count: 0, points: 0, lines: 0, polygons: 0, totalLengthM: 0, totalAreaM2: 0 };
+  for (const site of sites) {
+    const g = site?.geometry;
+    if (!g?.coords?.length) continue;
+    summary.count++;
+    const m = measureGeometry(g);
+    if (g.type === 'point') summary.points++;
+    if (g.type === 'line') { summary.lines++; summary.totalLengthM += m?.lengthM || 0; }
+    if (g.type === 'polygon') { summary.polygons++; summary.totalAreaM2 += m?.areaM2 || 0; }
+  }
+  summary.totalLengthM = round(summary.totalLengthM, 1);
+  summary.totalAreaM2 = round(summary.totalAreaM2, 1);
+  return summary;
+}
+
+// سطر عربي مجمّع: «3 مواقع — مسارات بطول 4.2 كم — مساحات 12,400 م²»
+export function sitesSummaryLabel(sites = []) {
+  const s = sitesSummary(sites);
+  if (!s.count) return 'لا مواقع محددة';
+  const parts = [`${fmtNumber(s.count)} ${s.count === 1 ? 'موقع' : 'مواقع'}`];
+  if (s.totalLengthM > 0) {
+    parts.push(s.totalLengthM >= 1000
+      ? `مسارات بطول ${fmtNumber(round(s.totalLengthM / 1000, 2))} كم`
+      : `مسارات بطول ${fmtNumber(s.totalLengthM)} م`);
+  }
+  if (s.totalAreaM2 > 0) {
+    parts.push(s.totalAreaM2 >= 1_000_000
+      ? `مساحات ${fmtNumber(round(s.totalAreaM2 / 1_000_000, 2))} كم²`
+      : `مساحات ${fmtNumber(round(s.totalAreaM2))} م²`);
+  }
+  return parts.join(' — ');
+}
+
 // مركز الهندسة (لعرضها على خريطة المنصة)
 export function geometryCenter(geometry) {
   if (!geometry?.coords?.length) return null;

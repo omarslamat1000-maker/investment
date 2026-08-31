@@ -39,12 +39,33 @@ export function newInitiative(overrides = {}) {
     costBand: '',           // نطاق التكلفة التقديرية
     durationBand: '',       // المدة التقديرية
     readinessLevel: '',     // مستوى الجاهزية
-    // الموقع الجغرافي المرسوم: { type: point|line|polygon, coords, lengthM, areaM2 }
+    // مواقع المبادرة المتعددة: [{ id, name, geometry: {type, coords} }]
+    // (الحقل القديم geometry يُقرأ كموقع أول للتوافق الخلفي عبر getSites)
+    sites: [],
     geometry: null,
     imageDataUrl: null,     // صورة المبادرة (مضغوطة)
     portfolioId: null,      // المحفظة الأم إن وجدت
+    campaignId: null,       // الحملة الموسمية داخل المحفظة إن وجدت
     ...overrides
   };
+}
+
+// مواقع المبادرة مع التوافق الخلفي: geometry القديمة أو lat/lng تصبح موقعًا أول
+export function getSites(initiative) {
+  if (Array.isArray(initiative.sites) && initiative.sites.length) return initiative.sites;
+  if (initiative.geometry?.coords?.length) {
+    return [{ id: 'site-legacy', name: 'الموقع الرئيس', geometry: initiative.geometry }];
+  }
+  if (initiative.lat && initiative.lng) {
+    return [{ id: 'site-legacy', name: 'الموقع الرئيس', geometry: { type: 'point', coords: [[initiative.lat, initiative.lng]] } }];
+  }
+  return [];
+}
+
+// أول إحداثية (لترتيب الخرائط القديمة lat/lng)
+export function firstLatLng(sites) {
+  const c = sites?.[0]?.geometry?.coords?.[0];
+  return c ? { lat: c[0], lng: c[1] } : { lat: null, lng: null };
 }
 
 export function validateInitiative(record) {

@@ -142,26 +142,40 @@ export async function openLocationPicker({ initial = null, onConfirm }) {
   if (initial?.coords?.length) { coords = initial.coords.map((c) => [...c]); redraw(); }
 }
 
+function geometryLayer(L, geometry) {
+  if (geometry.type === 'point') return L.marker(geometry.coords[0]);
+  if (geometry.type === 'line') return L.polyline(geometry.coords, STYLES.line);
+  return L.polygon(geometry.coords, STYLES.polygon);
+}
+
 // معاينة ثابتة لهندسة محفوظة (خريطة صغيرة غير قابلة للتحرير)
 export async function renderGeometryPreview(container, geometry) {
-  if (!geometry?.coords?.length) return;
+  return renderSitesPreview(container, [{ geometry }]);
+}
+
+// معاينة كل مواقع المبادرة معًا على خريطة واحدة غير قابلة للتحرير
+export async function renderSitesPreview(container, sites = []) {
+  const valid = sites.filter((s) => s?.geometry?.coords?.length);
+  if (!valid.length) return;
   let L;
   try { L = await loadLeaflet(); }
-  catch { container.innerHTML = '<p class="mi-muted">تعذر تحميل الخريطة — الموقع محفوظ ويُعرض عند توفر الاتصال</p>'; return; }
+  catch { container.innerHTML = '<p class="mi-muted">تعذر تحميل الخريطة — المواقع محفوظة وتُعرض عند توفر الاتصال</p>'; return; }
+  if (!document.body.contains(container)) return;
   container.classList.add('mi-geo-preview');
   const map = L.map(container, {
     zoomControl: false, dragging: false, scrollWheelZoom: false,
     doubleClickZoom: false, boxZoom: false, keyboard: false, touchZoom: false
   });
   baseLayer(L).addTo(map);
-  let layer;
-  if (geometry.type === 'point') layer = L.marker(geometry.coords[0]);
-  else if (geometry.type === 'line') layer = L.polyline(geometry.coords, STYLES.line);
-  else layer = L.polygon(geometry.coords, STYLES.polygon);
-  layer.addTo(map);
+  const layers = valid.map((s) => {
+    const layer = geometryLayer(L, s.geometry).addTo(map);
+    if (s.name) layer.bindPopup(String(s.name));
+    return layer;
+  });
   setTimeout(() => {
     map.invalidateSize();
-    if (geometry.type === 'point') map.setView(geometry.coords[0], 15);
-    else map.fitBounds(layer.getBounds(), { padding: [18, 18] });
+    const single = valid.length === 1 && valid[0].geometry.type === 'point';
+    if (single) map.setView(valid[0].geometry.coords[0], 15);
+    else map.fitBounds(L.featureGroup(layers).getBounds(), { padding: [18, 18], maxZoom: 15 });
   }, 120);
 }

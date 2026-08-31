@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>تقرير طباعة — منصة المبادرات</title>
+  <title>تقرير — منصة المبادرات</title>
   <link rel="icon" href="./assets/logo-placeholder.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,9 +13,10 @@
   <link rel="stylesheet" href="./css/components.css">
   <link rel="stylesheet" href="./css/print.css">
 </head>
-<body>
+<body class="mi-print-body">
   <div class="mi-print-toolbar">
     <button class="mi-btn mi-btn--primary" onclick="window.print()">طباعة / حفظ PDF</button>
+    <button class="mi-btn mi-btn--gold" id="mi-download-report" hidden>تنزيل التقرير (ملف مستقل)</button>
     <button class="mi-btn mi-btn--ghost" onclick="window.close()">إغلاق</button>
   </div>
   <div class="mi-print-page" id="mi-print-root">
@@ -27,23 +28,26 @@
   <script type="module">
     import { readPrintPayload } from './js/services/print-service.js';
     import { escapeHtml } from './js/core/sanitizer.js';
-    import { fmtDateTime, fmtHijri } from './js/core/date-time.js';
+    import { fmtDateTime, fmtHijri, todayYmd } from './js/core/date-time.js';
 
     const payload = readPrintPayload();
     if (payload) {
       document.title = `${payload.title} — منصة المبادرات`;
       const root = document.getElementById('mi-print-root');
+      const arches = '<div class="mi-print-arches" aria-hidden="true">' + '<i></i>'.repeat(7) + '</div>';
+      const kpis = (payload.kpis || []).length
+        ? `<div class="mi-print-kpis">${payload.kpis.map((k) =>
+          `<div class="mi-print-kpi"><b>${escapeHtml(k.value)}</b><span>${escapeHtml(k.label)}</span></div>`).join('')}</div>`
+        : '';
       root.innerHTML = `
+        ${arches}
         <header class="mi-print-head">
-          <div>
-            <h1>${escapeHtml(payload.title)}</h1>
-            ${payload.subtitle ? `<p class="mi-print-sub">${escapeHtml(payload.subtitle)}</p>` : ''}
-          </div>
-          <div class="mi-print-entity">
-            أمانة منطقة المدينة المنورة<br>
-            منصة مبادرات البنية التحتية<br>والشراكات المجتمعية
-          </div>
+          <p class="mi-print-entity-name">أمانة منطقة المدينة المنورة</p>
+          <p class="mi-print-entity-sub">منصة مبادرات البنية التحتية والشراكات المجتمعية</p>
+          <h1>${escapeHtml(payload.title)}</h1>
+          ${payload.subtitle ? `<p class="mi-print-sub">${escapeHtml(payload.subtitle)}</p>` : ''}
         </header>
+        ${kpis}
         ${(payload.sections || []).map((s) => `
           <section class="mi-print-section">
             <h2>${escapeHtml(s.heading)}</h2>
@@ -53,6 +57,44 @@
           <span>أُنشئ في: ${escapeHtml(fmtDateTime(payload.generatedAt))} — ${escapeHtml(fmtHijri(payload.generatedAt))}</span>
           <span>وثيقة آلية من منصة المبادرات — نسخة عرض ببيانات توضيحية</span>
         </footer>`;
+
+      // تنزيل التقرير ملفًا مستقلًا: تُضمَّن الأنماط داخله فيُفتح في أي متصفح دون المنصة
+      const dlBtn = document.getElementById('mi-download-report');
+      dlBtn.hidden = false;
+      dlBtn.addEventListener('click', async () => {
+        dlBtn.disabled = true;
+        dlBtn.textContent = 'جارٍ التجهيز…';
+        try {
+          const cssTexts = await Promise.all(
+            ['./css/tokens.css', './css/base.css', './css/components.css', './css/print.css']
+              .map((href) => fetch(href).then((r) => r.text()))
+          );
+          const standalone = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${escapeHtml(payload.title)} — أمانة منطقة المدينة المنورة</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&family=Noto+Kufi+Arabic:wght@500;700&display=swap" rel="stylesheet">
+<style>${cssTexts.join('\n')}\n.mi-print-toolbar{display:none}</style>
+</head>
+<body class="mi-print-body">
+<div class="mi-print-page">${root.innerHTML}</div>
+</body>
+</html>`;
+          const blob = new Blob(['﻿' + standalone], { type: 'text/html;charset=utf-8' });
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = `تقرير-${payload.title.replace(/[\\/:*?"<>|]/g, ' ').trim()}-${todayYmd()}.html`;
+          a.click();
+          URL.revokeObjectURL(a.href);
+        } catch (err) {
+          console.error('تعذر تجهيز ملف التنزيل', err);
+        } finally {
+          dlBtn.disabled = false;
+          dlBtn.textContent = 'تنزيل التقرير (ملف مستقل)';
+        }
+      });
     }
   </script>
 </body>

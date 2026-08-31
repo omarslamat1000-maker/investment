@@ -10,7 +10,9 @@ import { toastError, toastSuccess } from '../../ui/toast.js';
 import { notify } from '../../services/notification-service.js';
 import { openLocationPicker } from '../../ui/location-picker.js';
 import { pickInitiativeImage } from '../../services/image-service.js';
-import { measureLabel } from '../../core/geo.js';
+import { measureLabel, sitesSummaryLabel } from '../../core/geo.js';
+import { uid } from '../../core/utils.js';
+import { firstLatLng } from '../../domain/initiative-model.js';
 
 function field(label, inner, hint = '') {
   return `<div class="mi-form-field"><label>${escapeHtml(label)}</label>${inner}${hint ? `<small class="mi-muted">${escapeHtml(hint)}</small>` : ''}</div>`;
@@ -42,20 +44,28 @@ export function renderInitiativeForm(container, { onDone }) {
       }
     },
     {
-      id: 'location', title: 'الموقع والصورة',
+      id: 'location', title: 'المواقع والصورة',
       render(box, data) {
-        const geoLabel = data.geometry ? measureLabel(data.geometry) : '';
+        if (!Array.isArray(data.sites)) data.sites = [];
+        const siteRows = data.sites.map((s, i) => `
+          <div class="mi-site-row" data-site="${escapeHtml(s.id)}">
+            <input class="mi-input mi-site-row__name" data-site-name="${escapeHtml(s.id)}" value="${escapeHtml(s.name || '')}" placeholder="اسم الموقع ${i + 1} (مثال: ساحة المدرسة الشمالية)">
+            <span class="mi-site-row__measure">${escapeHtml(measureLabel(s.geometry))}</span>
+            <button type="button" class="mi-btn mi-btn--ghost mi-btn--sm" data-edit-site="${escapeHtml(s.id)}">تعديل</button>
+            <button type="button" class="mi-btn mi-btn--ghost mi-btn--sm" data-del-site="${escapeHtml(s.id)}">حذف</button>
+          </div>`).join('');
+
         box.innerHTML =
           `<div class="mi-form-row">` +
           field('6. الحي / المنطقة', `<select class="mi-input" name="district"><option value="">اختر…</option>${DISTRICTS.map((d) => `<option ${data.district === d ? 'selected' : ''}>${d}</option>`).join('')}</select>`) +
           field('الطريق / المعلم القريب', `<input class="mi-input" name="location" value="${escapeHtml(data.location || '')}" placeholder="وصف الموقع أو أقرب معلم">`) +
           `</div>` +
           `<div class="mi-form-field">
-            <label>الموقع على الخريطة (نقطة أو خط أو مساحة)</label>
-            <div class="mi-geo-field" data-has="${data.geometry ? 'yes' : 'no'}">
-              <span class="mi-geo-field__label">${data.geometry ? escapeHtml(geoLabel) : 'لم يُحدد الموقع بعد'}</span>
-              <button type="button" class="mi-btn mi-btn--primary mi-btn--sm" data-act="pick-geo">${data.geometry ? 'تعديل الموقع' : 'تحديد على الخريطة'}</button>
-              ${data.geometry ? '<button type="button" class="mi-btn mi-btn--ghost mi-btn--sm" data-act="clear-geo">إزالة</button>' : ''}
+            <label>مواقع المبادرة على الخريطة — يمكن إضافة أكثر من موقع (نقطة أو خط أو مساحة)</label>
+            <div class="mi-sites-list">${siteRows || '<p class="mi-muted mi-sites-empty">لم تُحدد مواقع بعد</p>'}</div>
+            <div class="mi-geo-field" data-has="${data.sites.length ? 'yes' : 'no'}">
+              <span class="mi-geo-field__label">${escapeHtml(sitesSummaryLabel(data.sites))}</span>
+              <button type="button" class="mi-btn mi-btn--primary mi-btn--sm" data-act="add-site">إضافة موقع على الخريطة</button>
             </div>
             <small class="mi-muted">يُحسب الطول أو المساحة تلقائيًا بالمتر عند الرسم</small>
           </div>` +
@@ -70,20 +80,39 @@ export function renderInitiativeForm(container, { onDone }) {
             </div>
           </div>`;
 
-        const rerender = () => {
-          // احتفظ بما كتبه المستخدم قبل إعادة رسم الخطوة
+        const collectInputs = () => {
           data.district = box.querySelector('[name="district"]').value;
           data.location = box.querySelector('[name="location"]').value;
-          steps.find((x) => x.id === 'location').render(box, data);
+          box.querySelectorAll('[data-site-name]').forEach((inp) => {
+            const site = data.sites.find((s) => s.id === inp.dataset.siteName);
+            if (site) site.name = inp.value.trim();
+          });
         };
+        const rerender = () => { collectInputs(); steps.find((x) => x.id === 'location').render(box, data); };
 
-        box.querySelector('[data-act="pick-geo"]').addEventListener('click', () => {
+        box.querySelector('[data-act="add-site"]').addEventListener('click', () => {
+          collectInputs();
           openLocationPicker({
-            initial: data.geometry,
-            onConfirm(geometry) { data.geometry = geometry; rerender(); }
+            initial: null,
+            onConfirm(geometry) {
+              data.sites.push({ id: uid('site'), name: '', geometry });
+              rerender();
+            }
           });
         });
-        box.querySelector('[data-act="clear-geo"]')?.addEventListener('click', () => { data.geometry = null; rerender(); });
+        box.querySelectorAll('[data-edit-site]').forEach((btn) => btn.addEventListener('click', () => {
+          collectInputs();
+          const site = data.sites.find((s) => s.id === btn.dataset.editSite);
+          openLocationPicker({
+            initial: site.geometry,
+            onConfirm(geometry) { site.geometry = geometry; rerender(); }
+          });
+        }));
+        box.querySelectorAll('[data-del-site]').forEach((btn) => btn.addEventListener('click', () => {
+          collectInputs();
+          data.sites = data.sites.filter((s) => s.id !== btn.dataset.delSite);
+          rerender();
+        }));
         box.querySelector('[data-act="pick-image"]').addEventListener('click', async () => {
           try {
             const dataUrl = await pickInitiativeImage();
@@ -95,7 +124,10 @@ export function renderInitiativeForm(container, { onDone }) {
       collect(box, data) {
         data.district = box.querySelector('[name="district"]').value;
         data.location = box.querySelector('[name="location"]').value;
-        // geometry وimageDataUrl تُدار مباشرة في data من الأزرار
+        box.querySelectorAll('[data-site-name]').forEach((inp) => {
+          const site = (data.sites || []).find((s) => s.id === inp.dataset.siteName);
+          if (site) site.name = inp.value.trim();
+        });
       },
       validate(data) {
         return validate(data, { district: [(v) => required(v, 'الحي')] });
@@ -160,7 +192,7 @@ export function renderInitiativeForm(container, { onDone }) {
             <dl class="mi-dl">
               <div class="mi-dl__row"><dt>المبادرة</dt><dd>${escapeHtml(data.title || '')}</dd></div>
               <div class="mi-dl__row"><dt>المجال</dt><dd>${escapeHtml(catLabel)}</dd></div>
-              <div class="mi-dl__row"><dt>الموقع</dt><dd>${escapeHtml(data.district || '')}${data.geometry ? ' — ' + escapeHtml(measureLabel(data.geometry)) : ''}</dd></div>
+              <div class="mi-dl__row"><dt>الموقع</dt><dd>${escapeHtml(data.district || '')}${data.sites?.length ? ' — ' + escapeHtml(sitesSummaryLabel(data.sites)) : ''}</dd></div>
               <div class="mi-dl__row"><dt>التكلفة</dt><dd>${escapeHtml(COST_BANDS.find((b) => b.id === data.costBand)?.label || '—')}</dd></div>
               <div class="mi-dl__row"><dt>المدة</dt><dd>${escapeHtml(DURATION_BANDS.find((b) => b.id === data.durationBand)?.label || '—')}</dd></div>
               <div class="mi-dl__row"><dt>الجاهزية</dt><dd>${escapeHtml(READINESS_LEVELS.find((b) => b.id === data.readinessLevel)?.label || '—')}</dd></div>
@@ -183,6 +215,8 @@ export function renderInitiativeForm(container, { onDone }) {
   createWizard(container, steps, {
     submitLabel: 'إرسال المبادرة',
     async onSubmit(data) {
+      const sites = (data.sites || []).map((s, i) => ({ ...s, name: s.name || `الموقع ${i + 1}` }));
+      const { lat, lng } = firstLatLng(sites);
       const record = sanitizeInitiative(newInitiative({
         title: data.title,
         summary: data.summary,
@@ -190,10 +224,9 @@ export function renderInitiativeForm(container, { onDone }) {
         category: data.category,
         district: data.district,
         location: data.location || '',
-        geometry: data.geometry || null,
+        sites,
         imageDataUrl: data.imageDataUrl || null,
-        lat: data.geometry?.coords?.[0]?.[0] ?? null,
-        lng: data.geometry?.coords?.[0]?.[1] ?? null,
+        lat, lng,
         beneficiaryGroups: data.beneficiaryGroups || '',
         beneficiaries: data.beneficiaries ? Number(data.beneficiaries) : null,
         expectedImpact: data.expectedImpact || '',

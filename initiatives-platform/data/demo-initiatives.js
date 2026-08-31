@@ -118,7 +118,21 @@ export const DEMO_PROPOSED_INITIATIVES = [
     expectedImpact: 'عدد المتدربين، الشهادات المكتسبة، التوظيف، ساعات نقل المعرفة، نسبة الكفاءات المحلية.',
     notes: 'الشركات الأنسب: جميع الشركات الكبرى والجامعات والمكاتب الاستشارية.'
   }
-].map((p) => ({ ...PMO_SUBMITTER, ...p, portfolioId: PF, location: '', lat: null, lng: null, fundingModel: 'coFunding', beneficiaries: null, geometry: null, imageDataUrl: null, problem: '', costBand: 'tbd', durationBand: '', readinessLevel: 'idea', scope: '' }));
+].map((p) => ({
+  ...PMO_SUBMITTER, ...p, portfolioId: PF,
+  // التدرج الهرمي: بعض المبادرات المقترحة تتبع الحملتين الموسميتين مباشرة
+  campaignId: {
+    'MDN-INIT-2026-0101': 'cmp-green-madinah',
+    'MDN-INIT-2026-0105': 'cmp-green-madinah',
+    'MDN-INIT-2026-0108': 'cmp-green-madinah',
+    'MDN-INIT-2026-0102': 'cmp-safe-paths',
+    'MDN-INIT-2026-0103': 'cmp-safe-paths',
+    'MDN-INIT-2026-0106': 'cmp-safe-paths'
+  }[p.id] || null,
+  location: '', lat: null, lng: null, fundingModel: 'coFunding', beneficiaries: null,
+  sites: [], geometry: null, imageDataUrl: null, problem: '', costBand: 'tbd',
+  durationBand: '', readinessLevel: 'idea', scope: ''
+}));
 
 export const DEMO_INITIATIVES = [
   {
@@ -126,7 +140,11 @@ export const DEMO_INITIATIVES = [
     summary: 'زراعة 1200 شجرة ظل محلية على جانبي محور قباء مع شبكة ري بالتنقيط وصيانة تشغيلية لمدة سنتين يتكفل بها الشريك.',
     scope: 'المرحلة الأولى: من ميدان قباء حتى تقاطع الهجرة (3.2 كم).',
     category: 'greening', district: 'قباء', location: 'محور طريق قباء', lat: 24.4425, lng: 39.6120,
-    geometry: { type: 'line', coords: [[24.4425, 39.6120], [24.4372, 39.6131], [24.4300, 39.6140], [24.4231, 39.6153]] },
+    sites: [
+      { id: 'site-0001-a', name: 'محور قباء — القطاع الشمالي', geometry: { type: 'line', coords: [[24.4425, 39.6120], [24.4372, 39.6131], [24.4300, 39.6140]] } },
+      { id: 'site-0001-b', name: 'محور قباء — القطاع الجنوبي', geometry: { type: 'line', coords: [[24.4300, 39.6140], [24.4231, 39.6153]] } }
+    ],
+    portfolioId: 'pf-madinah-proposed', campaignId: 'cmp-green-madinah',
     status: 'execution', channel: 'partner',
     submitterName: 'أ. مها الصاعدي', submitterEntity: 'جمعية سقيا وظل الأهلية',
     submitterEmail: 'maha@suqya.example', submitterPhone: '0551000002',
@@ -168,6 +186,11 @@ export const DEMO_INITIATIVES = [
     summary: 'إعادة رصف 2.4 كم من أرصفة شارع السلام مع منحدرات وصول شامل وتشجير جانبي، تنفيذًا مباشرًا من شريك مقاولات.',
     scope: 'شارع السلام كاملًا مع تقاطعاته الست.',
     category: 'sidewalks', district: 'الحرة الشرقية', location: 'شارع السلام', lat: 24.4720, lng: 39.6350,
+    sites: [
+      { id: 'site-0003-a', name: 'المقطع الأول — من التقاطع الأول', geometry: { type: 'line', coords: [[24.4720, 39.6350], [24.4752, 39.6392]] } },
+      { id: 'site-0003-b', name: 'المقطع الثاني — حتى الدوار', geometry: { type: 'line', coords: [[24.4752, 39.6392], [24.4790, 39.6440]] } }
+    ],
+    portfolioId: 'pf-madinah-proposed', campaignId: 'cmp-safe-paths',
     status: 'execution', channel: 'internal',
     submitterName: 'أ. ريم الجهني', submitterEntity: 'مكتب إدارة المبادرات',
     submitterEmail: 'pmo@amana.example', submitterPhone: '0551000010',
@@ -211,7 +234,9 @@ export const DEMO_INITIATIVES = [
     summary: 'إنشاء حديقة حي (5600 م²) بتمويل مشترك وتشغيل من جمعية أهلية: مسطحات خضراء وألعاب ومسار مشي 400 م.',
     scope: 'الأرض البلدية رقم 118 بحي الجرف.',
     category: 'parks', district: 'الجرف', location: 'الأرض البلدية 118', lat: 24.5230, lng: 39.5710,
-    geometry: { type: 'polygon', coords: [[24.5233, 39.5706], [24.5233, 39.5714], [24.5227, 39.5715], [24.5226, 39.5706]] },
+    sites: [
+      { id: 'site-0005-a', name: 'أرض الحديقة', geometry: { type: 'polygon', coords: [[24.5233, 39.5706], [24.5233, 39.5714], [24.5227, 39.5715], [24.5226, 39.5706]] } }
+    ],
     status: 'closed', channel: 'public',
     submitterName: 'أ. سارة الحسيني', submitterEntity: 'فريق «دربك أخضر» التطوعي',
     submitterEmail: 'sara@darbak.example', submitterPhone: '0551000004',
@@ -322,6 +347,12 @@ export const DEMO_INITIATIVES = [
     summary: 'مطبات ذكية وعلامات مضيئة وممرات ملونة حول 8 مدارس ضمن حملة «طرق آمنة لمدارسنا»، بتمويل مشترك.',
     scope: 'مدارس الحرة الشرقية والعزيزية.',
     category: 'safety', district: 'العزيزية', location: 'محيط 8 مدارس', lat: 24.4550, lng: 39.6440,
+    sites: [
+      { id: 'site-0011-a', name: 'مدرسة العزيزية الابتدائية', geometry: { type: 'point', coords: [[24.4550, 39.6440]] } },
+      { id: 'site-0011-b', name: 'مجمع مدارس الحرة الشرقية', geometry: { type: 'point', coords: [[24.4705, 39.6368]] } },
+      { id: 'site-0011-c', name: 'متوسطة العزيزية للبنات', geometry: { type: 'point', coords: [[24.4512, 39.6475]] } }
+    ],
+    portfolioId: 'pf-madinah-proposed', campaignId: 'cmp-safe-paths',
     status: 'onHold', channel: 'partner',
     submitterName: 'م. خالد الرشيدي', submitterEntity: 'شركة واحة البناء للمقاولات',
     submitterEmail: 'k.r@waha.example', submitterPhone: '0551000001',

@@ -168,6 +168,40 @@
 .mi-portfolio-campaigns { font-size: var(--mi-fs-sm); color: var(--mi-muted); margin: var(--mi-sp-2) 0; display: flex; gap: var(--mi-sp-1); flex-wrap: wrap; align-items: center; }
 .mi-tag--gold { background: var(--mi-gold-100); color: var(--mi-gold-700); border-color: transparent; }
 .mi-portfolio-members { margin-top: var(--mi-sp-2); }
+
+/* شجرة المحفظة: حملات ومبادرات مباشرة */
+.mi-portfolio-tree { margin-top: var(--mi-sp-3); display: flex; flex-direction: column; gap: var(--mi-sp-2); }
+.mi-campaign-node {
+  border: 1px solid var(--mi-line); border-radius: var(--mi-radius);
+  padding: var(--mi-sp-2) var(--mi-sp-3);
+  background: var(--mi-gold-100);
+}
+.mi-campaign-node--direct { background: var(--mi-surface-2); }
+.mi-campaign-node summary {
+  display: flex; align-items: center; gap: var(--mi-sp-2); flex-wrap: wrap;
+  cursor: pointer; list-style: none; font-size: var(--mi-fs-sm);
+}
+.mi-campaign-node summary::-webkit-details-marker { display: none; }
+.mi-campaign-node summary::before { content: '◂'; color: var(--mi-muted); transition: transform var(--mi-transition); }
+.mi-campaign-node[open] summary::before { transform: rotate(-90deg); }
+.mi-campaign-node__flag { color: var(--mi-gold-700); }
+.mi-campaign-node--direct .mi-campaign-node__flag { color: var(--mi-green-700); }
+.mi-campaign-node__tools { margin-inline-start: auto; display: flex; gap: var(--mi-sp-1); }
+.mi-campaign-node .mi-portfolio-member { background: var(--mi-surface); margin-top: var(--mi-sp-1); border: 1px solid var(--mi-line); border-radius: var(--mi-radius); }
+.mi-tree-branch { color: var(--mi-gold-700); font-weight: 700; }
+.mi-tree-empty { padding: var(--mi-sp-2) var(--mi-sp-3) 0; font-size: var(--mi-fs-xs); }
+
+/* صفوف مواقع المبادرة المتعددة */
+.mi-sites-list { display: flex; flex-direction: column; gap: var(--mi-sp-1); margin: var(--mi-sp-2) 0; }
+.mi-site-row {
+  display: flex; align-items: center; gap: var(--mi-sp-2); flex-wrap: wrap;
+  padding: var(--mi-sp-1) var(--mi-sp-2);
+  border: 1px dashed var(--mi-line); border-radius: var(--mi-radius);
+  font-size: var(--mi-fs-sm);
+}
+.mi-site-row__name { flex: 1; min-width: 10rem; }
+.mi-site-row__name-text { flex: 1; font-weight: 600; }
+.mi-site-row__measure { color: var(--mi-green-800); font-size: var(--mi-fs-xs); font-weight: 700; white-space: nowrap; }
 .mi-portfolio-member {
   display: flex; align-items: center; gap: var(--mi-sp-3);
   padding: var(--mi-sp-2) var(--mi-sp-2); border-radius: var(--mi-radius);
