@@ -101,6 +101,25 @@ async function topUpToV3() {
   }
 }
 
+// حذف جميع البيانات (الوضع المحلي) — تُمسح المخازن ويُثبَّت علم الزرع كي لا تعود البيانات التجريبية
+export async function wipeAllLocalData() {
+  const { OBJECT_STORES } = await import('../core/constants.js');
+  for (const store of OBJECT_STORES) {
+    await dataProvider.clear(store);
+  }
+  await dataProvider.put('settings', { id: SEED_FLAG_ID, seeded: true, version: SEED_VERSION, wiped: true, at: nowIso() });
+}
+
+// استعادة البيانات التجريبية من الصفر (الوضع المحلي)
+export async function resetDemoData() {
+  const { OBJECT_STORES } = await import('../core/constants.js');
+  for (const store of OBJECT_STORES) {
+    await dataProvider.clear(store);
+  }
+  await fullSeed();
+  await dataProvider.put('settings', { id: SEED_FLAG_ID, seeded: true, version: SEED_VERSION, at: nowIso() });
+}
+
 // استيراد نسخة احتياطية (كائن مفكوك مسبقًا) — يتحقق منها backup-service قبل الوصول هنا
 export async function importRecords(records) {
   let total = 0;

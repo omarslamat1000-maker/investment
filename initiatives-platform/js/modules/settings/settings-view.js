@@ -61,6 +61,13 @@ export async function renderSettings(container) {
           <button class="mi-btn mi-btn--primary" data-act="backup">تنزيل نسخة احتياطية</button>
           <label class="mi-btn mi-btn--ghost mi-file-btn">استعادة من ملف<input type="file" accept="application/json" data-act="restore" hidden></label>
         </div>
+        ${providerName() === 'indexeddb' ? raw(`
+        <h4 class="mi-subhead">البيانات التجريبية (هذا المتصفح)</h4>
+        <p class="mi-muted">البيانات محفوظة محليًا في متصفحك — الحذف والاستعادة لا يؤثران على أي زائر آخر.</p>
+        <div class="mi-settings-actions">
+          <button class="mi-btn mi-btn--danger" data-act="wipe">حذف جميع البيانات</button>
+          <button class="mi-btn mi-btn--gold" data-act="reseed">استعادة البيانات التجريبية</button>
+        </div>`) : ''}
       </section>`) : ''}
 
       <section class="mi-card mi-card--span">
@@ -103,6 +110,28 @@ export async function renderSettings(container) {
     } finally {
       e.target.value = '';
     }
+  });
+
+  container.querySelector('[data-act="wipe"]')?.addEventListener('click', async () => {
+    const sure = await confirmModal('حذف جميع البيانات',
+      'ستُحذف كل بيانات المنصة من هذا المتصفح (المبادرات والمحافظ والشركاء وكل شيء) ولن تعود البيانات التجريبية تلقائيًا. متابعة؟',
+      { confirmLabel: 'حذف كل شيء', danger: true });
+    if (!sure) return;
+    const { wipeAllLocalData } = await import('../../services/import-service.js');
+    await wipeAllLocalData();
+    toastSuccess('حُذفت جميع البيانات — المنصة فارغة الآن');
+    renderSettings(container);
+  });
+
+  container.querySelector('[data-act="reseed"]')?.addEventListener('click', async () => {
+    const sure = await confirmModal('استعادة البيانات التجريبية',
+      'ستُستبدل البيانات الحالية كاملةً بنسخة العرض التجريبية الأصلية. متابعة؟',
+      { confirmLabel: 'استعادة', danger: true });
+    if (!sure) return;
+    const { resetDemoData } = await import('../../services/import-service.js');
+    await resetDemoData();
+    toastSuccess('استُعيدت البيانات التجريبية كاملة');
+    renderSettings(container);
   });
 
   container.querySelector('[data-act="prune"]')?.addEventListener('click', async () => {
