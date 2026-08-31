@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تقديم مبادرة — منصة المبادرات</title>
+  <meta name="description" content="قدّم مبادرة بنية تحتية أو شراكة مجتمعية لأمانة منطقة المدينة المنورة.">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./assets/logo-placeholder.svg" type="image/svg+xml">
+  <meta name="theme-color" content="#073B2E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&family=Noto+Kufi+Arabic:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./css/tokens.css">
+  <link rel="stylesheet" href="./css/base.css">
+  <link rel="stylesheet" href="./css/components.css">
+  <link rel="stylesheet" href="./css/layout.css">
+  <link rel="stylesheet" href="./css/navigation.css">
+  <link rel="stylesheet" href="./css/forms.css">
+  <link rel="stylesheet" href="./css/dashboard.css">
+  <link rel="stylesheet" href="./css/map.css">
+  <link rel="stylesheet" href="./css/responsive.css">
+  <link rel="stylesheet" href="./css/themes.css">
+</head>
+<body>
+  <header class="mi-page-head-bar">
+    <a class="mi-sidebar__brand" href="./index.html">
+      <span class="mi-brand-arch" aria-hidden="true"></span>
+      <span class="mi-brand-text"><b>منصة المبادرات</b><small>أمانة منطقة المدينة المنورة</small></span>
+    </a>
+    <a class="mi-back" href="./index.html">← العودة للبوابة</a>
+  </header>
+
+  <main class="mi-page-plain" id="mi-submit-main">
+    <h1>قدّم مبادرتك</h1>
+    <p class="mi-muted">أربع خطوات قصيرة، ثم تدخل مبادرتك مسار الفرز خلال 14 يومًا. الحقول جميعها تُحفظ محليًا في متصفحك ضمن هذه النسخة التجريبية.</p>
+    <div id="mi-wizard" class="mi-card"></div>
+    <div id="mi-success" hidden></div>
+  </main>
+
+  <script type="module">
+    import { APP_CONFIG, isCloudMode } from './js/config.js';
+    import { initDataProvider } from './js/data/data-provider.js';
+    import { seedDemoDataIfEmpty } from './js/services/import-service.js';
+    import { renderInitiativeForm } from './js/modules/initiative-form/initiative-form-view.js';
+    import { html, raw } from './js/core/sanitizer.js';
+
+    (async () => {
+      await initDataProvider(APP_CONFIG);
+      await seedDemoDataIfEmpty();
+      const wizardBox = document.getElementById('mi-wizard');
+
+      // في وضع السحابة: التقديم يتطلب حساب جهة مسجلًا (سياسات RLS تفرض ذلك أيضًا)
+      if (isCloudMode()) {
+        const { restoreCloudSession } = await import('./js/services/auth-service.js');
+        const session = await restoreCloudSession();
+        if (!session || session.mustChangePassword) {
+          wizardBox.innerHTML = html`
+            <div class="mi-empty">
+              <div class="mi-empty__mark" aria-hidden="true">◈</div>
+              <h2>تسجيل الدخول مطلوب</h2>
+              <p class="mi-muted">تقديم المبادرات متاح لممثلي الجهات المسجلين — سجّل الدخول بحساب جهتك ثم عد لهذه الصفحة.</p>
+              <a class="mi-btn mi-btn--primary" href="./login.html">تسجيل الدخول</a>
+            </div>`;
+          return;
+        }
+      }
+      renderInitiativeForm(wizardBox, {
+        onDone(saved) {
+          wizardBox.hidden = true;
+          const ok = document.getElementById('mi-success');
+          ok.hidden = false;
+          ok.innerHTML = html`
+            <div class="mi-card mi-empty">
+              <div class="mi-empty__mark" aria-hidden="true">✓</div>
+              <h2>استلمنا مبادرتك</h2>
+              <p>رقم المتابعة: <b dir="ltr">${saved.id}</b> — احتفظ به لمتابعة حالة المبادرة.</p>
+              <p class="mi-muted">ستمر المبادرة الآن ببوابة الفرز G0، وسنتواصل معك عبر بيانات التواصل المسجلة.</p>
+              <p>
+                <a class="mi-btn mi-btn--primary" href="./initiative-details.html?id=${encodeURIComponent(saved.id)}">عرض حالة المبادرة</a>
+                <a class="mi-btn mi-btn--ghost" href="./index.html">العودة للبوابة</a>
+              </p>
+            </div>`;
+          ok.scrollIntoView({ behavior: 'smooth' });
+        }
+      });
+    })().catch((err) => console.error('تعذر تشغيل النموذج', err));
+  </script>
+</body>
+</html>

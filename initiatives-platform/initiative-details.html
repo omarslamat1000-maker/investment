@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>حالة المبادرة — منصة المبادرات</title>
+  <meta name="description" content="تتبع حالة مبادرتك عبر البوابات المرحلية برقم المتابعة.">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./assets/logo-placeholder.svg" type="image/svg+xml">
+  <meta name="theme-color" content="#073B2E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&family=Noto+Kufi+Arabic:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./css/tokens.css">
+  <link rel="stylesheet" href="./css/base.css">
+  <link rel="stylesheet" href="./css/components.css">
+  <link rel="stylesheet" href="./css/layout.css">
+  <link rel="stylesheet" href="./css/navigation.css">
+  <link rel="stylesheet" href="./css/forms.css">
+  <link rel="stylesheet" href="./css/dashboard.css">
+  <link rel="stylesheet" href="./css/responsive.css">
+  <link rel="stylesheet" href="./css/themes.css">
+</head>
+<body>
+  <header class="mi-page-head-bar">
+    <a class="mi-sidebar__brand" href="./index.html">
+      <span class="mi-brand-arch" aria-hidden="true"></span>
+      <span class="mi-brand-text"><b>منصة المبادرات</b><small>أمانة منطقة المدينة المنورة</small></span>
+    </a>
+    <a class="mi-back" href="./index.html">← العودة للبوابة</a>
+  </header>
+
+  <main class="mi-page-plain" id="mi-track-main">
+    <h1>تتبع حالة مبادرة</h1>
+    <p class="mi-muted">أدخل رقم المتابعة الذي استلمته عند التقديم (مثل <span dir="ltr">MDN-INIT-2026-0001</span>).</p>
+    <form class="mi-card mi-form" id="mi-track-form">
+      <div class="mi-form-field">
+        <label for="mi-track-id">رقم المتابعة</label>
+        <input class="mi-input" id="mi-track-id" dir="ltr" placeholder="MDN-INIT-YYYY-NNNN" required>
+      </div>
+      <button class="mi-btn mi-btn--primary" type="submit">عرض الحالة</button>
+    </form>
+    <div id="mi-track-result"></div>
+  </main>
+
+  <script type="module">
+    import { APP_CONFIG } from './js/config.js';
+    import { initDataProvider } from './js/data/data-provider.js';
+    import { seedDemoDataIfEmpty } from './js/services/import-service.js';
+    import { repos } from './js/data/repositories.js';
+    import { html, raw } from './js/core/sanitizer.js';
+    import { statusBadge, gateTrackHtml, definitionList } from './js/ui/components.js';
+    import { statusLabel } from './js/domain/workflow.js';
+    import { categoryLabel } from './js/domain/initiative-model.js';
+    import { fmtDate } from './js/core/date-time.js';
+    import { sortBy } from './js/core/utils.js';
+
+    (async () => {
+      await initDataProvider(APP_CONFIG);
+      await seedDemoDataIfEmpty();
+      const form = document.getElementById('mi-track-form');
+      const result = document.getElementById('mi-track-result');
+
+      async function show(id) {
+        const ini = await repos.initiatives.get(id.trim());
+        if (!ini) {
+          result.innerHTML = html`<div class="mi-alert mi-alert--error" style="margin-top:1rem">لا توجد مبادرة بالرقم المدخل — تحقق من الرقم وأعد المحاولة</div>`;
+          return;
+        }
+        document.title = `${ini.title} — حالة المبادرة`;
+        result.innerHTML = html`
+          <div class="mi-card" style="margin-top:1.5rem">
+            <h2>${ini.title}</h2>
+            <p class="mi-muted">${ini.id} • ${categoryLabel(ini.category)} • حي ${ini.district}</p>
+            <p>الحالة الحالية: ${raw(statusBadge(ini.status))}</p>
+            ${raw(gateTrackHtml(ini.status))}
+            ${raw(definitionList([
+              ['تاريخ التقديم', fmtDate(ini.createdAt)],
+              ['آخر تحديث', fmtDate(ini.updatedAt)]
+            ]))}
+            <h3 class="mi-subhead">سجل التقدم</h3>
+            ${raw(sortBy([...(ini.statusHistory || [])], (h) => h.at, 'desc').map((h) => html`
+              <div class="mi-ms"><span class="mi-ms__dot" style="background:var(--mi-green-500)"></span>
+                <span>${statusLabel(h.from)} ← ${statusLabel(h.to)}</span>
+                <small>${fmtDate(h.at)}</small>
+              </div>`).join('') || '<p class="mi-muted">المبادرة في بداية مسارها</p>')}
+          </div>`;
+      }
+
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const id = document.getElementById('mi-track-id').value;
+        if (id.trim()) show(id);
+      });
+
+      const preset = new URLSearchParams(location.search).get('id');
+      if (preset) {
+        document.getElementById('mi-track-id').value = preset;
+        show(preset);
+      }
+    })().catch((err) => console.error('تعذر تشغيل صفحة التتبع', err));
+  </script>
+</body>
+</html>

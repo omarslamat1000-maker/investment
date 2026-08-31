@@ -1,0 +1,12 @@
+# إعدادات محلية ومولدة — لا تُرفع للمستودع أبدًا
+js/config.local.js
+js/config.runtime.js
+.env
+.env.*
+!.env.example
+
+# ملفات النظام والأدوات
+node_modules/
+.DS_Store
+Thumbs.db
+*.log

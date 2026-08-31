@@ -1,0 +1,27 @@
+# نشر منصة المبادرات على Netlify
+# اضبط في واجهة Netlify: Base directory = initiatives-platform
+# ومتغيرات البيئة: SUPABASE_URL, SUPABASE_ANON_KEY, STORAGE_MODE=supabase
+[build]
+  command = "node tools/gen-config.mjs"
+  publish = "."
+
+# لا أسرار هنا — القيم تُدخل في إعدادات Netlify فقط (المفتاح القابل للنشر وليس service_role)
+
+# المنصة متعددة الصفحات مع Hash Routing داخل app.html — لا حاجة لإعادة توجيه SPA شاملة،
+# لكن المسارات غير الموجودة تعرض صفحة 404 العربية الخاصة بالمنصة
+[[redirects]]
+  from = "/*"
+  to = "/404.html"
+  status = 404
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Content-Type = "application/manifest+json; charset=utf-8"

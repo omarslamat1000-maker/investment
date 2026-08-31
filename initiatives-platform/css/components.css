@@ -1,0 +1,214 @@
+/* المكوّنات المشتركة: أزرار، شارات، بطاقات، مسار البوابات، تنبيهات، حوارات */
+
+/* الأزرار */
+.mi-btn {
+  display: inline-flex; align-items: center; gap: var(--mi-sp-2);
+  padding: 0.55rem 1.1rem;
+  border-radius: var(--mi-radius);
+  border: 1px solid transparent;
+  font: 600 var(--mi-fs-sm) var(--mi-font-body);
+  cursor: pointer; text-decoration: none;
+  transition: background var(--mi-transition), color var(--mi-transition), border-color var(--mi-transition);
+}
+.mi-btn--primary { background: var(--mi-green-800); color: #fff; }
+.mi-btn--primary:hover { background: var(--mi-green-700); color: #fff; }
+.mi-btn--gold { background: var(--mi-gold-500); color: var(--mi-green-950); }
+.mi-btn--gold:hover { background: var(--mi-gold-700); color: #fff; }
+.mi-btn--ghost { background: transparent; color: var(--mi-green-800); border-color: var(--mi-line); }
+.mi-btn--ghost:hover { background: var(--mi-surface-2); color: var(--mi-green-900); }
+.mi-btn--danger { background: var(--mi-bad); color: #fff; }
+.mi-btn--danger:hover { background: #8A3636; color: #fff; }
+.mi-btn--sm { padding: 0.3rem 0.7rem; font-size: var(--mi-fs-xs); }
+.mi-btn[disabled] { opacity: 0.5; cursor: not-allowed; }
+
+/* الشارات */
+.mi-status-badge {
+  display: inline-block; padding: 0.15rem 0.7rem;
+  border-radius: 999px; font-size: var(--mi-fs-xs); font-weight: 700;
+  background: var(--mi-surface-2); color: var(--mi-ink-soft);
+  white-space: nowrap;
+}
+.mi-status-badge[data-tone="exec"] { background: var(--mi-green-100); color: var(--mi-green-800); }
+.mi-status-badge[data-tone="ok"] { background: var(--mi-green-100); color: var(--mi-green-800); }
+.mi-status-badge[data-tone="gold"] { background: var(--mi-gold-100); color: var(--mi-gold-700); }
+.mi-status-badge[data-tone="warn"] { background: #F6ECD4; color: var(--mi-warn); }
+.mi-status-badge[data-tone="bad"] { background: #F3DDDD; color: var(--mi-bad); }
+.mi-status-badge[data-tone="info"] { background: #DDEBEE; color: var(--mi-info); }
+
+.mi-tag {
+  display: inline-block; padding: 0.05rem 0.55rem;
+  border-radius: 6px; font-size: var(--mi-fs-xs);
+  background: var(--mi-surface-2); color: var(--mi-ink-soft);
+  border: 1px solid var(--mi-line);
+}
+.mi-tag[data-benefit="achieved"] { background: var(--mi-green-100); color: var(--mi-green-800); border-color: transparent; }
+.mi-tag[data-benefit="onTrack"] { background: var(--mi-gold-100); color: var(--mi-gold-700); border-color: transparent; }
+.mi-tag[data-benefit="atRisk"] { background: #F3DDDD; color: var(--mi-bad); border-color: transparent; }
+.mi-tag--priority[data-priority="high"] { background: #F3DDDD; color: var(--mi-bad); border-color: transparent; }
+.mi-tag--priority[data-priority="medium"] { background: var(--mi-gold-100); color: var(--mi-gold-700); border-color: transparent; }
+
+.mi-health { font-size: var(--mi-fs-xs); font-weight: 700; padding: 0.15rem 0.7rem; border-radius: 999px; }
+.mi-health[data-health="green"] { background: var(--mi-green-100); color: var(--mi-green-800); }
+.mi-health[data-health="amber"] { background: var(--mi-gold-100); color: var(--mi-gold-700); }
+.mi-health[data-health="red"] { background: #F3DDDD; color: var(--mi-bad); }
+
+/* البطاقات */
+.mi-card {
+  background: var(--mi-surface);
+  border: 1px solid var(--mi-line);
+  border-radius: var(--mi-radius-lg);
+  padding: var(--mi-sp-5);
+  box-shadow: var(--mi-shadow);
+}
+
+/* ✦ العنصر المميز: مسار البوابات بأقواس معمارية ✦ */
+.mi-gate-track {
+  list-style: none; display: flex; gap: var(--mi-sp-2);
+  margin: var(--mi-sp-4) 0; padding: 0;
+  align-items: flex-end;
+}
+.mi-gate {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  gap: var(--mi-sp-1); position: relative; text-align: center;
+  min-width: 0;
+}
+.mi-gate::before {
+  /* الخط الواصل بين البوابات */
+  content: ''; position: absolute; top: 14px; inset-inline-start: -50%;
+  width: 100%; height: 2px; background: var(--mi-line); z-index: 0;
+}
+.mi-gate:first-child::before { display: none; }
+.mi-gate__arch {
+  display: block; width: 30px; height: 34px;
+  border: 3px solid var(--mi-line);
+  border-radius: var(--mi-arch-radius);
+  background: var(--mi-surface);
+  position: relative; z-index: 1;
+  transition: border-color var(--mi-transition), background var(--mi-transition);
+}
+.mi-gate[data-state="passed"] .mi-gate__arch { border-color: var(--mi-green-500); background: var(--mi-green-100); }
+.mi-gate[data-state="current"] .mi-gate__arch { border-color: var(--mi-gold-500); background: var(--mi-gold-100); box-shadow: 0 0 0 4px var(--mi-gold-100); }
+.mi-gate[data-state="passed"]::before { background: var(--mi-green-500); }
+.mi-gate[data-state="current"]::before { background: var(--mi-green-500); }
+.mi-gate__id { font: 700 var(--mi-fs-xs) var(--mi-font-display); color: var(--mi-ink-soft); }
+.mi-gate[data-state="current"] .mi-gate__id { color: var(--mi-gold-700); }
+.mi-gate__name { font-size: var(--mi-fs-xs); color: var(--mi-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.mi-gate-track--compact { margin: 0; width: 180px; flex: none; }
+.mi-gate-track--compact .mi-gate__arch { width: 14px; height: 17px; border-width: 2px; }
+.mi-gate-track--compact .mi-gate__id { font-size: 0.6rem; }
+.mi-gate-track--compact .mi-gate::before { top: 8px; }
+
+/* شريط التقدم */
+.mi-progress {
+  position: relative; height: 22px; border-radius: 999px;
+  background: var(--mi-surface-2); overflow: hidden;
+  margin: var(--mi-sp-2) 0;
+}
+.mi-progress__fill {
+  height: 100%; background: linear-gradient(90deg, var(--mi-green-700), var(--mi-green-500));
+  border-radius: 999px; transition: width 400ms ease;
+}
+.mi-progress__text {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  font-size: var(--mi-fs-xs); font-weight: 700; color: var(--mi-ink);
+}
+
+/* حالة الفراغ */
+.mi-empty { text-align: center; padding: var(--mi-sp-8) var(--mi-sp-4); color: var(--mi-muted); }
+.mi-empty__mark { font-size: 2.5rem; color: var(--mi-gold-500); margin-bottom: var(--mi-sp-3); }
+
+/* التنبيهات العائمة */
+.mi-toasts {
+  position: fixed; bottom: var(--mi-sp-4); inset-inline-start: var(--mi-sp-4);
+  display: flex; flex-direction: column; gap: var(--mi-sp-2); z-index: 1000;
+  max-width: min(90vw, 24rem);
+}
+.mi-toast {
+  display: flex; align-items: center; gap: var(--mi-sp-3);
+  background: var(--mi-green-950); color: #fff;
+  padding: var(--mi-sp-3) var(--mi-sp-4);
+  border-radius: var(--mi-radius); box-shadow: var(--mi-shadow-lg);
+  animation: mi-toast-in 200ms ease;
+}
+.mi-toast[data-level="success"] { border-inline-start: 4px solid var(--mi-green-300); }
+.mi-toast[data-level="error"] { border-inline-start: 4px solid #E08A8A; }
+.mi-toast__close { background: none; border: 0; color: #fff; cursor: pointer; font-size: 1rem; }
+@keyframes mi-toast-in { from { transform: translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+.mi-alert { padding: var(--mi-sp-3) var(--mi-sp-4); border-radius: var(--mi-radius); font-size: var(--mi-fs-sm); }
+.mi-alert--error { background: #F3DDDD; color: var(--mi-bad); }
+
+/* الحوارات */
+.mi-modal {
+  border: 0; border-radius: var(--mi-radius-lg);
+  box-shadow: var(--mi-shadow-lg);
+  width: min(94vw, 34rem); padding: 0;
+  background: var(--mi-surface); color: var(--mi-ink);
+}
+.mi-modal--wide { width: min(94vw, 46rem); }
+.mi-modal::backdrop { background: rgba(5, 42, 32, 0.45); }
+.mi-modal__head {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: var(--mi-sp-4) var(--mi-sp-5);
+  border-bottom: 1px solid var(--mi-line);
+}
+.mi-modal__head h2 { font-size: var(--mi-fs-lg); margin: 0; }
+.mi-modal__body { padding: var(--mi-sp-5); max-height: 70vh; overflow-y: auto; }
+.mi-modal__foot {
+  display: flex; justify-content: flex-end; gap: var(--mi-sp-2);
+  padding: var(--mi-sp-4) var(--mi-sp-5);
+  border-top: 1px solid var(--mi-line);
+}
+.mi-confirm-text { font-size: var(--mi-fs-md); }
+
+/* عناصر متفرقة */
+.mi-dl { margin: 0; }
+.mi-dl__row { display: grid; grid-template-columns: 11rem 1fr; gap: var(--mi-sp-3); padding: var(--mi-sp-2) 0; border-bottom: 1px dashed var(--mi-line); }
+.mi-dl__row:last-child { border-bottom: 0; }
+.mi-dl dt { color: var(--mi-muted); font-size: var(--mi-fs-sm); }
+.mi-dl dd { margin: 0; }
+
+.mi-chip {
+  border: 1px solid var(--mi-line); background: var(--mi-surface);
+  border-radius: 999px; padding: 0.3rem 0.9rem; cursor: pointer;
+  font: 600 var(--mi-fs-xs) var(--mi-font-body); color: var(--mi-ink-soft);
+}
+.mi-chip[aria-pressed="true"] { background: var(--mi-green-800); color: #fff; border-color: var(--mi-green-800); }
+
+.mi-section-head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--mi-sp-4); margin-bottom: var(--mi-sp-5); flex-wrap: wrap; }
+.mi-section-head__sub { color: var(--mi-muted); margin: 0; }
+.mi-section-head__actions { display: flex; gap: var(--mi-sp-2); flex-wrap: wrap; }
+
+.mi-breadcrumb { font-size: var(--mi-fs-sm); color: var(--mi-muted); margin-bottom: var(--mi-sp-3); }
+
+/* الرسوم */
+.mi-chart { width: 100%; height: auto; }
+.mi-chart-val { font: 700 0.55rem var(--mi-font-body); fill: var(--mi-ink-soft); }
+.mi-chart-lbl { font: 0.5rem var(--mi-font-body); fill: var(--mi-muted); }
+.mi-chart-empty { color: var(--mi-muted); text-align: center; padding: var(--mi-sp-5); }
+.mi-donut-wrap { display: flex; align-items: center; gap: var(--mi-sp-5); flex-wrap: wrap; }
+.mi-donut-total { font: 700 1.5rem var(--mi-font-display); fill: var(--mi-green-900); }
+.mi-donut-caption { font: 0.6rem var(--mi-font-body); fill: var(--mi-muted); }
+.mi-legend { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--mi-sp-1); font-size: var(--mi-fs-sm); }
+.mi-legend-dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-inline-end: var(--mi-sp-2); }
+.mi-hbars { display: flex; flex-direction: column; gap: var(--mi-sp-2); }
+.mi-hbar { display: grid; grid-template-columns: 9rem 1fr 4rem; align-items: center; gap: var(--mi-sp-2); font-size: var(--mi-fs-sm); }
+.mi-hbar__track { height: 10px; background: var(--mi-surface-2); border-radius: 999px; overflow: hidden; }
+.mi-hbar__fill { display: block; height: 100%; border-radius: 999px; }
+.mi-hbar__val { text-align: left; font-weight: 700; }
+
+.mi-notif-panel {
+  position: fixed; top: 64px; inset-inline-end: var(--mi-sp-4);
+  width: min(92vw, 22rem); max-height: 70vh; overflow-y: auto;
+  background: var(--mi-surface); border: 1px solid var(--mi-line);
+  border-radius: var(--mi-radius-lg); box-shadow: var(--mi-shadow-lg);
+  padding: var(--mi-sp-4); z-index: 50;
+}
+.mi-notif-item { padding: var(--mi-sp-2) 0; border-bottom: 1px dashed var(--mi-line); font-size: var(--mi-fs-sm); }
+.mi-notif-item time { color: var(--mi-muted); font-size: var(--mi-fs-xs); }
+.mi-notif-count {
+  position: absolute; top: 2px; inset-inline-end: 2px;
+  background: var(--mi-bad); color: #fff; border-radius: 999px;
+  font-size: 0.6rem; padding: 0 4px; min-width: 14px; text-align: center;
+}
+.mi-notif-btn { position: relative; }

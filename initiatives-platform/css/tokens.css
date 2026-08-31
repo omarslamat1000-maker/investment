@@ -1,0 +1,61 @@
+/* رموز التصميم — هوية «منصة المبادرات»: أخضر مديني عميق وذهبي على أرضية فاتحة
+   العنصر المميز: قوس البوابة (mi-arch) المستلهم من العمارة المدنية للمدينة المنورة */
+:root {
+  /* الألوان الأساسية */
+  --mi-green-950: #052A20;
+  --mi-green-900: #073B2E;
+  --mi-green-800: #0B4A38;
+  --mi-green-700: #0E5A44;
+  --mi-green-500: #1E7A5F;
+  --mi-green-300: #7FB3A2;
+  --mi-green-100: #DCEAE4;
+
+  --mi-gold-700: #8A6D1F;
+  --mi-gold-500: #C9A227;
+  --mi-gold-200: #E8D9A8;
+  --mi-gold-100: #F5EDD4;
+
+  --mi-bg: #F6F8F5;
+  --mi-surface: #FFFFFF;
+  --mi-surface-2: #EFF3EE;
+  --mi-ink: #17251F;
+  --mi-ink-soft: #3C4F47;
+  --mi-muted: #5B6E66;
+  --mi-line: #D8E0DB;
+
+  --mi-ok: #1E7A5F;
+  --mi-warn: #B07E10;
+  --mi-bad: #A34242;
+  --mi-info: #2C6E7A;
+
+  /* الطباعة */
+  --mi-font-display: 'Noto Kufi Arabic', 'Segoe UI', Tahoma, sans-serif;
+  --mi-font-body: 'IBM Plex Sans Arabic', 'Segoe UI', Tahoma, sans-serif;
+
+  --mi-fs-xs: 0.78rem;
+  --mi-fs-sm: 0.875rem;
+  --mi-fs-md: 1rem;
+  --mi-fs-lg: 1.25rem;
+  --mi-fs-xl: 1.6rem;
+  --mi-fs-2xl: 2.1rem;
+  --mi-fs-hero: clamp(1.9rem, 4.5vw, 3.2rem);
+
+  /* المسافات والأشكال */
+  --mi-sp-1: 0.25rem;
+  --mi-sp-2: 0.5rem;
+  --mi-sp-3: 0.75rem;
+  --mi-sp-4: 1rem;
+  --mi-sp-5: 1.5rem;
+  --mi-sp-6: 2rem;
+  --mi-sp-8: 3rem;
+
+  --mi-radius: 10px;
+  --mi-radius-lg: 16px;
+  /* قوس البوابة: نصف دائرة علوية فوق جسم مستقيم */
+  --mi-arch-radius: 999px 999px 6px 6px;
+
+  --mi-shadow: 0 1px 2px rgba(7, 59, 46, 0.06), 0 4px 16px rgba(7, 59, 46, 0.07);
+  --mi-shadow-lg: 0 6px 30px rgba(7, 59, 46, 0.16);
+
+  --mi-transition: 180ms ease;
+}

@@ -1,0 +1,227 @@
+/* التخطيط العام لتطبيق الإدارة والبوابة العامة */
+
+/* هيكل تطبيق الإدارة */
+.mi-shell { display: grid; grid-template-columns: 16rem 1fr; min-height: 100vh; }
+.mi-content-col { display: flex; flex-direction: column; min-width: 0; }
+.mi-main { padding: var(--mi-sp-5) var(--mi-sp-6); flex: 1; min-width: 0; }
+.mi-main:focus { outline: none; }
+
+.mi-topbar {
+  display: flex; align-items: center; gap: var(--mi-sp-3);
+  padding: var(--mi-sp-3) var(--mi-sp-6);
+  background: var(--mi-surface);
+  border-bottom: 1px solid var(--mi-line);
+  position: sticky; top: 0; z-index: 40;
+}
+.mi-topbar__title { flex: 1; }
+.mi-topbar__tools { display: flex; gap: var(--mi-sp-2); }
+.mi-menu-btn { display: none; }
+
+/* شبكات الصفحات */
+.mi-kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr)); gap: var(--mi-sp-3); margin-bottom: var(--mi-sp-5); }
+.mi-kpi {
+  background: var(--mi-surface); border: 1px solid var(--mi-line);
+  border-radius: var(--mi-radius-lg); padding: var(--mi-sp-4);
+  border-top: 4px solid var(--mi-line);
+}
+.mi-kpi[data-tone="primary"] { border-top-color: var(--mi-green-700); }
+.mi-kpi[data-tone="gold"] { border-top-color: var(--mi-gold-500); }
+.mi-kpi[data-tone="exec"] { border-top-color: var(--mi-green-500); }
+.mi-kpi[data-tone="ok"] { border-top-color: var(--mi-green-300); }
+.mi-kpi__value { font: 700 var(--mi-fs-xl) var(--mi-font-display); color: var(--mi-green-900); }
+.mi-kpi__title { color: var(--mi-ink-soft); font-size: var(--mi-fs-sm); }
+.mi-kpi__sub { color: var(--mi-muted); font-size: var(--mi-fs-xs); }
+
+.mi-dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--mi-sp-4); }
+.mi-card--span { grid-column: 1 / -1; }
+
+.mi-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--mi-sp-4); margin-top: var(--mi-sp-4); }
+.mi-detail-head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--mi-sp-4); flex-wrap: wrap; }
+.mi-detail-head__meta { color: var(--mi-muted); font-size: var(--mi-fs-sm); }
+.mi-detail-head__badges { display: flex; gap: var(--mi-sp-2); align-items: center; }
+.mi-detail-actions {
+  display: flex; gap: var(--mi-sp-2); flex-wrap: wrap;
+  margin-top: var(--mi-sp-5); padding-top: var(--mi-sp-4);
+  border-top: 1px solid var(--mi-line);
+  position: sticky; bottom: 0; background: var(--mi-bg); padding-bottom: var(--mi-sp-3);
+}
+
+.mi-settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--mi-sp-4); }
+.mi-settings-actions { display: flex; gap: var(--mi-sp-2); flex-wrap: wrap; }
+.mi-file-btn { position: relative; overflow: hidden; }
+.mi-grants { display: flex; flex-wrap: wrap; gap: var(--mi-sp-1); }
+
+.mi-report-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); gap: var(--mi-sp-4); }
+.mi-report-card { display: flex; flex-direction: column; gap: var(--mi-sp-1); }
+.mi-report-card p { flex: 1; }
+.mi-report-card__arch {
+  width: 20px; height: 24px;
+  border: 3px solid var(--mi-gold-500);
+  border-radius: var(--mi-arch-radius);
+  margin-bottom: var(--mi-sp-1);
+}
+.mi-report-card__actions { display: flex; gap: var(--mi-sp-2); }
+
+.mi-filters { display: flex; gap: var(--mi-sp-2); flex-wrap: wrap; margin-bottom: var(--mi-sp-4); }
+
+/* صفوف لوحة المتابعة */
+.mi-health-row {
+  display: flex; align-items: center; gap: var(--mi-sp-4);
+  padding: var(--mi-sp-3); border-radius: var(--mi-radius);
+  cursor: pointer; border: 1px solid transparent;
+}
+.mi-health-row:hover, .mi-health-row:focus-visible { background: var(--mi-surface-2); border-color: var(--mi-line); }
+.mi-health-row__main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.mi-health-row__main b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mi-health-row__meta { color: var(--mi-muted); font-size: var(--mi-fs-xs); }
+
+.mi-risk-line { display: flex; align-items: flex-start; gap: var(--mi-sp-3); padding: var(--mi-sp-2) 0; border-bottom: 1px dashed var(--mi-line); }
+.mi-risk-line:last-child { border-bottom: 0; }
+.mi-risk-line__badge { font-size: var(--mi-fs-xs); font-weight: 700; padding: 0.1rem 0.55rem; border-radius: 6px; white-space: nowrap; }
+.mi-risk-line__badge[data-level="low"] { background: var(--mi-green-100); color: var(--mi-green-800); }
+.mi-risk-line__badge[data-level="medium"] { background: var(--mi-gold-100); color: var(--mi-gold-700); }
+.mi-risk-line__badge[data-level="high"] { background: #F6E3CE; color: #9A5B16; }
+.mi-risk-line__badge[data-level="critical"] { background: #F3DDDD; color: var(--mi-bad); }
+
+/* تفاصيل المبادرة */
+.mi-summary { font-size: var(--mi-fs-md); }
+.mi-score { display: flex; align-items: baseline; gap: var(--mi-sp-3); margin-bottom: var(--mi-sp-3); }
+.mi-score__value { font: 700 2.4rem var(--mi-font-display); color: var(--mi-green-800); }
+.mi-score__band { color: var(--mi-gold-700); font-weight: 700; }
+.mi-criteria-row { display: flex; justify-content: space-between; padding: var(--mi-sp-1) 0; border-bottom: 1px dashed var(--mi-line); font-size: var(--mi-fs-sm); }
+.mi-criteria-row:last-child { border-bottom: 0; }
+
+.mi-partner-line { display: flex; align-items: center; gap: var(--mi-sp-2); padding: var(--mi-sp-2) 0; border-bottom: 1px dashed var(--mi-line); flex-wrap: wrap; }
+.mi-partner-line:last-child { border-bottom: 0; }
+.mi-partner-line small { flex-basis: 100%; color: var(--mi-muted); }
+
+.mi-checklist { display: flex; flex-direction: column; gap: var(--mi-sp-1); }
+.mi-check-item { display: flex; align-items: flex-start; gap: var(--mi-sp-2); font-size: var(--mi-fs-sm); cursor: pointer; }
+.mi-check-item input { margin-top: 0.3rem; accent-color: var(--mi-green-700); }
+.mi-check-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); gap: var(--mi-sp-2); }
+
+.mi-ms { display: flex; align-items: center; gap: var(--mi-sp-2); padding: var(--mi-sp-1) 0; font-size: var(--mi-fs-sm); }
+.mi-ms small { color: var(--mi-muted); margin-inline-start: auto; }
+.mi-ms__dot { width: 10px; height: 12px; border-radius: var(--mi-arch-radius); background: var(--mi-line); flex: none; }
+.mi-ms[data-done="yes"] .mi-ms__dot { background: var(--mi-green-500); }
+.mi-ms[data-done="yes"] span { text-decoration: line-through; color: var(--mi-muted); }
+.mi-ms[data-overdue="yes"] small { color: var(--mi-bad); font-weight: 700; }
+
+.mi-benefit { padding: var(--mi-sp-2) 0; border-bottom: 1px dashed var(--mi-line); }
+.mi-benefit:last-child { border-bottom: 0; }
+.mi-benefit__head { display: flex; justify-content: space-between; gap: var(--mi-sp-2); align-items: center; }
+
+.mi-quality-line { display: flex; gap: var(--mi-sp-3); padding: var(--mi-sp-2) 0; border-bottom: 1px dashed var(--mi-line); align-items: flex-start; }
+.mi-quality-line:last-child { border-bottom: 0; }
+
+.mi-timeline { position: relative; padding-inline-start: var(--mi-sp-4); }
+.mi-timeline::before { content: ''; position: absolute; inset-inline-start: 5px; top: 6px; bottom: 6px; width: 2px; background: var(--mi-line); }
+.mi-timeline__item { position: relative; padding: var(--mi-sp-2) 0; }
+.mi-timeline__item::before {
+  content: ''; position: absolute; inset-inline-start: calc(-1 * var(--mi-sp-4) + 1px); top: 1rem;
+  width: 10px; height: 12px; border-radius: var(--mi-arch-radius); background: var(--mi-green-500);
+}
+.mi-timeline__item time { color: var(--mi-muted); font-size: var(--mi-fs-xs); display: block; }
+.mi-decision-note { background: var(--mi-surface-2); border-radius: var(--mi-radius); padding: var(--mi-sp-2) var(--mi-sp-3); font-size: var(--mi-fs-sm); margin: var(--mi-sp-1) 0 0; }
+.mi-review-line { padding: var(--mi-sp-1) 0; font-size: var(--mi-fs-sm); display: flex; gap: var(--mi-sp-2); align-items: center; flex-wrap: wrap; }
+
+/* التنفيذ */
+.mi-exec-list { display: flex; flex-direction: column; gap: var(--mi-sp-4); }
+.mi-exec-card__head { display: flex; justify-content: space-between; gap: var(--mi-sp-3); align-items: flex-start; }
+.mi-exec-card__head h3 { margin-bottom: var(--mi-sp-1); }
+.mi-ms-list { margin: var(--mi-sp-3) 0; }
+.mi-exec-tools { display: flex; gap: var(--mi-sp-2); align-items: center; border-top: 1px dashed var(--mi-line); padding-top: var(--mi-sp-3); flex-wrap: wrap; font-size: var(--mi-fs-sm); }
+.mi-input--sm { width: 9rem; display: inline-block; }
+
+/* مصفوفة المخاطر */
+.mi-risk-matrix { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--mi-sp-1); max-width: 22rem; }
+.mi-risk-cell {
+  aspect-ratio: 1.6; display: grid; place-items: center;
+  border-radius: var(--mi-radius); font: 700 var(--mi-fs-md) var(--mi-font-display);
+  color: var(--mi-green-950);
+}
+.mi-risk-cell[data-exposure="low"] { background: var(--mi-green-100); }
+.mi-risk-cell[data-exposure="medium"] { background: var(--mi-gold-100); }
+.mi-risk-cell[data-exposure="high"] { background: #F6E3CE; }
+.mi-risk-cell[data-exposure="critical"] { background: #F3DDDD; }
+.mi-matrix-caption { font-size: var(--mi-fs-xs); margin-top: var(--mi-sp-2); }
+
+.mi-benefits-summary { margin-bottom: var(--mi-sp-4); }
+
+.mi-boot-error { max-width: 32rem; margin: 15vh auto; text-align: center; }
+
+/* وسائط تفاصيل المبادرة: الصورة + الخريطة */
+.mi-detail-media { display: grid; grid-template-columns: 1fr 1fr; gap: var(--mi-sp-4); }
+.mi-initiative-image { width: 100%; height: 240px; object-fit: cover; border-radius: var(--mi-radius); border: 1px solid var(--mi-line); }
+.mi-initiative-image--empty {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: var(--mi-sp-2); background: var(--mi-surface-2); color: var(--mi-muted);
+  font-size: 2rem;
+}
+.mi-initiative-image--empty span { font-size: var(--mi-fs-sm); }
+.mi-detail-media__tools { display: flex; gap: var(--mi-sp-2); margin-top: var(--mi-sp-2); flex-wrap: wrap; }
+
+/* حقل الصورة في النماذج */
+.mi-image-field { display: flex; align-items: center; gap: var(--mi-sp-3); flex-wrap: wrap; }
+.mi-image-thumb { width: 140px; height: 96px; object-fit: cover; border-radius: var(--mi-radius); border: 1px solid var(--mi-line); }
+.mi-image-empty { width: 140px; height: 96px; display: grid; place-items: center; font-size: 1.6rem; background: var(--mi-surface-2); border-radius: var(--mi-radius); color: var(--mi-muted); }
+.mi-image-field__actions { display: flex; flex-direction: column; gap: var(--mi-sp-1); }
+
+/* بطاقات المحافظ */
+.mi-portfolio-list { display: flex; flex-direction: column; gap: var(--mi-sp-4); }
+.mi-portfolio-card__head { display: flex; justify-content: space-between; gap: var(--mi-sp-4); flex-wrap: wrap; align-items: flex-start; }
+.mi-portfolio-goal { color: var(--mi-muted); font-size: var(--mi-fs-sm); margin: 0; max-width: 42rem; }
+.mi-portfolio-card__stats { display: flex; gap: var(--mi-sp-4); flex-wrap: wrap; font-size: var(--mi-fs-sm); color: var(--mi-ink-soft); }
+.mi-portfolio-card__stats b { color: var(--mi-green-800); font-family: var(--mi-font-display); }
+.mi-portfolio-campaigns { font-size: var(--mi-fs-sm); color: var(--mi-muted); margin: var(--mi-sp-2) 0; display: flex; gap: var(--mi-sp-1); flex-wrap: wrap; align-items: center; }
+.mi-tag--gold { background: var(--mi-gold-100); color: var(--mi-gold-700); border-color: transparent; }
+.mi-portfolio-members { margin-top: var(--mi-sp-2); }
+
+/* شجرة المحفظة: حملات ومبادرات مباشرة */
+.mi-portfolio-tree { margin-top: var(--mi-sp-3); display: flex; flex-direction: column; gap: var(--mi-sp-2); }
+.mi-campaign-node {
+  border: 1px solid var(--mi-line); border-radius: var(--mi-radius);
+  padding: var(--mi-sp-2) var(--mi-sp-3);
+  background: var(--mi-gold-100);
+}
+.mi-campaign-node--direct { background: var(--mi-surface-2); }
+.mi-campaign-node summary {
+  display: flex; align-items: center; gap: var(--mi-sp-2); flex-wrap: wrap;
+  cursor: pointer; list-style: none; font-size: var(--mi-fs-sm);
+}
+.mi-campaign-node summary::-webkit-details-marker { display: none; }
+.mi-campaign-node summary::before { content: '◂'; color: var(--mi-muted); transition: transform var(--mi-transition); }
+.mi-campaign-node[open] summary::before { transform: rotate(-90deg); }
+.mi-campaign-node__flag { color: var(--mi-gold-700); }
+.mi-campaign-node--direct .mi-campaign-node__flag { color: var(--mi-green-700); }
+.mi-campaign-node__tools { margin-inline-start: auto; display: flex; gap: var(--mi-sp-1); }
+.mi-campaign-node .mi-portfolio-member { background: var(--mi-surface); margin-top: var(--mi-sp-1); border: 1px solid var(--mi-line); border-radius: var(--mi-radius); }
+.mi-tree-branch { color: var(--mi-gold-700); font-weight: 700; }
+.mi-tree-empty { padding: var(--mi-sp-2) var(--mi-sp-3) 0; font-size: var(--mi-fs-xs); }
+
+/* صفوف مواقع المبادرة المتعددة */
+.mi-sites-list { display: flex; flex-direction: column; gap: var(--mi-sp-1); margin: var(--mi-sp-2) 0; }
+.mi-site-row {
+  display: flex; align-items: center; gap: var(--mi-sp-2); flex-wrap: wrap;
+  padding: var(--mi-sp-1) var(--mi-sp-2);
+  border: 1px dashed var(--mi-line); border-radius: var(--mi-radius);
+  font-size: var(--mi-fs-sm);
+}
+.mi-site-row__name { flex: 1; min-width: 10rem; }
+.mi-site-row__name-text { flex: 1; font-weight: 600; }
+.mi-site-row__measure { color: var(--mi-green-800); font-size: var(--mi-fs-xs); font-weight: 700; white-space: nowrap; }
+.mi-portfolio-member {
+  display: flex; align-items: center; gap: var(--mi-sp-3);
+  padding: var(--mi-sp-2) var(--mi-sp-2); border-radius: var(--mi-radius);
+  cursor: pointer; border-bottom: 1px dashed var(--mi-line);
+}
+.mi-portfolio-member:hover, .mi-portfolio-member:focus-visible { background: var(--mi-surface-2); }
+.mi-portfolio-member__title { flex: 1; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mi-portfolio-actions { display: flex; gap: var(--mi-sp-2); margin-top: var(--mi-sp-3); flex-wrap: wrap; }
+
+/* الشهادة */
+.mi-cert-preview { background: var(--mi-surface-2); border-radius: var(--mi-radius); padding: var(--mi-sp-2); text-align: center; }
+.mi-cert-canvas { width: 100%; height: auto; border-radius: 6px; box-shadow: var(--mi-shadow); }
+.mi-cert-edit { margin-top: var(--mi-sp-3); border: 1px dashed var(--mi-line); border-radius: var(--mi-radius); padding: var(--mi-sp-2) var(--mi-sp-3); font-size: var(--mi-fs-sm); }
+.mi-cert-edit summary { cursor: pointer; font-weight: 700; color: var(--mi-gold-700); }
+.mi-cert-edit form { margin-top: var(--mi-sp-3); }
