@@ -35,9 +35,10 @@ export async function renderUsers(container) {
     return;
   }
 
-  const [users, orgUnits] = await Promise.all([
-    repos.users.getAll(), repos.organizationalUnits.getAll()
+  const [users, orgUnits, partners] = await Promise.all([
+    repos.users.getAll(), repos.organizationalUnits.getAll(), repos.partners.getAll()
   ]);
+  const partnerName = (id) => partners.find((p) => p.id === id)?.name || null;
   const manage = can(myRole, 'users.manage');
   const session = getSession();
   const unitName = (id) => orgUnits.find((u) => u.id === id)?.name || '—';
@@ -58,7 +59,7 @@ export async function renderUsers(container) {
     { key: 'name', label: 'الاسم' },
     { key: 'username', label: 'اسم المستخدم', map: (u) => u.username || '—' },
     { key: 'role', label: 'الدور', map: (u) => roleLabel(u.role) },
-    { key: 'orgUnitId', label: 'الوحدة التنظيمية', map: (u) => unitName(u.orgUnitId) },
+    { key: 'orgUnitId', label: 'الوحدة / الجهة', map: (u) => u.partnerId ? (partnerName(u.partnerId) || '—') : unitName(u.orgUnitId) },
     { key: 'overrides', label: 'تجاوزات', map: (u) => overridesCount(u) ? String(overridesCount(u)) : '—', sortValue: overridesCount },
     { key: 'active', label: 'الحالة', map: (u) => u.active === false ? 'موقوف' : 'نشط' }
   ], {
@@ -131,6 +132,14 @@ export async function renderUsers(container) {
               <select class="mi-input" name="role" ${manage ? '' : raw('disabled')}>
                 ${raw(Object.values(ROLES).map((r) => `<option value="${r.id}" ${r.id === user.role ? 'selected' : ''}>${r.label}</option>`).join(''))}
               </select></div>
+            <div class="mi-form-field" data-partner-field ${user.role === 'partner' ? '' : raw('hidden')}>
+              <label>الجهة الشريكة المرتبطة (لحسابات الشركاء)</label>
+              <select class="mi-input" name="partnerId" ${manage ? '' : raw('disabled')}>
+                <option value="">—</option>
+                ${raw(partners.map((p) => `<option value="${escapeHtml(p.id)}" ${p.id === user.partnerId ? 'selected' : ''}>${escapeHtml(p.name)}</option>`).join(''))}
+              </select>
+              <small class="mi-muted">حساب الشريك يدخل بوابة الشركاء فقط ويرى بيانات جهته حصرًا</small>
+            </div>
             <div class="mi-form-field"><label>${isNew ? 'كلمة المرور' : 'كلمة مرور جديدة (اتركها فارغة للإبقاء)'}</label>
               <input class="mi-input" name="password" type="password" dir="ltr" autocomplete="new-password" ${manage ? '' : raw('disabled')} minlength="8" placeholder="8 أحرف على الأقل"></div>
           </div>
@@ -150,9 +159,11 @@ export async function renderUsers(container) {
 
     const form = dialog.querySelector('#mi-user-form');
 
-    // عند تغيير الدور: حدّث عمود «يمنحها الدور» ليعكس الدور الجديد
+    // عند تغيير الدور: أظهر ربط الجهة الشريكة لدور «شريك» وحدّث عمود «يمنحها الدور»
     form.role?.addEventListener('change', () => {
       const newRole = form.role.value;
+      const partnerField = dialog.querySelector('[data-partner-field]');
+      if (partnerField) partnerField.hidden = newRole !== 'partner';
       dialog.querySelectorAll('.mi-perm-row').forEach((row) => {
         const byRole = roleHas(newRole, row.dataset.action);
         const cell = row.querySelector('.mi-perm-row__role');
@@ -213,9 +224,11 @@ export async function renderUsers(container) {
         if (!stillManages) { toastError('لا يمكنك سحب صلاحية إدارة المستخدمين من حسابك أنت'); return; }
       }
 
+      const partnerId = role === 'partner' ? (form.partnerId.value || null) : null;
       const record = {
         ...user, name, username, email, role, active, grants, denies,
-        orgUnitId: form.orgUnitId.value || null
+        orgUnitId: form.orgUnitId.value || null,
+        partnerId
       };
       if (password) record.passwordHash = await hashPassword(password);
 

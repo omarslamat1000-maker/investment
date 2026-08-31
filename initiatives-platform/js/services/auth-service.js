@@ -16,7 +16,15 @@ export const DEFAULT_USERNAMES = {
   'u-rev1': 'reviewer1',
   'u-rev2': 'reviewer2',
   'u-exec': 'executor',
-  'u-partner': 'partner'
+  'u-partner': 'partner',
+  'u-prt-waha': 'waha',
+  'u-prt-suqya': 'suqya',
+  'u-prt-noor': 'noor',
+  'u-prt-darbak': 'darbak',
+  'u-prt-masarat': 'masarat',
+  'u-prt-omran': 'omran',
+  'u-prt-emaar': 'emaar',
+  'u-prt-yanabea': 'yanabea'
 };
 
 export async function hashPassword(password) {
@@ -146,6 +154,7 @@ export async function login(username, password) {
     name: user.name,
     username: normalizeUsername(user.username),
     role: user.role,
+    partnerId: user.partnerId || null, // حساب جهة شريكة: مقيد ببيانات جهته
     grants: user.grants || [],
     denies: user.denies || [],
     at: nowIso()
@@ -179,6 +188,7 @@ export function refreshSessionFromUser(user) {
     name: user.name,
     username: normalizeUsername(user.username),
     role: user.role,
+    partnerId: user.partnerId || null,
     grants: user.grants || [],
     denies: user.denies || []
   });

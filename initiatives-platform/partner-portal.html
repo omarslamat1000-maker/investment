@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>بوابة الشركاء — منصة المبادرات</title>
-  <meta name="description" content="بوابة شركاء أمانة منطقة المدينة المنورة: مبادراتكم ومساهماتكم ومنافعها المتحققة.">
+  <meta name="description" content="بوابة شركاء أمانة منطقة المدينة المنورة: كل جهة تتابع مبادراتها وتقدمها ومنافعها بحسابها الخاص.">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./assets/logo-placeholder.svg" type="image/svg+xml">
   <meta name="theme-color" content="#073B2E">
@@ -27,14 +27,18 @@
       <span class="mi-brand-arch" aria-hidden="true"></span>
       <span class="mi-brand-text"><b>منصة المبادرات</b><small>أمانة منطقة المدينة المنورة</small></span>
     </a>
-    <a class="mi-back" href="./index.html">← العودة للبوابة</a>
+    <div class="mi-portal-user" id="mi-portal-user" hidden>
+      <span class="mi-portal-user__name" id="mi-portal-user-name"></span>
+      <button class="mi-btn mi-btn--ghost mi-btn--sm" id="mi-portal-logout">خروج ⎋</button>
+    </div>
+    <a class="mi-back" href="./index.html" id="mi-portal-back">← العودة للبوابة</a>
   </header>
 
   <main class="mi-page-plain mi-page-plain--wide" id="mi-partner-main">
     <h1>بوابة الشركاء</h1>
-    <p class="mi-muted">اختر جهتك لعرض مبادراتها ومساهماتها — في النسخة التجريبية الاختيار مفتوح بلا مصادقة.</p>
-    <div class="mi-form-field" style="max-width:24rem">
-      <label for="mi-partner-select">الجهة الشريكة</label>
+    <p class="mi-muted" id="mi-portal-lead">متابعة مبادرات جهتكم وتقدمها ومنافعها — اطلاع للقراءة فقط.</p>
+    <div class="mi-form-field" id="mi-partner-select-wrap" style="max-width:24rem" hidden>
+      <label for="mi-partner-select">الجهة الشريكة (عرض إشرافي)</label>
       <select class="mi-input" id="mi-partner-select"></select>
     </div>
     <div id="mi-partner-content"></div>
@@ -44,65 +48,162 @@
     import { APP_CONFIG } from './js/config.js';
     import { initDataProvider } from './js/data/data-provider.js';
     import { seedDemoDataIfEmpty } from './js/services/import-service.js';
+    import { ensureAuthSeed, logout, restoreCloudSession } from './js/services/auth-service.js';
+    import { getSession } from './js/core/state.js';
+    import { isCloudMode } from './js/config.js';
     import { repos } from './js/data/repositories.js';
-    import { html, raw } from './js/core/sanitizer.js';
-    import { statusBadge, gateTrackHtml, definitionList } from './js/ui/components.js';
+    import { html, raw, escapeHtml } from './js/core/sanitizer.js';
+    import { statusBadge, gateTrackHtml, definitionList, progressBar } from './js/ui/components.js';
+    import { statusLabel } from './js/domain/workflow.js';
     import { partnerTypeLabel, modelLabel } from './js/domain/partner-model.js';
     import { categoryLabel } from './js/domain/initiative-model.js';
     import { realizationPercent, benefitStatus } from './js/domain/benefits.js';
-    import { fmtMoney, fmtNumber, sum } from './js/core/utils.js';
+    import { fmtMoney, fmtNumber, sum, percent, sortBy } from './js/core/utils.js';
+    import { fmtDate } from './js/core/date-time.js';
+
+    const REVIEW_ROLES = ['admin', 'pmo', 'supervisor', 'reviewer', 'viewer'];
 
     (async () => {
       await initDataProvider(APP_CONFIG);
       await seedDemoDataIfEmpty();
-      const [partners, links, initiatives, benefits] = await Promise.all([
+      await ensureAuthSeed();
+      if (isCloudMode()) await restoreCloudSession();
+
+      const main = document.getElementById('mi-partner-main');
+      const content = document.getElementById('mi-partner-content');
+      const session = getSession();
+
+      // البوابة تتطلب تسجيل الدخول — حساب شريك أو حساب إشرافي
+      if (!session) {
+        content.innerHTML = html`
+          <div class="mi-card mi-empty">
+            <div class="mi-empty__mark" aria-hidden="true">◈</div>
+            <h2>بوابة خاصة بحسابات الشركاء</h2>
+            <p class="mi-muted">لكل جهة شريكة حساب باسم ممثلها تتابع به مبادراتها وتقدمها — سجّل الدخول للمتابعة.</p>
+            <a class="mi-btn mi-btn--primary" href="./login.html">تسجيل الدخول</a>
+          </div>`;
+        return;
+      }
+
+      // شريط المستخدم + خروج
+      document.getElementById('mi-portal-back').hidden = true;
+      const userBar = document.getElementById('mi-portal-user');
+      userBar.hidden = false;
+      document.getElementById('mi-portal-user-name').textContent = session.name;
+      document.getElementById('mi-portal-logout').addEventListener('click', () => {
+        logout();
+        location.replace('./login.html');
+      });
+
+      const [partners, links, initiatives, benefits, milestones] = await Promise.all([
         repos.partners.getAll(), repos.initiativePartners.getAll(),
-        repos.initiatives.getAll(), repos.benefits.getAll()
+        repos.initiatives.getAll(), repos.benefits.getAll(), repos.milestones.getAll()
       ]);
 
+      const isPartnerAccount = session.role === 'partner' && session.partnerId;
+      const canBrowseAll = REVIEW_ROLES.includes(session.role);
+
+      if (!isPartnerAccount && !canBrowseAll) {
+        content.innerHTML = html`
+          <div class="mi-card mi-empty">
+            <div class="mi-empty__mark" aria-hidden="true">◈</div>
+            <h2>حسابك غير مرتبط بجهة شريكة</h2>
+            <p class="mi-muted">تواصل مع مدير النظام لربط حسابك بجهتكم من شاشة «المستخدمون».</p>
+          </div>`;
+        return;
+      }
+
+      // الحسابات الإشرافية فقط ترى محدد الجهات — حساب الشريك مقفول على جهته
+      const selectWrap = document.getElementById('mi-partner-select-wrap');
       const select = document.getElementById('mi-partner-select');
-      const content = document.getElementById('mi-partner-content');
-      select.innerHTML = partners.filter((p) => p.active)
-        .map((p) => `<option value="${p.id}">${p.name}</option>`).join('');
+      if (canBrowseAll) {
+        selectWrap.hidden = false;
+        select.innerHTML = partners.map((p) => `<option value="${p.id}">${p.name}</option>`).join('');
+        select.addEventListener('change', () => draw(select.value));
+      } else {
+        document.getElementById('mi-portal-lead').textContent =
+          'مرحبًا بكم — هنا تتابعون مبادرات جهتكم وتقدمها ومنافعها المعلنة، اطلاعًا للقراءة فقط.';
+      }
+
+      function initiativeCard(link, ini) {
+        const ms = sortBy(milestones.filter((m) => m.initiativeId === ini.id), (m) => m.due);
+        const done = ms.filter((m) => m.done).length;
+        const progressPct = ini.progressPercentage || (ms.length ? percent(done, ms.length) : null);
+        const myBenefits = benefits.filter((b) => b.initiativeId === ini.id);
+        const history = sortBy([...(ini.statusHistory || [])], (h) => h.at, 'desc').slice(0, 3);
+
+        return html`
+          <div class="mi-card" style="margin-top:1rem">
+            <div class="mi-detail-head">
+              <div>
+                <h3>${ini.title}</h3>
+                <p class="mi-muted">${ini.id} • ${categoryLabel(ini.category)} • حي ${ini.district}
+                  • دور جهتكم: <b>${modelLabel(link.model)}</b>${link.contribution ? raw(' — ' + escapeHtml(link.contribution)) : ''}</p>
+              </div>
+              ${raw(statusBadge(ini.status))}
+            </div>
+            ${raw(gateTrackHtml(ini.status))}
+            ${progressPct !== null ? raw(html`
+              <h4 class="mi-subhead">نسبة الإنجاز${ms.length ? raw(` <small class="mi-muted">(${escapeHtml(fmtNumber(done))} من ${escapeHtml(fmtNumber(ms.length))} معلمًا)</small>`) : ''}</h4>
+              ${raw(progressBar(progressPct, 'نسبة إنجاز ' + ini.title))}`) : ''}
+            ${ms.length ? raw('<h4 class="mi-subhead">معالم التنفيذ</h4>' + ms.map((m) => html`
+              <div class="mi-ms" data-done="${m.done ? 'yes' : 'no'}">
+                <span class="mi-ms__dot" aria-hidden="true"></span>
+                <span>${m.title}</span>
+                <small>${fmtDate(m.due)}</small>
+              </div>`).join('')) : ''}
+            ${history.length ? raw('<h4 class="mi-subhead">آخر التحديثات</h4>' + history.map((h) => html`
+              <div class="mi-ms"><span class="mi-ms__dot" style="background:var(--mi-green-500)"></span>
+                <span>${statusLabel(h.from)} ← ${statusLabel(h.to)}</span>
+                <small>${fmtDate(h.at)}</small>
+              </div>`).join('')) : ''}
+            ${myBenefits.length ? raw('<h4 class="mi-subhead">المنافع المعلنة</h4>' + myBenefits.map((b) => {
+        const p = realizationPercent(b);
+        return html`<div class="mi-ms"><span class="mi-ms__dot" style="background:var(--mi-gold-500)"></span>
+                <span>${b.title}</span>
+                <small>${p === null ? 'لم تُقس بعد' : benefitStatus(b).label + ' — ' + fmtNumber(Math.min(p, 100)) + '٪'}</small></div>`;
+      }).join('')) : ''}
+          </div>`;
+      }
 
       function draw(partnerId) {
         const partner = partners.find((p) => p.id === partnerId);
-        if (!partner) { content.innerHTML = ''; return; }
+        if (!partner) {
+          content.innerHTML = html`
+            <div class="mi-card mi-empty">
+              <h2>سجل الجهة غير موجود</h2>
+              <p class="mi-muted">تواصل مع مكتب إدارة المبادرات لتحديث ربط حسابكم.</p>
+            </div>`;
+          return;
+        }
         const myLinks = links.filter((l) => l.partnerId === partnerId);
-        const myInis = myLinks.map((l) => ({ link: l, ini: initiatives.find((i) => i.id === l.initiativeId) })).filter((x) => x.ini);
+        const myInis = myLinks
+          .map((l) => ({ link: l, ini: initiatives.find((i) => i.id === l.initiativeId) }))
+          .filter((x) => x.ini);
+        const running = myInis.filter((x) => ['execution', 'benefits'].includes(x.ini.status)).length;
+        const closed = myInis.filter((x) => x.ini.status === 'closed').length;
         const totalValue = sum(myInis, (x) => x.ini.budget);
 
         content.innerHTML = html`
           <div class="mi-card" style="margin-top:1rem">
             <h2>${partner.name}</h2>
             ${raw(definitionList([
-              ['نوع الجهة', partnerTypeLabel(partner.type)],
-              ['ممثل الجهة', partner.contactName || '—'],
-              ['عدد المبادرات المرتبطة', String(myInis.length)],
-              ['قيمة المبادرات المرتبطة', fmtMoney(totalValue)],
-              ['تقييم الأداء', partner.rating ? `${partner.rating}/5` : 'شريك جديد']
-            ]))}
+          ['نوع الجهة', partnerTypeLabel(partner.type)],
+          ['ممثل الجهة', partner.contactName || '—'],
+          ['عدد المبادرات', fmtNumber(myInis.length)],
+          ['قيد التنفيذ حاليًا', fmtNumber(running)],
+          ['مكتملة', fmtNumber(closed)],
+          ['قيمة المبادرات المرتبطة', fmtMoney(totalValue)],
+          ['تقييم الأداء', partner.rating ? `${partner.rating}/5` : 'شريك جديد']
+        ]))}
           </div>
-          ${myInis.length ? raw(myInis.map(({ link, ini }) => {
-            const myBenefits = benefits.filter((b) => b.initiativeId === ini.id);
-            return html`
-            <div class="mi-card" style="margin-top:1rem">
-              <h3>${ini.title}</h3>
-              <p class="mi-muted">${ini.id} • ${categoryLabel(ini.category)} • دور الجهة: ${modelLabel(link.model)}${link.contribution ? ' — ' + link.contribution : ''}</p>
-              <p>${raw(statusBadge(ini.status))}</p>
-              ${raw(gateTrackHtml(ini.status, { compact: false }))}
-              ${myBenefits.length ? raw('<h4 class="mi-subhead">المنافع المعلنة</h4>' + myBenefits.map((b) => {
-                const p = realizationPercent(b);
-                return html`<div class="mi-ms"><span class="mi-ms__dot" style="background:var(--mi-gold-500)"></span>
-                  <span>${b.title}</span>
-                  <small>${p === null ? 'لم تُقس بعد' : benefitStatus(b).label + ' — ' + fmtNumber(Math.min(p, 100)) + '٪'}</small></div>`;
-              }).join('')) : ''}
-            </div>`;
-          }).join('')) : raw('<div class="mi-card mi-empty" style="margin-top:1rem"><h3>لا مبادرات مرتبطة بهذه الجهة</h3><p class="mi-muted">تصفحوا الفرص المطروحة وقدموا مبادرة لتبنّي إحداها.</p><a class="mi-btn mi-btn--gold" href="./index.html#mi-opportunities">الفرص المطروحة</a></div>')}`;
+          ${myInis.length
+          ? raw(myInis.map(({ link, ini }) => initiativeCard(link, ini)).join(''))
+          : raw('<div class="mi-card mi-empty" style="margin-top:1rem"><h3>لا مبادرات مرتبطة بجهتكم بعد</h3><p class="mi-muted">تصفحوا الفرص المطروحة في البوابة العامة وقدموا مبادرة لتبنّي إحداها.</p><a class="mi-btn mi-btn--gold" href="./index.html#mi-opportunities">الفرص المطروحة</a></div>')}`;
       }
 
-      select.addEventListener('change', () => draw(select.value));
-      if (partners.length) draw(select.value || partners[0].id);
+      if (isPartnerAccount) draw(session.partnerId);
+      else if (partners.length) draw(select.value || partners[0].id);
     })().catch((err) => console.error('تعذر تشغيل بوابة الشركاء', err));
   </script>
 </body>

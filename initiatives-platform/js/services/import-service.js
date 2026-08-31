@@ -9,7 +9,7 @@ import { nowIso } from '../core/date-time.js';
 import { hashPassword, DEFAULT_PASSWORD } from './auth-service.js';
 
 const SEED_FLAG_ID = 'seed-status';
-export const SEED_VERSION = 3; // v3: التدرج الهرمي (حملات ← مبادرات ← مواقع متعددة)
+export const SEED_VERSION = 4; // v4: حسابات الجهات الشريكة لبوابة الشركاء
 
 const stamp = (r) => ({ createdAt: nowIso(), updatedAt: nowIso(), ...r });
 
@@ -27,6 +27,7 @@ export async function seedDemoDataIfEmpty() {
   } else {
     if (version < 2) await topUpToV2();
     if (version < 3) await topUpToV3();
+    if (version < 4) await topUpToV4();
   }
   await dataProvider.put('settings', { id: SEED_FLAG_ID, seeded: true, version: SEED_VERSION, at: nowIso() });
   return true;
@@ -118,6 +119,18 @@ export async function resetDemoData() {
   }
   await fullSeed();
   await dataProvider.put('settings', { id: SEED_FLAG_ID, seeded: true, version: SEED_VERSION, at: nowIso() });
+}
+
+// v3 → v4: إضافة حسابات الجهات الشريكة للمتصفحات القائمة (إن لم يحذف المستخدم بياناته)
+async function topUpToV4() {
+  const existing = await dataProvider.getAll('users');
+  if (!existing.length) return; // منصة مُفرغة عمدًا — لا نعيد الزرع
+  const ids = new Set(existing.map((u) => u.id));
+  const defaultHash = await hashPassword(DEFAULT_PASSWORD);
+  const fresh = DEMO_USERS.filter((u) => u.partnerId && !ids.has(u.id));
+  if (fresh.length) {
+    await dataProvider.bulkPut('users', fresh.map((u) => stamp({ ...u, passwordHash: defaultHash })));
+  }
 }
 
 // استيراد نسخة احتياطية (كائن مفكوك مسبقًا) — يتحقق منها backup-service قبل الوصول هنا

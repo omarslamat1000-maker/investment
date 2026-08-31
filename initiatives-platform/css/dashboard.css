@@ -128,3 +128,6 @@
 }
 .mi-page-head-bar .mi-brand-text b { font-size: var(--mi-fs-sm); }
 .mi-page-head-bar a.mi-back { color: var(--mi-gold-200); font-size: var(--mi-fs-sm); text-decoration: none; }
+.mi-portal-user { display: flex; align-items: center; gap: var(--mi-sp-3); }
+.mi-portal-user__name { color: #E9F0EC; font-size: var(--mi-fs-sm); font-weight: 700; }
+.mi-portal-user .mi-btn--ghost { color: var(--mi-gold-200); border-color: rgba(233, 240, 236, 0.3); }
