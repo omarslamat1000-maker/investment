@@ -4,11 +4,14 @@ import { repos } from '../../data/repositories.js';
 import { html, raw, escapeHtml } from '../../core/sanitizer.js';
 import { sectionHeader, statusBadge } from '../../ui/components.js';
 import { statusLabel } from '../../domain/workflow.js';
-import { categoryLabel, getSites } from '../../domain/initiative-model.js';
+import { categoryLabel, getSites, firstLatLng } from '../../domain/initiative-model.js';
 import { measureLabel, sitesSummaryLabel } from '../../core/geo.js';
-import { loadLeaflet } from '../../ui/location-picker.js';
+import { loadLeaflet, openLocationPicker } from '../../ui/location-picker.js';
 import { fmtNumber } from '../../core/utils.js';
 import { navigate } from '../../router.js';
+import { getRole } from '../../core/state.js';
+import { can } from '../../core/permissions.js';
+import { toastSuccess } from '../../ui/toast.js';
 
 const MADINAH_CENTER = [24.468, 39.612];
 
@@ -24,6 +27,8 @@ let currentMap = null; // خريطة الشاشة الحالية — تُزال 
 
 export async function renderMap(container) {
   const [initiatives, needs] = await Promise.all([repos.initiatives.getAll(), repos.needs.getAll()]);
+  const role = getRole();
+  const canEdit = can(role, 'initiatives.edit');
 
   const located = initiatives.filter((i) => i.status !== 'rejected' && getSites(i).length);
   const totalSites = located.reduce((a, i) => a + getSites(i).length, 0);
@@ -32,7 +37,7 @@ export async function renderMap(container) {
 
   container.innerHTML = html`
     ${raw(sectionHeader('خريطة المبادرات',
-    `خريطة فعلية لـ ${fmtNumber(totalSites)} موقعًا تتبع ${fmtNumber(located.length)} مبادرة، و${fmtNumber(locatedNeeds.length)} احتياجًا مطروحًا — انقر أي موقع للتفاصيل`))}
+    `خريطة فعلية لـ ${fmtNumber(totalSites)} موقعًا تتبع ${fmtNumber(located.length)} مبادرة، و${fmtNumber(locatedNeeds.length)} احتياجًا مطروحًا — انقر أي موقع لفتح المبادرة${canEdit ? ' أو تعديل موقعها' : ''}`))}
     <div class="mi-card mi-map-card">
       <div class="mi-map-real" aria-label="خريطة مواقع المبادرات"></div>
       <div class="mi-map-legend">
@@ -100,12 +105,50 @@ export async function renderMap(container) {
     });
   }
 
+  // نافذة منبثقة على الموقع نفسه: فتح المبادرة أو تعديل موقعها الجغرافي مباشرة
+  function buildSitePopup(ini, site) {
+    const sites = getSites(ini);
+    const el = document.createElement('div');
+    el.className = 'mi-map-popup';
+    el.dir = 'rtl';
+    el.innerHTML = html`
+      <b class="mi-map-popup__title">${ini.title}</b>
+      ${raw(statusBadge(ini.status))}
+      <small class="mi-map-popup__meta">${sites.length > 1 && site.name ? raw(escapeHtml(site.name) + ' — ') : ''}${measureLabel(site.geometry)}</small>
+      <div class="mi-map-popup__actions">
+        <button class="mi-btn mi-btn--primary mi-btn--sm" data-act="open">فتح المبادرة</button>
+        ${canEdit ? raw('<button class="mi-btn mi-btn--ghost mi-btn--sm" data-act="edit-geo">تعديل الموقع</button>') : ''}
+      </div>`;
+
+    el.querySelector('[data-act="open"]').addEventListener('click', () => {
+      map.closePopup();
+      navigate(`initiatives/${ini.id}`);
+    });
+
+    el.querySelector('[data-act="edit-geo"]')?.addEventListener('click', () => {
+      map.closePopup();
+      openLocationPicker({
+        initial: site.geometry,
+        async onConfirm(geometry) {
+          // استبدال هندسة هذا الموقع وحده مع الحفاظ على بقية المواقع
+          const updated = sites.map((s) => s.id === site.id ? { ...s, geometry } : { ...s });
+          const { lat, lng } = firstLatLng(updated);
+          await repos.initiatives.update(ini.id, { sites: updated, geometry: null, lat, lng });
+          toastSuccess(`حُدّث موقع «${ini.title}» — ${measureLabel(geometry)}`);
+          renderMap(container); // إعادة رسم الخريطة بالموقع الجديد
+        }
+      });
+    });
+    return el;
+  }
+
   // كل مواقع كل مبادرة — الموقع الواحد طبقة مستقلة قابلة للنقر
   for (const ini of located) {
     const color = STATUS_COLOR[ini.status] || '#5B6E66';
     for (const site of getSites(ini)) {
       const layer = layerFor(L, site.geometry, [ini.lat, ini.lng], color);
       layer.addTo(map);
+      layer.bindPopup(() => buildSitePopup(ini, site), { closeButton: true, maxWidth: 300 });
       layer.on('click', () => showInitiative(ini, site));
       layer.on('dblclick', () => navigate(`initiatives/${ini.id}`));
       allLayers.push(layer);
@@ -115,6 +158,18 @@ export async function renderMap(container) {
   for (const need of locatedNeeds) {
     const layer = layerFor(L, need.geometry, [need.lat, need.lng], NEED_COLOR, true);
     layer.addTo(map);
+    layer.bindPopup(() => {
+      const el = document.createElement('div');
+      el.className = 'mi-map-popup';
+      el.dir = 'rtl';
+      el.innerHTML = html`
+        <b class="mi-map-popup__title">${need.title}</b>
+        <span class="mi-tag mi-tag--gold">احتياج مطروح</span>
+        <div class="mi-map-popup__actions">
+          <a class="mi-btn mi-btn--primary mi-btn--sm" href="./opportunity.html?id=${encodeURIComponent(need.id)}" target="_blank" rel="noopener">صفحة الفرصة</a>
+        </div>`;
+      return el;
+    }, { closeButton: true, maxWidth: 280 });
     layer.on('click', () => showNeed(need));
     allLayers.push(layer);
   }
