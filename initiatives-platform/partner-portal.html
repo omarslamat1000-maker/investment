@@ -37,7 +37,7 @@
   <main class="mi-page-plain mi-page-plain--wide" id="mi-partner-main">
     <h1>بوابة الشركاء</h1>
     <p class="mi-muted" id="mi-portal-lead">متابعة مبادرات جهتكم وتقدمها ومنافعها — اطلاع للقراءة فقط.</p>
-    <div class="mi-form-field" id="mi-partner-select-wrap" style="max-width:24rem" hidden>
+    <div class="mi-form-field" id="mi-partner-select-wrap" style="max-width:24rem;display:none" hidden>
       <label for="mi-partner-select">الجهة الشريكة (عرض إشرافي)</label>
       <select class="mi-input" id="mi-partner-select"></select>
     </div>
@@ -118,9 +118,11 @@
       const select = document.getElementById('mi-partner-select');
       if (canBrowseAll) {
         selectWrap.hidden = false;
+        selectWrap.style.display = '';
         select.innerHTML = partners.map((p) => `<option value="${p.id}">${p.name}</option>`).join('');
         select.addEventListener('change', () => draw(select.value));
       } else {
+        selectWrap.remove(); // حساب الشريك: لا محدد جهات إطلاقًا
         document.getElementById('mi-portal-lead').textContent =
           'مرحبًا بكم — هنا تتابعون مبادرات جهتكم وتقدمها ومنافعها المعلنة، اطلاعًا للقراءة فقط.';
       }
