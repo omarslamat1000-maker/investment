@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تسجيل الدخول — منصة المبادرات</title>
+  <meta name="description" content="تسجيل الدخول إلى منصة مبادرات البنية التحتية والشراكات المجتمعية بأمانة منطقة المدينة المنورة.">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./assets/logo-placeholder.svg" type="image/svg+xml">
+  <meta name="theme-color" content="#073B2E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&family=Noto+Kufi+Arabic:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./css/tokens.css">
+  <link rel="stylesheet" href="./css/base.css">
+  <link rel="stylesheet" href="./css/components.css">
+  <link rel="stylesheet" href="./css/layout.css">
+  <link rel="stylesheet" href="./css/navigation.css">
+  <link rel="stylesheet" href="./css/forms.css">
+  <link rel="stylesheet" href="./css/responsive.css">
+  <link rel="stylesheet" href="./css/themes.css">
+</head>
+<body class="mi-login-body">
+  <main class="mi-login-wrap">
+    <section class="mi-login-card" aria-labelledby="mi-login-title">
+      <div class="mi-login-brand">
+        <span class="mi-brand-arch mi-brand-arch--lg" aria-hidden="true"></span>
+        <h1 id="mi-login-title">تسجيل الدخول</h1>
+        <p class="mi-muted">منصة مبادرات البنية التحتية والشراكات المجتمعية<br>أمانة منطقة المدينة المنورة</p>
+      </div>
+
+      <form class="mi-form" id="mi-login-form" novalidate>
+        <div class="mi-form-field">
+          <label for="mi-username">اسم المستخدم</label>
+          <input class="mi-input" id="mi-username" name="username" dir="ltr" autocomplete="username" required autofocus>
+        </div>
+        <div class="mi-form-field">
+          <label for="mi-password">كلمة المرور</label>
+          <div class="mi-password-wrap">
+            <input class="mi-input" id="mi-password" name="password" type="password" dir="ltr" autocomplete="current-password" required>
+            <button type="button" class="mi-btn mi-btn--ghost mi-btn--sm mi-password-toggle" aria-label="إظهار كلمة المرور">إظهار</button>
+          </div>
+        </div>
+        <div class="mi-login-error" role="alert" aria-live="assertive"></div>
+        <button class="mi-btn mi-btn--primary mi-login-submit" type="submit">دخول</button>
+      </form>
+
+      <details class="mi-login-hint">
+        <summary>حسابات العرض التوضيحي</summary>
+        <p class="mi-muted">كلمة المرور لجميع الحسابات: <code>Admin@123</code></p>
+        <ul>
+          <li><code>admin</code> — مدير النظام (كل الصلاحيات وإدارة المستخدمين)</li>
+          <li><code>pmo</code> — مكتب إدارة المبادرات</li>
+          <li><code>reviewer1</code> — عضو لجنة المراجعة</li>
+          <li><code>executor</code> — مشرف تنفيذ</li>
+          <li><code>partner</code> — شريك</li>
+        </ul>
+      </details>
+
+      <p class="mi-login-back"><a href="./index.html">← العودة إلى البوابة العامة</a></p>
+    </section>
+  </main>
+
+  <script type="module">
+    import { APP_CONFIG } from './js/config.example.js';
+    import { initDataProvider } from './js/data/data-provider.js';
+    import { seedDemoDataIfEmpty } from './js/services/import-service.js';
+    import { login, ensureAuthSeed, isLoggedIn } from './js/services/auth-service.js';
+
+    (async () => {
+      await initDataProvider(APP_CONFIG);
+      await seedDemoDataIfEmpty();
+      await ensureAuthSeed();
+
+      // مسجل دخول بالفعل؟ ادخل مباشرة
+      if (isLoggedIn()) { location.replace('./app.html'); return; }
+
+      const form = document.getElementById('mi-login-form');
+      const errorBox = form.querySelector('.mi-login-error');
+      const submitBtn = form.querySelector('.mi-login-submit');
+      const passwordInput = document.getElementById('mi-password');
+
+      form.querySelector('.mi-password-toggle').addEventListener('click', (e) => {
+        const show = passwordInput.type === 'password';
+        passwordInput.type = show ? 'text' : 'password';
+        e.target.textContent = show ? 'إخفاء' : 'إظهار';
+        e.target.setAttribute('aria-label', show ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور');
+      });
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        errorBox.textContent = '';
+        const username = form.username.value.trim();
+        const password = form.password.value;
+        if (!username || !password) {
+          errorBox.textContent = 'أدخل اسم المستخدم وكلمة المرور';
+          return;
+        }
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'جارٍ التحقق…';
+        try {
+          const result = await login(username, password);
+          if (result.ok) {
+            location.replace('./app.html');
+          } else {
+            errorBox.textContent = result.error;
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'دخول';
+            passwordInput.value = '';
+            passwordInput.focus();
+          }
+        } catch (err) {
+          console.error('فشل تسجيل الدخول', err);
+          errorBox.textContent = 'حدث خطأ غير متوقع — أعد المحاولة';
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'دخول';
+        }
+      });
+    })().catch((err) => console.error('تعذر تجهيز صفحة الدخول', err));
+  </script>
+</body>
+</html>

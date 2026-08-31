@@ -2,8 +2,9 @@
 import { html, raw, escapeHtml } from '../../core/sanitizer.js';
 import { sectionHeader } from '../../ui/components.js';
 import { ROLES } from '../../core/constants.js';
-import { getRole, setRole, getTheme, setTheme, getUserName, setUserName } from '../../core/state.js';
+import { getRole, getTheme, setTheme, getSession } from '../../core/state.js';
 import { can, grantsFor } from '../../core/permissions.js';
+import { logout } from '../../services/auth-service.js';
 import { downloadBackup, restoreBackup, validateBackup } from '../../services/backup-service.js';
 import { readJsonFile } from '../../services/import-service.js';
 import { getAuditLogs, pruneAuditLogs } from '../../services/audit-service.js';
@@ -20,18 +21,21 @@ export async function renderSettings(container) {
     ${raw(sectionHeader('الإعدادات', 'الدور التجريبي، المظهر، النسخ الاحتياطي، وسجل التدقيق'))}
     <div class="mi-settings-grid">
       <section class="mi-card">
-        <h3>الجلسة التجريبية</h3>
-        <div class="mi-form-field">
-          <label for="mi-set-name">اسم المستخدم</label>
-          <input id="mi-set-name" class="mi-input" value="${getUserName()}">
-        </div>
-        <div class="mi-form-field">
-          <label for="mi-set-role">الدور الحالي</label>
-          <select id="mi-set-role" class="mi-input">
-            ${raw(Object.values(ROLES).map((r) => `<option value="${r.id}" ${r.id === role ? 'selected' : ''}>${r.label}</option>`).join(''))}
-          </select>
-          <small class="mi-muted">تغيير الدور يعيد ضبط الصلاحيات الظاهرة في كامل المنصة — منصة عرض بلا مصادقة فعلية</small>
-        </div>
+        <h3>الحساب</h3>
+        ${raw((() => {
+    const session = getSession();
+    if (!session) return '<p class="mi-muted">لا جلسة نشطة</p>';
+    const overrides = (session.grants?.length || 0) + (session.denies?.length || 0);
+    return `
+          <dl class="mi-dl">
+            <div class="mi-dl__row"><dt>الاسم</dt><dd>${escapeHtml(session.name)}</dd></div>
+            <div class="mi-dl__row"><dt>اسم المستخدم</dt><dd dir="ltr">${escapeHtml(session.username)}</dd></div>
+            <div class="mi-dl__row"><dt>الدور</dt><dd>${escapeHtml(ROLES[session.role]?.label || session.role)}</dd></div>
+            ${overrides ? `<div class="mi-dl__row"><dt>تجاوزات خاصة</dt><dd>${overrides} صلاحية معدلة عن الدور</dd></div>` : ''}
+          </dl>
+          <p class="mi-muted">الأدوار والصلاحيات تُدار من شاشة «المستخدمون» بواسطة مدير النظام.</p>
+          <button class="mi-btn mi-btn--danger" data-act="logout">تسجيل الخروج</button>`;
+  })())}
         <h4 class="mi-subhead">صلاحيات الدور</h4>
         <div class="mi-grants">${raw(grantsFor(role).map((g) => `<span class="mi-tag">${escapeHtml(g)}</span>`).join(' '))}</div>
       </section>
@@ -68,14 +72,9 @@ export async function renderSettings(container) {
       </section>
     </div>`;
 
-  container.querySelector('#mi-set-name').addEventListener('change', (e) => {
-    setUserName(e.target.value.trim() || 'مستخدم تجريبي');
-    toastSuccess('حُدّث اسم المستخدم');
-  });
-  container.querySelector('#mi-set-role').addEventListener('change', (e) => {
-    setRole(e.target.value);
-    toastSuccess(`تغيّر الدور إلى: ${ROLES[e.target.value].label}`);
-    renderSettings(container);
+  container.querySelector('[data-act="logout"]')?.addEventListener('click', () => {
+    logout();
+    location.replace('./login.html');
   });
   container.querySelector('#mi-set-theme').addEventListener('change', (e) => {
     setTheme(e.target.value);

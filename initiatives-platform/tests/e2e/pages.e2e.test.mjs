@@ -31,6 +31,7 @@ const PAGES = [
   { path: '/', marker: 'بنيةٌ تحتية يبنيها' },
   { path: '/index.html', marker: 'قدّم مبادرتك' },
   { path: '/app.html', marker: 'mi-app' },
+  { path: '/login.html', marker: 'تسجيل الدخول' },
   { path: '/submit.html', marker: 'قدّم مبادرتك' },
   { path: '/opportunity.html', marker: 'منصة المبادرات' },
   { path: '/initiative-details.html', marker: 'تتبع حالة مبادرة' },

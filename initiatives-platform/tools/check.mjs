@@ -11,7 +11,7 @@ const fail = (msg) => { errors.push(msg); console.error(`FAIL ${msg}`); };
 
 // 1) الملفات الأساسية موجودة
 const REQUIRED = [
-  'index.html', 'app.html', 'submit.html', 'opportunity.html',
+  'index.html', 'app.html', 'login.html', 'submit.html', 'opportunity.html',
   'initiative-details.html', 'partner-portal.html', 'dashboard.html',
   'print.html', 'offline.html', '404.html',
   'manifest.webmanifest', 'service-worker.js', 'package.json',

@@ -52,3 +52,14 @@ export function rememberRoute(path) {
   writeLs('lastRoute', path);
 }
 export function getLastRoute() { return state.lastRoute; }
+
+// جلسة تسجيل الدخول — { userId, name, username, role, grants, denies, at }
+export function getSession() {
+  return readLs('session', null);
+}
+export function setSession(session) {
+  writeLs('session', session);
+}
+export function clearSession() {
+  try { localStorage.removeItem(key('session')); } catch { /* محظور */ }
+}

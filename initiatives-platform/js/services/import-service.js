@@ -5,6 +5,7 @@ import { DEMO_NEEDS } from '../../data/demo-needs.js';
 import { DEMO_PARTNERS } from '../../data/demo-partners.js';
 import { ORG_UNITS, DEMO_USERS, DEMO_CAMPAIGNS } from '../../data/reference-data.js';
 import { nowIso } from '../core/date-time.js';
+import { hashPassword, DEFAULT_PASSWORD } from './auth-service.js';
 
 const SEED_FLAG_ID = 'seed-status';
 
@@ -15,8 +16,9 @@ export async function seedDemoDataIfEmpty() {
   if (count > 0) return false;
 
   const stamp = (r) => ({ createdAt: nowIso(), updatedAt: nowIso(), ...r });
+  const defaultHash = await hashPassword(DEFAULT_PASSWORD);
   await dataProvider.bulkPut('organizationalUnits', ORG_UNITS.map(stamp));
-  await dataProvider.bulkPut('users', DEMO_USERS.map(stamp));
+  await dataProvider.bulkPut('users', DEMO_USERS.map((u) => stamp({ ...u, passwordHash: defaultHash })));
   await dataProvider.bulkPut('campaigns', DEMO_CAMPAIGNS.map(stamp));
   await dataProvider.bulkPut('partners', DEMO_PARTNERS.map(stamp));
   await dataProvider.bulkPut('infrastructureNeeds', DEMO_NEEDS.map(stamp));

@@ -4,7 +4,9 @@ import { initDataProvider } from './data/data-provider.js';
 import { seedDemoDataIfEmpty } from './services/import-service.js';
 import { initNotifications, getNotifications, unreadCount, markAllRead } from './services/notification-service.js';
 import { route, startRouter, onNotFound, navigate } from './router.js';
-import { getRole, getRoleLabel, getTheme, setTheme, getLastRoute } from './core/state.js';
+import { getRole, getRoleLabel, getTheme, setTheme, getLastRoute, getSession, setRole, setUserName } from './core/state.js';
+import { can, setOverridesProvider } from './core/permissions.js';
+import { logout } from './services/auth-service.js';
 import { on, EVENTS } from './core/events.js';
 import { initAccessibility } from './ui/accessibility.js';
 import { html, raw, escapeHtml } from './core/sanitizer.js';
@@ -23,26 +25,30 @@ import { renderQuality } from './modules/quality/quality-view.js';
 import { renderMap } from './modules/map/map-view.js';
 import { renderReports } from './modules/reports/reports-view.js';
 import { renderSettings } from './modules/settings/settings-view.js';
+import { renderUsers } from './modules/users/users-view.js';
 
+// perm: الصلاحية اللازمة لظهور الرابط — بدونها يظهر للجميع
 const NAV = [
   { path: 'dashboard', label: 'لوحة المتابعة', icon: '◫' },
-  { path: 'initiatives', label: 'المبادرات', icon: '▤' },
-  { path: 'needs', label: 'الاحتياجات', icon: '◇' },
-  { path: 'partners', label: 'الشركاء', icon: '◔' },
-  { path: 'reviews', label: 'المراجعات', icon: '✎' },
-  { path: 'decisions', label: 'القرارات', icon: '⚖' },
-  { path: 'execution', label: 'التنفيذ', icon: '▸' },
-  { path: 'benefits', label: 'المنافع', icon: '✦' },
-  { path: 'risks', label: 'المخاطر', icon: '△' },
-  { path: 'quality', label: 'الجودة', icon: '✓' },
+  { path: 'initiatives', label: 'المبادرات', icon: '▤', perm: 'initiatives.view' },
+  { path: 'needs', label: 'الاحتياجات', icon: '◇', perm: 'needs.view' },
+  { path: 'partners', label: 'الشركاء', icon: '◔', perm: 'partners.view' },
+  { path: 'reviews', label: 'المراجعات', icon: '✎', perm: 'reviews.view' },
+  { path: 'decisions', label: 'القرارات', icon: '⚖', perm: 'decisions.view' },
+  { path: 'execution', label: 'التنفيذ', icon: '▸', perm: 'execution.view' },
+  { path: 'benefits', label: 'المنافع', icon: '✦', perm: 'benefits.view' },
+  { path: 'risks', label: 'المخاطر', icon: '△', perm: 'risks.view' },
+  { path: 'quality', label: 'الجودة', icon: '✓', perm: 'quality.view' },
   { path: 'map', label: 'الخريطة', icon: '◎' },
-  { path: 'reports', label: 'التقارير', icon: '≡' },
+  { path: 'reports', label: 'التقارير', icon: '≡', perm: 'reports.view' },
+  { path: 'users', label: 'المستخدمون', icon: '◉', perm: 'users.view' },
   { path: 'settings', label: 'الإعدادات', icon: '⚙' }
 ];
 
-function drawShell() {
+function drawShell(session) {
   document.documentElement.setAttribute('data-mi-theme', getTheme());
   const root = document.getElementById('mi-app');
+  const visibleNav = NAV.filter((n) => !n.perm || can(getRole(), n.perm));
   root.innerHTML = html`
     <a class="mi-skip-link" href="#mi-main">تخطٍّ إلى المحتوى</a>
     <div class="mi-shell">
@@ -52,9 +58,10 @@ function drawShell() {
           <span class="mi-brand-text"><b>منصة المبادرات</b><small>أمانة منطقة المدينة المنورة</small></span>
         </a>
         <nav class="mi-nav">
-          ${raw(NAV.map((n) => `<a class="mi-nav__link" data-path="${n.path}" href="#/${n.path}"><span class="mi-nav__icon" aria-hidden="true">${n.icon}</span>${escapeHtml(n.label)}</a>`).join(''))}
+          ${raw(visibleNav.map((n) => `<a class="mi-nav__link" data-path="${n.path}" href="#/${n.path}"><span class="mi-nav__icon" aria-hidden="true">${n.icon}</span>${escapeHtml(n.label)}</a>`).join(''))}
         </nav>
         <footer class="mi-sidebar__foot">
+          <span class="mi-user-chip" title="المستخدم الحالي">${session.name}</span>
           <span class="mi-role-chip" title="الدور الحالي">${getRoleLabel()}</span>
         </footer>
       </aside>
@@ -65,6 +72,7 @@ function drawShell() {
           <div class="mi-topbar__tools">
             <button class="mi-btn mi-btn--ghost" data-act="theme" aria-label="تبديل السمة">◐</button>
             <button class="mi-btn mi-btn--ghost mi-notif-btn" data-act="notifications" aria-label="الإشعارات">🔔<span class="mi-notif-count" hidden></span></button>
+            <button class="mi-btn mi-btn--ghost" data-act="logout" title="تسجيل الخروج">خروج ⎋</button>
           </div>
         </header>
         <main id="mi-main" class="mi-main" role="main" tabindex="-1"></main>
@@ -80,6 +88,10 @@ function drawShell() {
     setTheme(getTheme() === 'light' ? 'dark' : 'light');
   });
   root.querySelector('[data-act="notifications"]').addEventListener('click', toggleNotifPanel);
+  root.querySelector('[data-act="logout"]').addEventListener('click', () => {
+    logout();
+    location.replace('./login.html');
+  });
 }
 
 function markActiveNav(path) {
@@ -120,9 +132,21 @@ function main(container) { return document.querySelector('.mi-main') || containe
 async function boot() {
   await initDataProvider(APP_CONFIG);
   await seedDemoDataIfEmpty();
+
+  // حارس الدخول: لا وصول لتطبيق الإدارة بلا جلسة
+  const session = getSession();
+  if (!session) {
+    location.replace('./login.html');
+    return;
+  }
+  setRole(session.role);
+  setUserName(session.name);
+  // تجاوزات صلاحيات الحساب (سماح/منع) تُطبق فوق مصفوفة الدور
+  setOverridesProvider(() => getSession());
+
   initAccessibility();
   initNotifications();
-  drawShell();
+  drawShell(session);
   refreshNotifBadge();
 
   const m = () => main();
@@ -139,6 +163,7 @@ async function boot() {
   route('quality', () => renderQuality(m()), 'فحوص الجودة');
   route('map', () => renderMap(m()), 'الخريطة');
   route('reports', () => renderReports(m()), 'التقارير');
+  route('users', () => renderUsers(m()), 'المستخدمون والصلاحيات');
   route('settings', () => renderSettings(m()), 'الإعدادات');
   onNotFound((path) => {
     m().innerHTML = emptyState('الصفحة غير موجودة', `لا مسار باسم «${path}» داخل التطبيق`,

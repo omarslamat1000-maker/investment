@@ -1,13 +1,14 @@
 // Service Worker لمنصة المبادرات — نطاقه ./ داخل مجلد المنصة فقط
 // أسماء التخزين ببادئة مستقلة كي لا تتعارض مع أي تطبيق آخر في المستودع
 const CACHE_PREFIX = 'madinah-initiatives-platform-';
-const STATIC_CACHE = CACHE_PREFIX + 'static-v1';
-const RUNTIME_CACHE = CACHE_PREFIX + 'runtime-v1';
+const STATIC_CACHE = CACHE_PREFIX + 'static-v2';
+const RUNTIME_CACHE = CACHE_PREFIX + 'runtime-v2';
 
 const PRECACHE = [
   './',
   './index.html',
   './app.html',
+  './login.html',
   './submit.html',
   './opportunity.html',
   './initiative-details.html',
