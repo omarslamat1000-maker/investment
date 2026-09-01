@@ -1,21 +1,28 @@
 // سجل الاحتياجات — فرص البنية التحتية المطروحة للشراكة وإدارتها
 import { repos } from '../../data/repositories.js';
-import { html, raw } from '../../core/sanitizer.js';
+import { html, raw, escapeHtml } from '../../core/sanitizer.js';
 import { sectionHeader } from '../../ui/components.js';
 import { renderTable } from '../../ui/table.js';
 import { needStatusLabel, PRIORITY_LABELS, newNeed, validateNeed, sanitizeNeed } from '../../domain/infrastructure-need-model.js';
 import { categoryLabel } from '../../domain/initiative-model.js';
+import { modelLabel } from '../../domain/partner-model.js';
 import { CATEGORIES, DISTRICTS } from '../../core/constants.js';
-import { fmtMoney } from '../../core/utils.js';
-import { getRole } from '../../core/state.js';
+import { fmtMoney, fmtNumber } from '../../core/utils.js';
+import { fmtDate } from '../../core/date-time.js';
+import { getRole, getSession } from '../../core/state.js';
 import { can } from '../../core/permissions.js';
 import { openModal } from '../../ui/modal.js';
 import { toastSuccess, toastError } from '../../ui/toast.js';
 import { openLocationPicker } from '../../ui/location-picker.js';
 import { measureLabel } from '../../core/geo.js';
+import { APPLICATION_STATUS, adoptNeed } from '../../services/application-service.js';
 
 export async function renderNeeds(container) {
-  const needs = await repos.needs.getAll();
+  const [needs, allApplications] = await Promise.all([
+    repos.needs.getAll(),
+    // جدول الطلبات غير مهيأ بعد في وضع السحابة — تجاهل بأمان
+    repos.needApplications.getAll().catch(() => [])
+  ]);
   const role = getRole();
 
   container.innerHTML = html`
@@ -31,6 +38,7 @@ export async function renderNeeds(container) {
     { key: 'district', label: 'الحي' },
     { key: 'priority', label: 'الأولوية', map: (r) => PRIORITY_LABELS[r.priority] || r.priority },
     { key: 'estimatedCost', label: 'التكلفة التقديرية', map: (r) => fmtMoney(r.estimatedCost), sortValue: (r) => Number(r.estimatedCost) || 0 },
+    { key: 'applicants', label: 'المتقدمون', map: (r) => fmtNumber(allApplications.filter((a) => a.needId === r.id).length), sortValue: (r) => allApplications.filter((a) => a.needId === r.id).length },
     { key: 'status', label: 'الحالة', map: (r) => needStatusLabel(r.status) }
   ], {
     searchable: true, initialSort: 'id',
@@ -43,6 +51,38 @@ export async function renderNeeds(container) {
   function openNeedModal(existing) {
     const need = existing || newNeed();
     const editable = can(role, existing ? 'needs.edit' : 'needs.create');
+    const applications = existing ? allApplications.filter((a) => a.needId === existing.id) : [];
+    const canDecide = can(role, 'decisions.create');
+    const decidable = canDecide && existing?.status === 'published' && applications.length > 0;
+
+    // لوحة المفاضلة: مقارنة المتقدمين واعتماد واحد أو شراكة مشتركة
+    const comparisonHtml = !existing ? '' : html`
+      <div class="mi-card" style="margin-top:1rem" id="mi-need-apps">
+        <h3>المتقدمون على الفرصة ${applications.length ? raw(`<small class="mi-muted">(${escapeHtml(fmtNumber(applications.length))})</small>`) : ''}</h3>
+        ${applications.length ? raw(applications.map((a) => {
+          const st = APPLICATION_STATUS[a.status] || APPLICATION_STATUS.applied;
+          const badge = a.status === 'accepted' ? 'achieved' : a.status === 'rejected' ? 'atRisk' : 'onTrack';
+          return html`
+            <label class="mi-ms" data-done="${a.status === 'accepted' ? 'yes' : 'no'}" style="align-items:flex-start">
+              ${decidable && a.status === 'applied'
+              ? raw(`<input type="checkbox" data-app-select value="${escapeHtml(a.id)}" style="margin-top:0.3rem">`)
+              : raw('<span class="mi-ms__dot" aria-hidden="true" style="margin-top:0.45rem"></span>')}
+              <span>
+                <b>${a.partnerName}</b> — ${modelLabel(a.model)}
+                <span class="mi-tag" data-benefit="${badge}">${st.label}</span><br>
+                <small class="mi-muted">${a.proposal}</small>
+              </span>
+              <small>${fmtDate(a.at)}</small>
+            </label>`;
+        }).join('')) : raw('<p class="mi-muted">لا طلبات تقديم على هذه الفرصة بعد — تصل الطلبات من بوابة الشركاء.</p>')}
+        ${decidable ? raw(`
+          <p class="mi-muted" style="margin-top:0.75rem">حدد جهة واحدة لاعتمادها منفردة، أو أكثر من جهة لاعتماد شراكة مشتركة — تُنشأ مبادرة واحدة يرتبط بها كل المعتمدين وتُرفض بقية الطلبات.</p>
+          <button type="button" class="mi-btn mi-btn--gold" data-act="adopt" disabled>اعتماد المحدد وإنشاء المبادرة</button>`) : ''}
+        ${existing.status === 'matched' && existing.matchedInitiativeId
+        ? raw(`<p class="mi-muted" style="margin-top:0.75rem">اكتملت المفاضلة — المبادرة الناتجة: <a href="#/initiatives/${escapeHtml(existing.matchedInitiativeId)}" data-close-modal>${escapeHtml(existing.matchedInitiativeId)}</a></p>`)
+        : ''}
+      </div>`;
+
     const { dialog, close } = openModal({
       title: existing ? `احتياج ${existing.id}` : 'طرح احتياج جديد',
       wide: true,
@@ -72,7 +112,8 @@ export async function renderNeeds(container) {
               ${editable ? raw('<button type="button" class="mi-btn mi-btn--primary mi-btn--sm" data-act="pick-geo">تحديد / تعديل الموقع</button>') : ''}
             </div>
           </div>
-        </form>`,
+        </form>
+        ${raw(comparisonHtml)}`,
       footerHtml: html`
         <button class="mi-btn mi-btn--ghost" data-act="cancel">إغلاق</button>
         ${editable ? raw('<button class="mi-btn mi-btn--primary" data-act="save">حفظ</button>') : ''}
@@ -91,6 +132,39 @@ export async function renderNeeds(container) {
         }
       });
     });
+
+    // المفاضلة: تفعيل زر الاعتماد وتحديث نصه حسب عدد المحدد (واحد أو شراكة مشتركة)
+    const adoptBtn = dialog.querySelector('[data-act="adopt"]');
+    if (adoptBtn) {
+      const boxes = [...dialog.querySelectorAll('[data-app-select]')];
+      const refresh = () => {
+        const n = boxes.filter((b) => b.checked).length;
+        adoptBtn.disabled = n === 0;
+        adoptBtn.textContent = n > 1
+          ? `اعتماد شراكة مشتركة (${fmtNumber(n)} جهات) وإنشاء المبادرة`
+          : 'اعتماد المحدد وإنشاء المبادرة';
+      };
+      boxes.forEach((b) => b.addEventListener('change', refresh));
+      adoptBtn.addEventListener('click', async () => {
+        const selectedIds = boxes.filter((b) => b.checked).map((b) => b.value);
+        if (!selectedIds.length) return;
+        adoptBtn.disabled = true;
+        try {
+          const initiative = await adoptNeed({
+            need: existing, applications, selectedIds,
+            byName: getSession()?.name || 'لجنة الفرز'
+          });
+          close();
+          toastSuccess(selectedIds.length > 1
+            ? `اعتُمدت شراكة مشتركة وأُنشئت المبادرة ${initiative.id}`
+            : `اعتُمد المتقدم وأُنشئت المبادرة ${initiative.id}`);
+          renderNeeds(container);
+        } catch (err) {
+          adoptBtn.disabled = false;
+          toastError(err.message || 'تعذر اعتماد المفاضلة');
+        }
+      });
+    }
 
     dialog.querySelector('[data-act="cancel"]').addEventListener('click', close);
     dialog.querySelector('[data-act="save"]')?.addEventListener('click', async () => {

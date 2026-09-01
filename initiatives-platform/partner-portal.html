@@ -60,6 +60,11 @@
     import { realizationPercent, benefitStatus } from './js/domain/benefits.js';
     import { fmtMoney, fmtNumber, sum, percent, sortBy } from './js/core/utils.js';
     import { fmtDate } from './js/core/date-time.js';
+    import { PRIORITY_LABELS } from './js/domain/infrastructure-need-model.js';
+    import { PARTNERSHIP_MODELS } from './js/core/constants.js';
+    import { applyToNeed, APPLICATION_STATUS } from './js/services/application-service.js';
+    import { openModal } from './js/ui/modal.js';
+    import { toastSuccess, toastError } from './js/ui/toast.js';
 
     const REVIEW_ROLES = ['admin', 'pmo', 'supervisor', 'reviewer', 'viewer'];
 
@@ -91,9 +96,12 @@
         location.replace('./login.html');
       });
 
-      const [partners, links, initiatives, benefits, milestones] = await Promise.all([
+      const [partners, links, initiatives, benefits, milestones, needs, allApplications] = await Promise.all([
         repos.partners.getAll(), repos.initiativePartners.getAll(),
-        repos.initiatives.getAll(), repos.benefits.getAll(), repos.milestones.getAll()
+        repos.initiatives.getAll(), repos.benefits.getAll(), repos.milestones.getAll(),
+        repos.needs.getAll(),
+        // جدول الطلبات غير مهيأ بعد في وضع السحابة — تجاهل بأمان
+        repos.needApplications.getAll().catch(() => [])
       ]);
 
       const isPartnerAccount = session.role === 'partner' && session.partnerId;
@@ -125,6 +133,99 @@
 
       function roleTextOf(link) {
         return link.model ? modelLabel(link.model) : 'جهة مقدمة للمبادرة';
+      }
+
+      // قسم الفرص: المطروحة للتقديم + طلبات الجهة وحالتها — لحسابات الشركاء فقط
+      function opportunitiesSection(partnerId) {
+        const myApps = sortBy(allApplications.filter((a) => a.partnerId === partnerId), (a) => a.at, 'desc');
+        const appliedNeedIds = new Set(myApps.map((a) => a.needId));
+        const openNeeds = needs.filter((n) => n.status === 'published');
+
+        const needCards = openNeeds.length ? openNeeds.map((n) => {
+          const applied = appliedNeedIds.has(n.id);
+          return html`
+            <article class="mi-opportunity-card">
+              <div class="mi-opportunity-card__arch" aria-hidden="true"></div>
+              <span class="mi-tag mi-tag--priority" data-priority="${n.priority}">${PRIORITY_LABELS[n.priority] || n.priority}</span>
+              <h3>${n.title}</h3>
+              <p class="mi-opportunity-card__meta">${categoryLabel(n.category)} • حي ${n.district}</p>
+              <p class="mi-opportunity-card__desc">${n.description.length > 140 ? n.description.slice(0, 137) + '…' : n.description}</p>
+              <div class="mi-opportunity-card__facts">
+                <span>التكلفة التقديرية: <b>${fmtMoney(n.estimatedCost)}</b></span>
+                <span>المستفيدون: <b>${fmtNumber(n.beneficiaries || 0)}</b></span>
+              </div>
+              <div class="mi-opportunity-card__models">${raw((n.preferredModels || []).map((m) => `<span class="mi-tag">${escapeHtml(modelLabel(m))}</span>`).join(' '))}</div>
+              ${applied
+              ? raw('<p class="mi-muted"><span class="mi-tag" data-benefit="onTrack">سبق التقديم — بانتظار المفاضلة</span></p>')
+              : raw(`<button class="mi-btn mi-btn--primary" data-apply-need="${escapeHtml(n.id)}">التقديم على الفرصة</button>`)}
+              <a class="mi-btn mi-btn--ghost mi-btn--sm" href="./opportunity.html?id=${encodeURIComponent(n.id)}">تفاصيل الفرصة</a>
+            </article>`;
+        }).join('') : '<p class="mi-muted">لا فرص مطروحة حاليًا — تُعرض هنا فور طرحها.</p>';
+
+        const appsRows = myApps.length ? myApps.map((a) => {
+          const need = needs.find((n) => n.id === a.needId);
+          const st = APPLICATION_STATUS[a.status] || APPLICATION_STATUS.applied;
+          const badge = a.status === 'accepted' ? 'achieved' : a.status === 'rejected' ? 'atRisk' : 'onTrack';
+          return html`
+            <div class="mi-ms" data-done="${a.status === 'accepted' ? 'yes' : 'no'}">
+              <span class="mi-ms__dot" aria-hidden="true"></span>
+              <span>«${need?.title || a.needId}» — ${modelLabel(a.model)}
+                ${a.status === 'accepted' ? raw(' <small class="mi-muted">(اعتُمد وأُنشئت مبادرة الشراكة — تظهر ضمن مبادراتكم أعلاه)</small>') : ''}</span>
+              <span class="mi-tag" data-benefit="${badge}">${st.label}</span>
+              <small>${fmtDate(a.at)}</small>
+            </div>`;
+        }).join('') : '<p class="mi-muted">لم تقدموا على فرص بعد.</p>';
+
+        return html`
+          <h2 class="mi-subhead" style="margin-top:1.5rem">فرص متاحة للتقديم</h2>
+          <p class="mi-muted">اختاروا فرصة واكتبوا مقترح مساهمتكم — تُدرس الطلبات في مرحلة الفرز ويجوز اعتماد أكثر من جهة بشراكة مشتركة.</p>
+          <div class="mi-opportunities-grid">${raw(needCards)}</div>
+          <div class="mi-card" style="margin-top:1.5rem">
+            <h3>طلبات تقديمكم</h3>
+            ${raw(appsRows)}
+          </div>`;
+      }
+
+      // نافذة التقديم على فرصة: نموذج الشراكة + مقترح المساهمة
+      function openApplyModal(need, partnerId) {
+        if (!need) return;
+        const { dialog, close } = openModal({
+          title: `التقديم على «${need.title}»`,
+          bodyHtml: html`
+            <form class="mi-form" id="mi-apply-form">
+              <p class="mi-muted">${categoryLabel(need.category)} • حي ${need.district} • التكلفة التقديرية ${fmtMoney(need.estimatedCost)}</p>
+              <div class="mi-form-field">
+                <label for="mi-apply-model">نموذج الشراكة المقترح</label>
+                <select class="mi-input" id="mi-apply-model" name="model">
+                  ${raw(PARTNERSHIP_MODELS.map((m) => `<option value="${m.id}" ${(need.preferredModels || [])[0] === m.id ? 'selected' : ''}>${m.label}</option>`).join(''))}
+                </select>
+              </div>
+              <div class="mi-form-field">
+                <label for="mi-apply-proposal">مقترح مساهمتكم (20 حرفًا على الأقل)</label>
+                <textarea class="mi-input" id="mi-apply-proposal" name="proposal" rows="4" required
+                  placeholder="ماذا ستقدم جهتكم؟ نطاق الأعمال، التمويل أو التنفيذ، المدة المتوقعة…"></textarea>
+              </div>
+            </form>`,
+          footerHtml: html`
+            <button class="mi-btn mi-btn--ghost" data-act="cancel">إلغاء</button>
+            <button class="mi-btn mi-btn--primary" data-act="send">إرسال الطلب</button>`
+        });
+        dialog.querySelector('[data-act="cancel"]').addEventListener('click', close);
+        dialog.querySelector('[data-act="send"]').addEventListener('click', async () => {
+          try {
+            await applyToNeed({
+              need,
+              session,
+              model: dialog.querySelector('#mi-apply-model').value,
+              proposal: dialog.querySelector('#mi-apply-proposal').value
+            });
+            toastSuccess('أُرسل طلبكم — يُبَت فيه في مرحلة الفرز');
+            close();
+            location.reload();
+          } catch (err) {
+            toastError(err.message || 'تعذر إرسال الطلب');
+          }
+        });
       }
 
       function initiativeCard(link, ini) {
@@ -231,8 +332,15 @@
           ${submittedByMe.length ? raw('<h2 class="mi-subhead" style="margin-top:1.5rem">مبادرات قدمتموها عبر المنصة</h2>' +
         submittedByMe.map((ini) => initiativeCard({ model: null, contribution: '' }, ini)).join('')) : ''}
           ${!allMine.length
-          ? raw('<div class="mi-card mi-empty" style="margin-top:1rem"><h3>لا مبادرات مرتبطة بجهتكم بعد</h3><p class="mi-muted">تصفحوا الفرص المطروحة في البوابة العامة وقدموا مبادرة لتبنّي إحداها — المبادرات المقدمة ببريدكم تظهر هنا تلقائيًا.</p><a class="mi-btn mi-btn--gold" href="./index.html#mi-opportunities">الفرص المطروحة</a></div>')
-          : ''}`;
+          ? raw('<div class="mi-card mi-empty" style="margin-top:1rem"><h3>لا مبادرات مرتبطة بجهتكم بعد</h3><p class="mi-muted">قدموا على إحدى الفرص المطروحة أدناه — وعند اعتماد المفاضلة تظهر المبادرة هنا.</p></div>')
+          : ''}
+
+          ${isPartnerAccount ? raw(opportunitiesSection(partnerId)) : ''}`;
+
+        // ربط أزرار التقديم على الفرص
+        content.querySelectorAll('[data-apply-need]').forEach((btn) =>
+          btn.addEventListener('click', () => openApplyModal(
+            needs.find((n) => n.id === btn.dataset.applyNeed), partnerId)));
 
         // حفظ بيانات الجهة (حساب الشريك — بياناته هو فقط)
         content.querySelector('#mi-partner-selfedit')?.addEventListener('submit', async (e) => {

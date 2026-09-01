@@ -47,6 +47,16 @@ export const MIGRATIONS = [
         db.createObjectStore('gallery', { keyPath: 'id' });
       }
     }
+  },
+  {
+    version: 4,
+    describe: 'طلبات تقديم الشركاء على الفرص المطروحة needApplications',
+    run(db) {
+      if (!db.objectStoreNames.contains('needApplications')) {
+        const store = db.createObjectStore('needApplications', { keyPath: 'id' });
+        store.createIndex('needId', 'needId', { unique: false });
+      }
+    }
   }
 ];
 
