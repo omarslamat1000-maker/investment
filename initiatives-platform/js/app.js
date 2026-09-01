@@ -27,6 +27,7 @@ import { renderReports } from './modules/reports/reports-view.js';
 import { renderSettings } from './modules/settings/settings-view.js';
 import { renderUsers } from './modules/users/users-view.js';
 import { renderPortfolios } from './modules/portfolios/portfolios-view.js';
+import { renderGalleryAdmin } from './modules/gallery/gallery-admin-view.js';
 
 // perm: الصلاحية اللازمة لظهور الرابط — بدونها يظهر للجميع
 const NAV = [
@@ -43,6 +44,7 @@ const NAV = [
   { path: 'quality', label: 'الجودة', icon: '✓', perm: 'quality.view' },
   { path: 'map', label: 'الخريطة', icon: '◎' },
   { path: 'reports', label: 'التقارير', icon: '≡', perm: 'reports.view' },
+  { path: 'gallery', label: 'معرض الصور', icon: '▣', perm: 'gallery.manage' },
   { path: 'users', label: 'المستخدمون', icon: '◉', perm: 'users.view' },
   { path: 'settings', label: 'الإعدادات', icon: '⚙' }
 ];
@@ -178,6 +180,7 @@ async function boot() {
   route('quality', () => renderQuality(m()), 'فحوص الجودة');
   route('map', () => renderMap(m()), 'الخريطة');
   route('reports', () => renderReports(m()), 'التقارير');
+  route('gallery', () => renderGalleryAdmin(m()), 'إدارة معرض الصور');
   route('users', () => renderUsers(m()), 'المستخدمون والصلاحيات');
   route('settings', () => renderSettings(m()), 'الإعدادات');
   onNotFound((path) => {
