@@ -1,6 +1,6 @@
 // الثوابت المرجعية لمنصة المبادرات — مصدر الحقيقة الوحيد للمعرّفات والتسميات
 export const DB_NAME = 'madinah-initiatives-platform-db';
-export const DB_VERSION = 2; // v2: مخزن المحافظ portfolios
+export const DB_VERSION = 3; // v3: مخزن معرض صور المبادرات gallery
 
 export const STORAGE_PREFIX = 'madinahInitiativesPlatform:';
 export const CHANNELS = {
@@ -15,7 +15,7 @@ export const OBJECT_STORES = [
   'campaigns', 'reviews', 'decisions', 'gateChecklists', 'kpis', 'benefits',
   'risks', 'milestones', 'deliverables', 'qualityChecks', 'changeRequests',
   'comments', 'attachments', 'users', 'organizationalUnits', 'notifications',
-  'auditLogs', 'settings', 'savedViews', 'portfolios'
+  'auditLogs', 'settings', 'savedViews', 'portfolios', 'gallery'
 ];
 
 // حالات المبادرة عبر دورة الحياة

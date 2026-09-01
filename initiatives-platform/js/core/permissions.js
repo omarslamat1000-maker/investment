@@ -129,7 +129,8 @@ export const ACTION_CATALOG = [
     { id: 'backup.run', label: 'النسخ الاحتياطي والاستعادة' },
     { id: 'users.view', label: 'عرض المستخدمين' },
     { id: 'users.manage', label: 'إدارة المستخدمين والصلاحيات' },
-    { id: 'comments.internal', label: 'الملاحظات الداخلية (إشراف)' }
+    { id: 'comments.internal', label: 'الملاحظات الداخلية (إشراف)' },
+    { id: 'gallery.manage', label: 'إدارة معرض صور المبادرات' }
   ] }
 ];
 

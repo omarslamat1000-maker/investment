@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="./css/components.css">
   <link rel="stylesheet" href="./css/layout.css">
   <link rel="stylesheet" href="./css/navigation.css">
+  <link rel="stylesheet" href="./css/forms.css">
   <link rel="stylesheet" href="./css/dashboard.css">
   <link rel="stylesheet" href="./css/responsive.css">
   <link rel="stylesheet" href="./css/themes.css">
@@ -32,6 +33,7 @@
       <a href="#mi-opportunities">الفرص المطروحة</a>
       <a href="#mi-running">جارٍ تنفيذها</a>
       <a href="#mi-completed">أُنجزت</a>
+      <a href="#mi-gallery">معرض الصور</a>
       <a href="#mi-how">كيف تشارك؟</a>
       <a href="./partner-portal.html">بوابة الشركاء</a>
       <a class="mi-btn mi-btn--gold" href="./app.html">دخول المنصة</a>
@@ -72,6 +74,12 @@
       <h2>مبادرات أُنجزت وتحققت منافعها</h2>
       <p class="mi-section-lead">ما اكتمل تنفيذه واجتاز بوابة المنافع — بأرقام معلنة.</p>
       <div class="mi-progress-grid" id="mi-completed-grid"></div>
+    </section>
+
+    <section class="mi-portal-section mi-portal-section--tinted" id="mi-gallery" hidden>
+      <h2>معرض صور المبادرات</h2>
+      <p class="mi-section-lead">مشاهد من الميدان — ما يُنجز في أحياء المدينة المنورة بعدسة المنصة.</p>
+      <div id="mi-gallery-host"></div>
     </section>
 
     <section class="mi-portal-section" id="mi-campaigns-section">
@@ -123,6 +131,7 @@
     import { initDataProvider } from './js/data/data-provider.js';
     import { seedDemoDataIfEmpty } from './js/services/import-service.js';
     import { renderPortalStats, renderPublishedNeeds, renderCampaigns, renderRunningInitiatives, renderCompletedInitiatives } from './js/modules/public-portal/portal-view.js';
+    import { renderGallery } from './js/modules/public-portal/gallery-view.js';
 
     (async () => {
       await initDataProvider(APP_CONFIG);
@@ -132,6 +141,7 @@
         renderPublishedNeeds(document.getElementById('mi-needs-grid')),
         renderRunningInitiatives(document.getElementById('mi-running-grid')),
         renderCompletedInitiatives(document.getElementById('mi-completed-grid')),
+        renderGallery(document.getElementById('mi-gallery-host')),
         renderCampaigns(document.getElementById('mi-campaigns'))
       ]);
     })().catch((err) => console.error('تعذر تحميل بيانات البوابة', err));

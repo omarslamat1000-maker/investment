@@ -26,6 +26,51 @@ export const DEMO_USERS = [
   { id: 'u-prt-yanabea', username: 'yanabea', name: 'م. لينا مغربي', role: 'partner', partnerId: 'MDN-PRT-2026-0008', orgUnitId: null, email: 'lina@yanabea.example', active: true, grants: [], denies: [] }
 ];
 
+// صور معرض تجريبية — SVG مدمجة خفيفة تُستبدل بصور فعلية من شاشة الإدارة
+function galleryPlaceholder(bg, accent, label) {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 420">
+    <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="${bg}"/><stop offset="1" stop-color="#052A20"/></linearGradient></defs>
+    <rect width="640" height="420" fill="url(#g)"/>
+    <g fill="none" stroke="${accent}" stroke-width="6" opacity="0.9">
+      <path d="M240 300 V210 a80 80 0 0 1 160 0 V300"/>
+    </g>
+    <g fill="none" stroke="${accent}" stroke-width="3" opacity="0.35">
+      <path d="M80 340 V290 a40 40 0 0 1 80 0 V340"/>
+      <path d="M480 340 V290 a40 40 0 0 1 80 0 V340"/>
+    </g>
+    <text x="320" y="375" text-anchor="middle" fill="#F5EDD4" font-family="sans-serif" font-size="26" font-weight="bold">${label}</text>
+  </svg>`;
+  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg.replace(/\n\s*/g, ' '));
+}
+
+export const DEMO_GALLERY = [
+  {
+    id: 'gal-001', title: 'تشجير محور طريق قباء بالمشاركة المجتمعية',
+    status: 'execution', initiativeId: 'MDN-INIT-2026-0001', order: 1,
+    caption: 'زراعة القطاع الأول — 400 شجرة ظل محلية بسواعد 120 متطوعًا',
+    imageDataUrl: galleryPlaceholder('#0E5A44', '#C9A227', 'تشجير محور قباء')
+  },
+  {
+    id: 'gal-002', title: 'مظلات ساحة مسجد الميقات',
+    status: 'benefits', initiativeId: 'MDN-INIT-2026-0004', order: 2,
+    caption: '2800 م² من الظل لخدمة الحجاج والمعتمرين بتمويل شريك خاص',
+    imageDataUrl: galleryPlaceholder('#8A6D1F', '#F5EDD4', 'مظلات الميقات')
+  },
+  {
+    id: 'gal-003', title: 'حديقة حي الجرف المجتمعية',
+    status: 'closed', initiativeId: 'MDN-INIT-2026-0005', order: 3,
+    caption: 'اكتملت وتحققت منافعها 96% — تشغيل أهلي نموذجي',
+    imageDataUrl: galleryPlaceholder('#1E7A5F', '#E8D9A8', 'حديقة الجرف')
+  },
+  {
+    id: 'gal-004', title: 'تأهيل أرصفة شارع السلام وممرات المدارس',
+    status: 'execution', initiativeId: 'MDN-INIT-2026-0003', order: 4,
+    caption: 'رصف المقطع الأول 1.2 كم بمنحدرات وصول شامل',
+    imageDataUrl: galleryPlaceholder('#2C6E7A', '#C9A227', 'أرصفة شارع السلام')
+  }
+];
+
 export const DEMO_CAMPAIGNS = [
   {
     id: 'cmp-green-madinah',

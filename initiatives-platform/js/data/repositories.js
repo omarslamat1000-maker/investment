@@ -92,7 +92,8 @@ export const repos = {
   auditLogs: makeRepo('auditLogs'),
   settings: makeRepo('settings'),
   savedViews: makeRepo('savedViews'),
-  portfolios: makeRepo('portfolios', { auditLabel: 'محفظة' })
+  portfolios: makeRepo('portfolios', { auditLabel: 'محفظة' }),
+  gallery: makeRepo('gallery', { auditLabel: 'صورة معرض' })
 };
 
 // انتقال حالة مبادرة — في السحابة عبر دالة القاعدة (المسار الوحيد)، ومحليًا بالتحديث المباشر

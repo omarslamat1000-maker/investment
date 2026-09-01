@@ -38,6 +38,15 @@ export const MIGRATIONS = [
         db.createObjectStore('portfolios', { keyPath: 'id' });
       }
     }
+  },
+  {
+    version: 3,
+    describe: 'مخزن معرض صور المبادرات gallery للصفحة الرئيسية',
+    run(db) {
+      if (!db.objectStoreNames.contains('gallery')) {
+        db.createObjectStore('gallery', { keyPath: 'id' });
+      }
+    }
   }
 ];
 
