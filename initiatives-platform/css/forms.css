@@ -103,6 +103,16 @@ textarea.mi-input { resize: vertical; line-height: 1.6; }
 .mi-perm-select:has(option[value="deny"]:checked) { border-color: var(--mi-bad); background: #F3DDDD; }
 .mi-users-note { margin-bottom: var(--mi-sp-4); }
 
+/* طلبات حسابات الشركاء المعلقة */
+.mi-pending-card { margin-bottom: var(--mi-sp-4); border-top: 4px solid var(--mi-gold-500); }
+.mi-pending-row {
+  display: flex; align-items: center; gap: var(--mi-sp-3); flex-wrap: wrap;
+  padding: var(--mi-sp-3) 0; border-bottom: 1px dashed var(--mi-line);
+}
+.mi-pending-row:last-child { border-bottom: 0; }
+.mi-pending-row__info { flex: 1; min-width: 16rem; display: flex; flex-direction: column; gap: 2px; }
+.mi-pending-row__actions { display: flex; gap: var(--mi-sp-2); }
+
 @media (max-width: 640px) {
   .mi-perm-row { grid-template-columns: 1fr 6.5rem; }
   .mi-perm-row__role { display: none; }

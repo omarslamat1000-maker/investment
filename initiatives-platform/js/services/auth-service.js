@@ -144,6 +144,13 @@ export async function login(username, password) {
   if (isCloudMode()) return cloudLogin(username, password);
   const user = await findUserByUsername(username);
   if (!user) return { ok: false, error: 'اسم المستخدم أو كلمة المرور غير صحيحة' };
+  // دورة اعتماد حسابات الشركاء المسجلة ذاتيًا
+  if (user.approvalStatus === 'pending') {
+    return { ok: false, error: 'حسابكم قيد المراجعة — يُفعَّل بعد تدقيق البيانات واعتماد مدير النظام' };
+  }
+  if (user.approvalStatus === 'rejected') {
+    return { ok: false, error: 'نعتذر — لم يُعتمد طلب التسجيل. تواصلوا مع مكتب إدارة المبادرات' };
+  }
   if (user.active === false) return { ok: false, error: 'الحساب موقوف — تواصل مع مدير النظام' };
   const hash = await hashPassword(password);
   if (hash !== user.passwordHash) return { ok: false, error: 'اسم المستخدم أو كلمة المرور غير صحيحة' };

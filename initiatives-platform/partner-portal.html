@@ -74,14 +74,10 @@
       const session = getSession();
 
       // البوابة تتطلب تسجيل الدخول — حساب شريك أو حساب إشرافي
+      // مع إمكانية تسجيل حساب جديد للشركاء (يُفعَّل بعد اعتماد مدير النظام)
       if (!session) {
-        content.innerHTML = html`
-          <div class="mi-card mi-empty">
-            <div class="mi-empty__mark" aria-hidden="true">◈</div>
-            <h2>بوابة خاصة بحسابات الشركاء</h2>
-            <p class="mi-muted">لكل جهة شريكة حساب باسم ممثلها تتابع به مبادراتها وتقدمها — سجّل الدخول للمتابعة.</p>
-            <a class="mi-btn mi-btn--primary" href="./login.html">تسجيل الدخول</a>
-          </div>`;
+        const { renderPartnerRegistration } = await import('./js/modules/public-portal/partner-registration.js');
+        renderPartnerRegistration(content);
         return;
       }
 
@@ -127,6 +123,10 @@
           'مرحبًا بكم — هنا تتابعون مبادرات جهتكم وتقدمها ومنافعها المعلنة، اطلاعًا للقراءة فقط.';
       }
 
+      function roleTextOf(link) {
+        return link.model ? modelLabel(link.model) : 'جهة مقدمة للمبادرة';
+      }
+
       function initiativeCard(link, ini) {
         const ms = sortBy(milestones.filter((m) => m.initiativeId === ini.id), (m) => m.due);
         const done = ms.filter((m) => m.done).length;
@@ -140,7 +140,7 @@
               <div>
                 <h3>${ini.title}</h3>
                 <p class="mi-muted">${ini.id} • ${categoryLabel(ini.category)} • حي ${ini.district}
-                  • دور جهتكم: <b>${modelLabel(link.model)}</b>${link.contribution ? raw(' — ' + escapeHtml(link.contribution)) : ''}</p>
+                  • دور جهتكم: <b>${roleTextOf(link)}</b>${link.contribution ? raw(' — ' + escapeHtml(link.contribution)) : ''}</p>
               </div>
               ${raw(statusBadge(ini.status))}
             </div>
@@ -182,9 +182,17 @@
         const myInis = myLinks
           .map((l) => ({ link: l, ini: initiatives.find((i) => i.id === l.initiativeId) }))
           .filter((x) => x.ini);
-        const running = myInis.filter((x) => ['execution', 'benefits'].includes(x.ini.status)).length;
-        const closed = myInis.filter((x) => x.ini.status === 'closed').length;
-        const totalValue = sum(myInis, (x) => x.ini.budget);
+        // المبادرات التي قدمتها الجهة بنفسها (مطابقة بريد الممثل) ولم تُربط رسميًا بعد
+        const linkedIds = new Set(myInis.map((x) => x.ini.id));
+        const email = (partner.contactEmail || '').trim().toLowerCase();
+        const submittedByMe = email
+          ? initiatives.filter((i) => !linkedIds.has(i.id)
+            && (i.submitterEmail || '').trim().toLowerCase() === email)
+          : [];
+        const allMine = [...myInis, ...submittedByMe.map((ini) => ({ link: { model: null, contribution: '' }, ini }))];
+        const running = allMine.filter((x) => ['execution', 'benefits'].includes(x.ini.status)).length;
+        const closed = allMine.filter((x) => x.ini.status === 'closed').length;
+        const totalValue = sum(allMine, (x) => x.ini.budget);
 
         content.innerHTML = html`
           <div class="mi-card" style="margin-top:1rem">
@@ -192,16 +200,54 @@
             ${raw(definitionList([
           ['نوع الجهة', partnerTypeLabel(partner.type)],
           ['ممثل الجهة', partner.contactName || '—'],
-          ['عدد المبادرات', fmtNumber(myInis.length)],
+          ['عدد المبادرات', fmtNumber(allMine.length)],
           ['قيد التنفيذ حاليًا', fmtNumber(running)],
           ['مكتملة', fmtNumber(closed)],
           ['قيمة المبادرات المرتبطة', fmtMoney(totalValue)],
           ['تقييم الأداء', partner.rating ? `${partner.rating}/5` : 'شريك جديد']
         ]))}
           </div>
-          ${myInis.length
-          ? raw(myInis.map(({ link, ini }) => initiativeCard(link, ini)).join(''))
-          : raw('<div class="mi-card mi-empty" style="margin-top:1rem"><h3>لا مبادرات مرتبطة بجهتكم بعد</h3><p class="mi-muted">تصفحوا الفرص المطروحة في البوابة العامة وقدموا مبادرة لتبنّي إحداها.</p><a class="mi-btn mi-btn--gold" href="./index.html#mi-opportunities">الفرص المطروحة</a></div>')}`;
+          ${isPartnerAccount ? raw(html`
+          <div class="mi-card" style="margin-top:1rem">
+            <h3>تعبئة / تحديث بيانات جهتكم</h3>
+            <p class="mi-muted">تُدقق التحديثات الجوهرية من مكتب إدارة المبادرات عند الحاجة.</p>
+            <form class="mi-form" id="mi-partner-selfedit">
+              <div class="mi-form-row">
+                <div class="mi-form-field"><label>ممثل الجهة</label>
+                  <input class="mi-input" name="contactName" value="${partner.contactName || ''}"></div>
+                <div class="mi-form-field"><label>البريد الإلكتروني</label>
+                  <input class="mi-input" name="contactEmail" type="email" dir="ltr" value="${partner.contactEmail || ''}"></div>
+                <div class="mi-form-field"><label>رقم الجوال</label>
+                  <input class="mi-input" name="contactPhone" dir="ltr" value="${partner.contactPhone || ''}"></div>
+              </div>
+              <div class="mi-form-field"><label>نبذة / ملاحظات عن الجهة</label>
+                <textarea class="mi-input" name="notes" rows="2">${partner.notes || ''}</textarea></div>
+              <button class="mi-btn mi-btn--primary mi-btn--sm" type="submit">حفظ بيانات الجهة</button>
+            </form>
+          </div>`) : ''}
+
+          ${myInis.length ? raw('<h2 class="mi-subhead" style="margin-top:1.5rem">مبادرات بشراكة رسمية</h2>' +
+        myInis.map(({ link, ini }) => initiativeCard(link, ini)).join('')) : ''}
+          ${submittedByMe.length ? raw('<h2 class="mi-subhead" style="margin-top:1.5rem">مبادرات قدمتموها عبر المنصة</h2>' +
+        submittedByMe.map((ini) => initiativeCard({ model: null, contribution: '' }, ini)).join('')) : ''}
+          ${!allMine.length
+          ? raw('<div class="mi-card mi-empty" style="margin-top:1rem"><h3>لا مبادرات مرتبطة بجهتكم بعد</h3><p class="mi-muted">تصفحوا الفرص المطروحة في البوابة العامة وقدموا مبادرة لتبنّي إحداها — المبادرات المقدمة ببريدكم تظهر هنا تلقائيًا.</p><a class="mi-btn mi-btn--gold" href="./index.html#mi-opportunities">الفرص المطروحة</a></div>')
+          : ''}`;
+
+        // حفظ بيانات الجهة (حساب الشريك — بياناته هو فقط)
+        content.querySelector('#mi-partner-selfedit')?.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const f = e.target;
+          await repos.partners.update(partner.id, {
+            contactName: f.contactName.value.trim(),
+            contactEmail: f.contactEmail.value.trim(),
+            contactPhone: f.contactPhone.value.trim(),
+            notes: f.notes.value.trim()
+          });
+          const { toastSuccess } = await import('./js/ui/toast.js');
+          toastSuccess('حُفظت بيانات جهتكم');
+          location.reload();
+        });
       }
 
       if (isPartnerAccount) draw(session.partnerId);
