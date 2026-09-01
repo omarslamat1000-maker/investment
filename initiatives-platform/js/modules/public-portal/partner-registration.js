@@ -36,8 +36,6 @@ export function renderPartnerRegistration(container) {
             <select class="mi-input" name="entityType">
               ${raw(PARTNER_TYPES.map((t) => `<option value="${t.id}">${t.label}</option>`).join(''))}
             </select></div>
-          <div class="mi-form-field"><label>السجل التجاري / الترخيص (اختياري)</label>
-            <input class="mi-input" name="crNumber" dir="ltr"></div>
         </div>
 
         <h4 class="mi-subhead">ممثل الجهة (شخص واحد — صاحب الحساب)</h4>
@@ -103,7 +101,6 @@ export function renderPartnerRegistration(container) {
     const data = {
       entityName: form.entityName.value.trim(),
       entityType: form.entityType.value,
-      crNumber: form.crNumber.value.trim(),
       repName: form.repName.value.trim(),
       repEmail: form.repEmail.value.trim(),
       repPhone: form.repPhone.value.trim(),
@@ -135,7 +132,7 @@ export function renderPartnerRegistration(container) {
     const partner = await repos.partners.create(sanitizePartner(newPartner({
       name: data.entityName,
       type: data.entityType,
-      crNumber: data.crNumber,
+      
       contactName: data.repName,
       contactEmail: data.repEmail,
       contactPhone: data.repPhone,

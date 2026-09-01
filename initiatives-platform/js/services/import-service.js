@@ -4,12 +4,12 @@ import { dataProvider } from '../data/data-provider.js';
 import { DEMO_INITIATIVES, DEMO_PROPOSED_INITIATIVES, DEMO_PORTFOLIOS, DEMO_INITIATIVE_PARTNERS, DEMO_MILESTONES, DEMO_BENEFITS, DEMO_RISKS, DEMO_KPIS, DEMO_REVIEWS, DEMO_DECISIONS, DEMO_QUALITY_CHECKS } from '../../data/demo-initiatives.js';
 import { DEMO_NEEDS } from '../../data/demo-needs.js';
 import { DEMO_PARTNERS } from '../../data/demo-partners.js';
-import { ORG_UNITS, DEMO_USERS, DEMO_CAMPAIGNS } from '../../data/reference-data.js';
+import { ORG_UNITS, DEMO_USERS, DEMO_CAMPAIGNS, DEMO_GALLERY } from '../../data/reference-data.js';
 import { nowIso } from '../core/date-time.js';
 import { hashPassword, DEFAULT_PASSWORD } from './auth-service.js';
 
 const SEED_FLAG_ID = 'seed-status';
-export const SEED_VERSION = 4; // v4: حسابات الجهات الشريكة لبوابة الشركاء
+export const SEED_VERSION = 5; // v5: معرض صور المبادرات في الصفحة الرئيسية
 
 const stamp = (r) => ({ createdAt: nowIso(), updatedAt: nowIso(), ...r });
 
@@ -28,6 +28,7 @@ export async function seedDemoDataIfEmpty() {
     if (version < 2) await topUpToV2();
     if (version < 3) await topUpToV3();
     if (version < 4) await topUpToV4();
+    if (version < 5) await topUpToV5();
   }
   await dataProvider.put('settings', { id: SEED_FLAG_ID, seeded: true, version: SEED_VERSION, at: nowIso() });
   return true;
@@ -50,6 +51,15 @@ async function fullSeed() {
   await dataProvider.bulkPut('reviews', DEMO_REVIEWS.map(stamp));
   await dataProvider.bulkPut('decisions', DEMO_DECISIONS.map(stamp));
   await dataProvider.bulkPut('qualityChecks', DEMO_QUALITY_CHECKS.map(stamp));
+  await dataProvider.bulkPut('gallery', DEMO_GALLERY.map(stamp));
+}
+
+// v4 → v5: معرض الصور للمتصفحات القائمة (إن لم يُفرغ المستخدم بياناته)
+async function topUpToV5() {
+  const existing = await dataProvider.getAll('gallery');
+  const users = await dataProvider.getAll('users');
+  if (existing.length || !users.length) return;
+  await dataProvider.bulkPut('gallery', DEMO_GALLERY.map(stamp));
 }
 
 // v1 → v2: يضيف الجديد فقط ولا يلمس تعديلات المستخدم على السجلات القائمة
