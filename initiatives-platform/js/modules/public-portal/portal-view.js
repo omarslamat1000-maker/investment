@@ -26,6 +26,23 @@ export async function renderPortalStats(container) {
     ${ben.avgRealization !== null ? raw(`<div class="mi-hero-stat"><b>${ben.avgRealization}٪</b><span>متوسط تحقق المنافع</span></div>`) : ''}`;
 }
 
+// بوابة الفرص المقفلة: التصفح والتقديم لحسابات الشركاء المسجلة فقط
+export async function renderOpportunitiesGate(container) {
+  const needs = await repos.needs.getAll();
+  const publishedCount = needs.filter((n) => n.status === 'published').length;
+  container.innerHTML = html`
+    <div class="mi-card mi-empty mi-opportunities-gate">
+      <div class="mi-empty__mark" aria-hidden="true">◈</div>
+      <h3>${fmtNumber(publishedCount)} ${publishedCount === 1 ? 'فرصة مطروحة' : 'فرص مطروحة'} حاليًا للشراكة</h3>
+      <p class="mi-muted">تصفح تفاصيل الفرص والتقديم عليها متاح للجهات الشريكة المسجلة —
+        سجّل دخول جهتك في بوابة الشركاء، أو أنشئ حسابًا جديدًا يُعتمد من مدير النظام.</p>
+      <p>
+        <a class="mi-btn mi-btn--gold" href="./partner-portal.html">دخول بوابة الشركاء</a>
+        <a class="mi-btn mi-btn--ghost" href="./partner-portal.html">تسجيل جهة جديدة</a>
+      </p>
+    </div>`;
+}
+
 export async function renderPublishedNeeds(container, { limit = 6 } = {}) {
   const needs = await repos.needs.getAll();
   const published = needs.filter((n) => n.status === 'published').slice(0, limit);
