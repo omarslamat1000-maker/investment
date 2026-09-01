@@ -142,6 +142,18 @@
 }
 .mi-gallery-card__tools .mi-btn { background: rgba(246, 248, 245, 0.92); }
 
+/* صفحة إدارة المعرض داخل التطبيق */
+.mi-gallery-card--admin { cursor: default; }
+.mi-gallery-card__order {
+  position: absolute; top: calc(var(--mi-sp-3) + 2.1rem); inset-inline-start: var(--mi-sp-3);
+  background: rgba(5, 42, 32, 0.75); color: var(--mi-gold-200);
+  font: 700 var(--mi-fs-xs) var(--mi-font-display);
+  padding: 0.15rem 0.55rem; border-radius: 6px;
+}
+.mi-gallery-card__link { cursor: pointer; border: 0; align-self: flex-start; }
+.mi-gallery-search { max-width: 16rem; margin-inline-start: auto; }
+.mi-filters .mi-gallery-search { flex: 1; min-width: 12rem; }
+
 /* الصندوق الضوئي Lightbox */
 .mi-lightbox {
   position: fixed; inset: 0; z-index: 400;
