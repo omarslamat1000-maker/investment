@@ -48,6 +48,7 @@ export async function renderUsers(container) {
     ${raw(sectionHeader('المستخدمون والصلاحيات',
     'حسابات الدخول وأدوارها، مع تجاوزات سماح/منع لكل مستخدم فوق صلاحيات دوره',
     manage ? '<button class="mi-btn mi-btn--primary" data-act="new">مستخدم جديد</button>' : ''))}
+    <div class="mi-pending-host"></div>
     <div class="mi-card mi-users-note">
       <p class="mi-muted">الدور يحدد الصلاحيات الأساسية (انظر مصفوفة الصلاحيات في الوثائق)،
       و«التجاوزات» تخصص حسابًا بعينه: <b>سماح</b> يضيف صلاحية فوق الدور، و<b>منع</b> يحجبها حتى لو كان الدور يمنحها.
@@ -55,13 +56,64 @@ export async function renderUsers(container) {
     </div>
     <div class="mi-table-host"></div>`;
 
+  // ————— طلبات حسابات الشركاء بانتظار الاعتماد (تسجيل ذاتي من بوابة الشركاء) —————
+  const pending = users.filter((u) => u.approvalStatus === 'pending');
+  const pendingHost = container.querySelector('.mi-pending-host');
+  if (pending.length && can(myRole, 'users.manage')) {
+    pendingHost.innerHTML = html`
+      <section class="mi-card mi-pending-card">
+        <h3>طلبات حسابات شركاء بانتظار الاعتماد (${String(pending.length)})</h3>
+        <p class="mi-muted">دقق بيانات الجهة والممثل قبل الاعتماد — الاعتماد يفعّل الحساب وسجل الجهة معًا.</p>
+        ${raw(pending.map((u) => {
+      const p = partners.find((x) => x.id === u.partnerId);
+      return html`
+          <div class="mi-pending-row" data-user="${u.id}">
+            <div class="mi-pending-row__info">
+              <b>${p?.name || 'جهة غير مسجلة'}</b>
+              <small class="mi-muted">${p?.id || ''} • الممثل: ${u.name} • دخول: <span dir="ltr">${u.username}</span>
+                • ${u.email || '—'} • ${p?.contactPhone || '—'}${p?.crNumber ? raw(' • سجل: ' + escapeHtml(p.crNumber)) : ''}</small>
+            </div>
+            <div class="mi-pending-row__actions">
+              <button class="mi-btn mi-btn--primary mi-btn--sm" data-approve="${u.id}">اعتماد</button>
+              <button class="mi-btn mi-btn--danger mi-btn--sm" data-reject="${u.id}">رفض</button>
+            </div>
+          </div>`;
+    }).join(''))}
+      </section>`;
+
+    pendingHost.querySelectorAll('[data-approve]').forEach((btn) =>
+      btn.addEventListener('click', async () => {
+        const u = pending.find((x) => x.id === btn.dataset.approve);
+        const sure = await confirmModal('اعتماد حساب الشريك',
+          `تأكيد اعتماد حساب «${u.name}» — سيتفعل الحساب وسجل الجهة ويستطيع الدخول فورًا. هل دققت البيانات؟`,
+          { confirmLabel: 'اعتماد وتفعيل' });
+        if (!sure) return;
+        await repos.users.update(u.id, { active: true, approvalStatus: 'approved' });
+        if (u.partnerId) await repos.partners.update(u.partnerId, { active: true });
+        toastSuccess('اعتُمد الحساب وفُعّلت الجهة');
+        renderUsers(container);
+      }));
+
+    pendingHost.querySelectorAll('[data-reject]').forEach((btn) =>
+      btn.addEventListener('click', async () => {
+        const u = pending.find((x) => x.id === btn.dataset.reject);
+        const sure = await confirmModal('رفض طلب التسجيل',
+          `سيُرفض طلب «${u.name}» ولن يستطيع الدخول (يبقى السجل للمراجعة ويمكن حذفه من الجدول). متابعة؟`,
+          { confirmLabel: 'رفض الطلب', danger: true });
+        if (!sure) return;
+        await repos.users.update(u.id, { active: false, approvalStatus: 'rejected' });
+        toastSuccess('رُفض الطلب');
+        renderUsers(container);
+      }));
+  }
+
   renderTable(container.querySelector('.mi-table-host'), users, [
     { key: 'name', label: 'الاسم' },
     { key: 'username', label: 'اسم المستخدم', map: (u) => u.username || '—' },
     { key: 'role', label: 'الدور', map: (u) => roleLabel(u.role) },
     { key: 'orgUnitId', label: 'الوحدة / الجهة', map: (u) => u.partnerId ? (partnerName(u.partnerId) || '—') : unitName(u.orgUnitId) },
     { key: 'overrides', label: 'تجاوزات', map: (u) => overridesCount(u) ? String(overridesCount(u)) : '—', sortValue: overridesCount },
-    { key: 'active', label: 'الحالة', map: (u) => u.active === false ? 'موقوف' : 'نشط' }
+    { key: 'active', label: 'الحالة', map: (u) => u.approvalStatus === 'pending' ? 'بانتظار الاعتماد' : u.approvalStatus === 'rejected' ? 'مرفوض' : u.active === false ? 'موقوف' : 'نشط' }
   ], {
     searchable: true,
     onRowClick: (u) => openUserModal(u),
