@@ -64,7 +64,7 @@ export async function renderPublishedNeeds(container, { limit = 6 } = {}) {
         <span>المستفيدون: <b>${fmtNumber(n.beneficiaries || 0)}</b></span>
       </div>
       <div class="mi-opportunity-card__models">${raw((n.preferredModels || []).map((m) => `<span class="mi-tag">${escapeHtml(modelLabel(m))}</span>`).join(' '))}</div>
-      <a class="mi-btn mi-btn--primary" href="./opportunity.html?id=${encodeURIComponent(n.id)}">تفاصيل الفرصة والتقدم لتبنّيها</a>
+      <a class="mi-btn mi-btn--primary" href="./opportunity.html?id=${encodeURIComponent(n.id)}">تفاصيل الفرصة</a>
     </article>`).join('');
 }
 

@@ -87,9 +87,19 @@
 
       // البوابة تتطلب تسجيل الدخول — حساب شريك أو حساب إشرافي
       // مع إمكانية تسجيل حساب جديد للشركاء (يُفعَّل بعد اعتماد مدير النظام)
+      // فرصة مقصودة بالتقديم (من صفحة التفاصيل): تُحفظ حتى بعد تسجيل الدخول وإعادة التوجيه
+      const applyParam = new URLSearchParams(location.search).get('apply');
+      if (applyParam) sessionStorage.setItem('madinahInitiativesPlatform:pendingApply', applyParam);
+
       if (!session) {
         const { renderPartnerRegistration } = await import('./js/modules/public-portal/partner-registration.js');
         renderPartnerRegistration(content);
+        if (applyParam) {
+          const note = document.createElement('p');
+          note.className = 'mi-alert mi-alert--info';
+          note.textContent = 'سجّل الدخول بحساب جهتكم (أو أنشئ حسابًا) وسيُفتح نموذج التقديم على الفرصة التي اخترتها مباشرة.';
+          content.prepend(note);
+        }
         return;
       }
 
@@ -588,6 +598,19 @@
 
       if (isPartnerAccount) draw(session.partnerId);
       else if (partners.length) draw(select.value || partners[0].id);
+
+      // فتح نموذج التقديم مباشرة للفرصة المقصودة (بعد الدخول من صفحة تفاصيل الفرصة)
+      const pendingApply = sessionStorage.getItem('madinahInitiativesPlatform:pendingApply');
+      if (pendingApply) {
+        sessionStorage.removeItem('madinahInitiativesPlatform:pendingApply');
+        if (isPartnerAccount) {
+          const target = needs.find((n) => n.id === pendingApply);
+          const already = allApplications.some((a) => a.needId === pendingApply && a.partnerId === session.partnerId);
+          if (target && target.status === 'published' && !already) openApplyModal(target, session.partnerId);
+          else if (already) toastSuccess('سبق لجهتكم التقديم على هذه الفرصة — تابعوا حالته في «طلبات تقديمكم»');
+          document.querySelector('[data-apply-need], .mi-opportunities-grid')?.scrollIntoView({ block: 'start' });
+        }
+      }
     })().catch((err) => console.error('تعذر تشغيل بوابة الشركاء', err));
   </script>
 </body>

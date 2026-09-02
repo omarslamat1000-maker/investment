@@ -59,9 +59,9 @@
     </section>
 
     <section class="mi-portal-section" id="mi-opportunities">
-      <h2>فرصٌ تنتظر شريكًا</h2>
-      <p class="mi-section-lead">احتياجات بنية تحتية اعتمدتها الأمانة وطرحتها للجهات الشريكة المسجلة — التصفح والتقديم عبر بوابة الشركاء.</p>
-      <div id="mi-needs-grid"></div>
+      <h2>فرص متاحة للتقديم</h2>
+      <p class="mi-section-lead">احتياجات بنية تحتية اعتمدتها الأمانة وطرحتها للشراكة — تصفّح التفاصيل بحرية، والتقديم عليها يتم بعد تسجيل الدخول في بوابة الشركاء.</p>
+      <div class="mi-opportunities-grid" id="mi-needs-grid"></div>
     </section>
 
     <section class="mi-portal-section mi-portal-section--tinted" id="mi-running">
@@ -130,7 +130,7 @@
     import { APP_CONFIG } from './js/config.js';
     import { initDataProvider } from './js/data/data-provider.js';
     import { seedDemoDataIfEmpty } from './js/services/import-service.js';
-    import { renderPortalStats, renderOpportunitiesGate, renderCampaigns, renderRunningInitiatives, renderCompletedInitiatives } from './js/modules/public-portal/portal-view.js';
+    import { renderPortalStats, renderPublishedNeeds, renderCampaigns, renderRunningInitiatives, renderCompletedInitiatives } from './js/modules/public-portal/portal-view.js';
     import { renderGallery } from './js/modules/public-portal/gallery-view.js';
 
     (async () => {
@@ -138,7 +138,7 @@
       await seedDemoDataIfEmpty();
       await Promise.all([
         renderPortalStats(document.getElementById('mi-portal-stats')),
-        renderOpportunitiesGate(document.getElementById('mi-needs-grid')),
+        renderPublishedNeeds(document.getElementById('mi-needs-grid'), { limit: 12 }),
         renderRunningInitiatives(document.getElementById('mi-running-grid')),
         renderCompletedInitiatives(document.getElementById('mi-completed-grid')),
         renderGallery(document.getElementById('mi-gallery-host')),

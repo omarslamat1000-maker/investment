@@ -55,23 +55,8 @@
       if (isCloudMode()) await restoreCloudSession();
       const main = document.getElementById('mi-opportunity-main');
 
-      // تفاصيل الفرص متاحة للجهات الشريكة المسجلة (أو الحسابات الإشرافية) فقط
+      // تفاصيل الفرصة للقراءة للجميع — التقديم يتطلب حساب شريك في البوابة
       const session = getSession();
-      if (!session) {
-        main.innerHTML = html`
-          <div class="mi-card mi-empty">
-            <div class="mi-empty__mark" aria-hidden="true">◈</div>
-            <h1>تفاصيل الفرص متاحة للشركاء المسجلين</h1>
-            <p class="mi-muted">سجّل دخول جهتك في بوابة الشركاء لتصفح الفرص المطروحة والتقديم عليها —
-              أو أنشئ حسابًا جديدًا يُعتمد من مدير النظام.</p>
-            <p>
-              <a class="mi-btn mi-btn--gold" href="./partner-portal.html">دخول بوابة الشركاء</a>
-              <a class="mi-btn mi-btn--ghost" href="./index.html">العودة للبوابة</a>
-            </p>
-          </div>`;
-        return;
-      }
-
       const id = new URLSearchParams(location.search).get('id');
       const need = id ? await repos.needs.get(id) : null;
 
@@ -103,12 +88,18 @@
         </div>
         <div class="mi-card" style="margin-top:1rem" id="mi-opportunity-cta">
           <h2>ترغب جهتك في تبنّي هذه الفرصة؟</h2>
-          <p class="mi-muted">التقديم يتم من بوابة الشركاء — تُدرس الطلبات في مرحلة الفرز ويجوز اعتماد أكثر من جهة بشراكة مشتركة.</p>
-          <a class="mi-btn mi-btn--gold" href="./partner-portal.html">التقديم من بوابة الشركاء</a>
+          ${session?.partnerId
+            ? raw(`<p class="mi-muted">التقديم من بوابة الشركاء بنموذج يضم بيانات جهتكم وبيانات مقترحكم التفصيلية — تُدرس الطلبات في مرحلة الفرز ويجوز اعتماد أكثر من جهة بشراكة مشتركة.</p>
+              <a class="mi-btn mi-btn--gold" href="./partner-portal.html?apply=${encodeURIComponent(need.id)}">التقديم على الفرصة</a>`)
+            : session
+              ? raw('<p class="mi-muted">التقديم على الفرص متاح لحسابات الجهات الشريكة فقط — حسابك الحالي إشرافي.</p>')
+              : raw(`<p class="mi-muted">التقديم يتطلب تسجيل الدخول بحساب جهتكم في بوابة الشركاء — أو إنشاء حساب جديد يُعتمد من مدير النظام. بعد الدخول يُفتح نموذج التقديم لهذه الفرصة مباشرة.</p>
+              <a class="mi-btn mi-btn--gold" href="./partner-portal.html?apply=${encodeURIComponent(need.id)}">تسجيل الدخول والتقديم</a>
+              <a class="mi-btn mi-btn--ghost" href="./partner-portal.html">إنشاء حساب شريك</a>`)}
         </div>`;
 
       // حساب شريك سبق تقديمه: عرض حالة الطلب بدل دعوة التقديم
-      if (session.partnerId) {
+      if (session?.partnerId) {
         const apps = await repos.needApplications.getAll().catch(() => []);
         const mine = apps.find((a) => a.needId === need.id && a.partnerId === session.partnerId);
         if (mine) {
