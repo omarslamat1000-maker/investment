@@ -16,14 +16,20 @@ import { toastSuccess, toastError } from '../../ui/toast.js';
 import { openLocationPicker } from '../../ui/location-picker.js';
 import { measureLabel } from '../../core/geo.js';
 import { APPLICATION_STATUS, adoptNeed } from '../../services/application-service.js';
+import { partnerScorecard } from '../../domain/partner-scorecard.js';
+import { ratingStarsHtml } from '../../ui/components.js';
 
 export async function renderNeeds(container) {
-  const [needs, allApplications] = await Promise.all([
+  const [needs, allApplications, links, initiatives, milestones, benefits, qualityChecks, progressReports] = await Promise.all([
     repos.needs.getAll(),
     // جدول الطلبات غير مهيأ بعد في وضع السحابة — تجاهل بأمان
-    repos.needApplications.getAll().catch(() => [])
+    repos.needApplications.getAll().catch(() => []),
+    repos.initiativePartners.getAll(), repos.initiatives.getAll(), repos.milestones.getAll(),
+    repos.benefits.getAll(), repos.qualityChecks.getAll(), repos.progressReports.getAll().catch(() => [])
   ]);
   const role = getRole();
+  // بطاقة الأداء المحسوبة لكل متقدم — تُغذي المفاضلة بسجل فعلي
+  const scorecardOf = (partnerId) => partnerScorecard({ partnerId, links, initiatives, milestones, benefits, qualityChecks, progressReports });
 
   container.innerHTML = html`
     ${raw(sectionHeader('احتياجات البنية التحتية', 'الفرص التي تطرحها الأمانة لتتبناها جهات القطاع الخاص والمجتمع',
@@ -62,6 +68,8 @@ export async function renderNeeds(container) {
         ${applications.length ? raw(applications.map((a) => {
           const st = APPLICATION_STATUS[a.status] || APPLICATION_STATUS.applied;
           const badge = a.status === 'accepted' ? 'achieved' : a.status === 'rejected' ? 'atRisk' : 'onTrack';
+          const card = scorecardOf(a.partnerId);
+          const timeliness = card.components.find((c) => c.id === 'timeliness');
           return html`
             <label class="mi-ms" data-done="${a.status === 'accepted' ? 'yes' : 'no'}" style="align-items:flex-start">
               ${decidable && a.status === 'applied'
@@ -70,7 +78,11 @@ export async function renderNeeds(container) {
               <span>
                 <b>${a.partnerName}</b> — ${modelLabel(a.model)}
                 <span class="mi-tag" data-benefit="${badge}">${st.label}</span><br>
-                <small class="mi-muted">${a.proposal}</small>
+                <small class="mi-muted">${a.proposal}</small><br>
+                <small class="mi-applicant-score">${raw(ratingStarsHtml(card.rating, { label: card.band.label }))}
+                  ${card.overall !== null
+                  ? raw(`أداء سابق <b>${escapeHtml(fmtNumber(card.overall))}/100</b> من ${escapeHtml(fmtNumber(card.sample.initiatives))} مبادرة${timeliness?.available ? ` • التزام بالمواعيد ${escapeHtml(fmtNumber(timeliness.value))}٪` : ''}`)
+                  : raw('<span class="mi-muted">شريك جديد — لا سجل تنفيذي سابق</span>')}</small>
               </span>
               <small>${fmtDate(a.at)}</small>
             </label>`;

@@ -65,6 +65,12 @@
     import { applyToNeed, APPLICATION_STATUS } from './js/services/application-service.js';
     import { openModal } from './js/ui/modal.js';
     import { toastSuccess, toastError } from './js/ui/toast.js';
+    import { partnerApprove, openAgreementViewer, computeAgreementStatus, agreementStatusLabel } from './js/services/agreement-service.js';
+    import { submitProgressReport, REPORT_STATUS, MAX_REPORT_PHOTOS } from './js/services/progress-report-service.js';
+    import { compressImage } from './js/services/image-service.js';
+    import { partnerScorecard } from './js/domain/partner-scorecard.js';
+    import { ratingStarsHtml } from './js/ui/components.js';
+    import { fmtDateTime } from './js/core/date-time.js';
 
     const REVIEW_ROLES = ['admin', 'pmo', 'supervisor', 'reviewer', 'viewer'];
 
@@ -103,6 +109,11 @@
         // جدول الطلبات غير مهيأ بعد في وضع السحابة — تجاهل بأمان
         repos.needApplications.getAll().catch(() => [])
       ]);
+      const [qualityChecks, progressReports, allAgreements] = await Promise.all([
+        repos.qualityChecks.getAll().catch(() => []),
+        repos.progressReports.getAll().catch(() => []),
+        repos.agreements.getAll().catch(() => [])
+      ]);
 
       const isPartnerAccount = session.role === 'partner' && session.partnerId;
       const canBrowseAll = REVIEW_ROLES.includes(session.role);
@@ -128,7 +139,7 @@
       } else {
         selectWrap.remove(); // حساب الشريك: لا محدد جهات إطلاقًا
         document.getElementById('mi-portal-lead').textContent =
-          'مرحبًا بكم — هنا تتابعون مبادرات جهتكم وتقدمها ومنافعها المعلنة، اطلاعًا للقراءة فقط.';
+          'مرحبًا بكم — هنا تتابعون مبادرات جهتكم، وترفعون تقارير التقدم الميدانية، وتعتمدون اتفاقيات الشراكة، وتقدمون على الفرص المطروحة.';
       }
 
       function roleTextOf(link) {
@@ -234,9 +245,11 @@
         const progressPct = ini.progressPercentage || (ms.length ? percent(done, ms.length) : null);
         const myBenefits = benefits.filter((b) => b.initiativeId === ini.id);
         const history = sortBy([...(ini.statusHistory || [])], (h) => h.at, 'desc').slice(0, 3);
+        const myReports = sortBy(progressReports.filter((r) => r.initiativeId === ini.id && r.partnerId === link.partnerId), (r) => r.at, 'desc');
+        const canReport = isPartnerAccount && link.partnerId && ['execution', 'benefits'].includes(ini.status);
 
         return html`
-          <div class="mi-card" style="margin-top:1rem">
+          <div class="mi-card" style="margin-top:1rem" data-ini-card="${ini.id}">
             <div class="mi-detail-head">
               <div>
                 <h3>${ini.title}</h3>
@@ -246,6 +259,21 @@
               ${raw(statusBadge(ini.status))}
             </div>
             ${raw(gateTrackHtml(ini.status))}
+            ${canReport ? raw(html`
+              <h4 class="mi-subhead">تقارير التقدم الميدانية لجهتكم
+                <button class="mi-btn mi-btn--gold mi-btn--sm" type="button" data-report-ini="${ini.id}">رفع تقرير تقدم ميداني</button></h4>
+              ${myReports.length ? raw(myReports.map((r) => {
+                const st = REPORT_STATUS[r.status] || REPORT_STATUS.pending;
+                const tone = r.status === 'approved' ? 'achieved' : r.status === 'rejected' ? 'atRisk' : 'onTrack';
+                const ms = milestones.find((m) => m.id === r.milestoneId);
+                return html`<div class="mi-field-report" data-status="${r.status}">
+                  <div class="mi-field-report__head"><div><span class="mi-field-report__pct">${fmtNumber(r.percent)}٪</span> ${ms ? raw(`<span class="mi-tag">${escapeHtml(ms.title)}</span>`) : ''}</div>
+                    <div class="mi-field-report__meta"><span class="mi-tag" data-benefit="${tone}">${st.label}</span><small class="mi-muted">${fmtDateTime(r.at)}</small></div></div>
+                  <p class="mi-field-report__note">${r.note}</p>
+                  ${(r.photos || []).length ? raw(`<div class="mi-field-report__photos">${r.photos.map((p) => `<img alt="" loading="lazy" src='${p}'>`).join('')}</div>`) : ''}
+                  ${r.status === 'rejected' && r.reviewNote ? raw(`<small class="mi-alert mi-alert--error">سبب الرفض: ${escapeHtml(r.reviewNote)}</small>`) : ''}
+                </div>`;
+              }).join('')) : raw('<p class="mi-muted">لم ترفعوا تقارير بعد — يُعتمد كل تقرير من مكتب إدارة المبادرات قبل نشر الإنجاز.</p>')}`) : ''}
             ${progressPct !== null ? raw(html`
               <h4 class="mi-subhead">نسبة الإنجاز${ms.length ? raw(` <small class="mi-muted">(${escapeHtml(fmtNumber(done))} من ${escapeHtml(fmtNumber(ms.length))} معلمًا)</small>`) : ''}</h4>
               ${raw(progressBar(progressPct, 'نسبة إنجاز ' + ini.title))}`) : ''}
@@ -294,6 +322,9 @@
         const running = allMine.filter((x) => ['execution', 'benefits'].includes(x.ini.status)).length;
         const closed = allMine.filter((x) => x.ini.status === 'closed').length;
         const totalValue = sum(allMine, (x) => x.ini.budget);
+        // بطاقة الأداء المحسوبة من السجل الفعلي
+        const card = partnerScorecard({ partnerId, links, initiatives, milestones, benefits, qualityChecks, progressReports });
+        const myAgreements = sortBy(allAgreements.filter((a) => a.status !== 'cancelled' && (a.parties || []).some((p) => p.partnerId === partnerId)), (a) => a.issuedAt, 'desc');
 
         content.innerHTML = html`
           <div class="mi-card" style="margin-top:1rem">
@@ -305,9 +336,37 @@
           ['قيد التنفيذ حاليًا', fmtNumber(running)],
           ['مكتملة', fmtNumber(closed)],
           ['قيمة المبادرات المرتبطة', fmtMoney(totalValue)],
-          ['تقييم الأداء', partner.rating ? `${partner.rating}/5` : 'شريك جديد']
+          ['بطاقة الأداء', card.overall !== null ? `${card.rating}/5 (${fmtNumber(card.overall)}/100) — ${card.band.label}` : card.band.label]
         ]))}
+            ${card.overall !== null ? raw(`<div class="mi-scorecard"><div class="mi-scorecard__head"><h4 class="mi-subhead">بطاقة الأداء المحسوبة</h4><div class="mi-scorecard__overall"><b>${escapeHtml(fmtNumber(card.overall))}</b><small>/100</small><div>${ratingStarsHtml(card.rating, { label: card.band.label })}</div></div></div>${card.components.map((c) => `
+              <div class="mi-scorecard__row" data-available="${c.available ? 'yes' : 'no'}">
+                <span>${escapeHtml(c.label)}</span>
+                <span class="mi-hbar__track"><span class="mi-hbar__fill" style="width:${c.available ? c.value : 0}%"></span></span>
+                <b>${c.available ? escapeHtml(fmtNumber(c.value)) + '٪' : 'لا بيانات'}</b>
+              </div>`).join('')}<small class="mi-muted">يُحسب التقييم آليًا من الالتزام بمواعيد المعالم وفحوص الجودة وتحقق المنافع وتقاريركم الميدانية المعتمدة، ويُغذي المفاضلة على الفرص القادمة.</small></div>`) : ''}
           </div>
+
+          ${myAgreements.length ? raw(html`
+          <div class="mi-card" style="margin-top:1rem">
+            <h3>اتفاقيات الشراكة</h3>
+            ${raw(myAgreements.map((a) => {
+              const st = computeAgreementStatus(a);
+              const me = a.parties.find((p) => p.partnerId === partnerId);
+              const tone = st === 'signed' ? 'achieved' : 'onTrack';
+              return html`
+                <div class="mi-field-report" data-status="${me?.approvedAt ? 'approved' : 'pending'}">
+                  <div class="mi-field-report__head">
+                    <div><b>${a.id}</b> — ${a.initiativeTitle}<br><small class="mi-muted">${me?.modelLabel || ''}${me?.contribution ? raw(' — ' + escapeHtml(me.contribution)) : ''} • صدرت ${fmtDate(a.issuedAt)}</small></div>
+                    <div class="mi-field-report__meta"><span class="mi-tag" data-benefit="${tone}">${agreementStatusLabel(st)}</span></div>
+                  </div>
+                  <div class="mi-field-report__actions">
+                    <button class="mi-btn mi-btn--ghost mi-btn--sm" type="button" data-agr-view="${a.id}">عرض / طباعة الاتفاقية</button>
+                    ${isPartnerAccount && me && !me.approvedAt ? raw(`<button class="mi-btn mi-btn--gold mi-btn--sm" type="button" data-agr-approve="${escapeHtml(a.id)}">اعتماد الاتفاقية إلكترونيًا</button>`) : ''}
+                    ${me?.approvedAt ? raw(`<small class="mi-muted">اعتمدتها جهتكم في ${escapeHtml(fmtDate(me.approvedAt))} — ${escapeHtml(me.approvedBy || '')}</small>`) : ''}
+                  </div>
+                </div>`;
+            }).join(''))}
+          </div>`) : ''}
           ${isPartnerAccount ? raw(html`
           <div class="mi-card" style="margin-top:1rem">
             <h3>تعبئة / تحديث بيانات جهتكم</h3>
@@ -342,6 +401,18 @@
           btn.addEventListener('click', () => openApplyModal(
             needs.find((n) => n.id === btn.dataset.applyNeed), partnerId)));
 
+        // الاتفاقيات: عرض واعتماد إلكتروني
+        content.querySelectorAll('[data-agr-view]').forEach((btn) => btn.addEventListener('click', () => {
+          const a = allAgreements.find((x) => x.id === btn.dataset.agrView);
+          openAgreementViewer(a, initiatives.find((i) => i.id === a.initiativeId) || null);
+        }));
+        content.querySelectorAll('[data-agr-approve]').forEach((btn) => btn.addEventListener('click', () => openAgreementApproval(
+          allAgreements.find((x) => x.id === btn.dataset.agrApprove))));
+
+        // تقارير التقدم الميدانية
+        content.querySelectorAll('[data-report-ini]').forEach((btn) => btn.addEventListener('click', () =>
+          openProgressReportModal(initiatives.find((i) => i.id === btn.dataset.reportIni))));
+
         // حفظ بيانات الجهة (حساب الشريك — بياناته هو فقط)
         content.querySelector('#mi-partner-selfedit')?.addEventListener('submit', async (e) => {
           e.preventDefault();
@@ -355,6 +426,87 @@
           const { toastSuccess } = await import('./js/ui/toast.js');
           toastSuccess('حُفظت بيانات جهتكم');
           location.reload();
+        });
+      }
+
+      // اعتماد الاتفاقية إلكترونيًا: إقرار صريح باسم ممثل الجهة
+      function openAgreementApproval(agreement) {
+        if (!agreement) return;
+        const { dialog, close } = openModal({
+          title: `اعتماد الاتفاقية ${agreement.id}`,
+          bodyHtml: html`
+            <p>«${agreement.initiativeTitle}» — راجعوا نص الاتفاقية كاملًا قبل الاعتماد.</p>
+            <p><button class="mi-btn mi-btn--ghost mi-btn--sm" type="button" data-act="view">عرض نص الاتفاقية</button></p>
+            <label class="mi-agr-consent"><input type="checkbox" id="mi-agr-consent">
+              <span>أقر بصفتي <b>${session.name}</b> ممثلًا عن <b>${partners.find((p) => p.id === session.partnerId)?.name || ''}</b> بأنني اطلعت على بنود الاتفاقية وأوافق عليها، وأن هذا الاعتماد الإلكتروني يُعد بمثابة التوقيع ويُوثَّق بتاريخه في سجل المنصة.</span></label>`,
+          footerHtml: html`
+            <button class="mi-btn mi-btn--ghost" data-act="cancel">إلغاء</button>
+            <button class="mi-btn mi-btn--gold" data-act="ok" disabled>اعتماد وتوقيع إلكتروني</button>`
+        });
+        const ok = dialog.querySelector('[data-act="ok"]');
+        dialog.querySelector('#mi-agr-consent').addEventListener('change', (e) => { ok.disabled = !e.target.checked; });
+        dialog.querySelector('[data-act="view"]').addEventListener('click', () => openAgreementViewer(agreement, initiatives.find((i) => i.id === agreement.initiativeId) || null));
+        dialog.querySelector('[data-act="cancel"]').addEventListener('click', close);
+        ok.addEventListener('click', async () => {
+          try {
+            const saved = await partnerApprove(agreement.id, session);
+            close();
+            toastSuccess(computeAgreementStatus(saved) === 'signed' ? 'اكتمل توقيع الاتفاقية من الطرفين' : 'سُجّل اعتماد جهتكم — بانتظار اعتماد الأمانة');
+            location.reload();
+          } catch (err) { toastError(err.message); }
+        });
+      }
+
+      // رفع تقرير تقدم ميداني: المَعلم + النسبة + الوصف + حتى 4 صور مضغوطة
+      function openProgressReportModal(ini) {
+        if (!ini) return;
+        const ms = sortBy(milestones.filter((m) => m.initiativeId === ini.id), (m) => m.due);
+        const photos = [];
+        const { dialog, close } = openModal({
+          title: `تقرير تقدم ميداني — ${ini.title}`,
+          wide: true,
+          bodyHtml: html`
+            <form class="mi-form" id="mi-pr-form">
+              <div class="mi-form-row">
+                <div class="mi-form-field"><label for="mi-pr-ms">المَعلم المرتبط</label>
+                  <select class="mi-input" id="mi-pr-ms"><option value="">— تقدم عام للمبادرة —</option>
+                    ${raw(ms.map((m) => `<option value="${escapeHtml(m.id)}" ${m.done ? 'disabled' : ''}>${escapeHtml(m.title)}${m.done ? ' (منجز)' : ''}</option>`).join(''))}</select></div>
+                <div class="mi-form-field"><label for="mi-pr-pct">نسبة الإنجاز الإجمالية (٪)</label>
+                  <input class="mi-input" id="mi-pr-pct" type="number" min="0" max="100" value="${String(ini.progressPercentage || 0)}"></div>
+              </div>
+              <div class="mi-form-field"><label for="mi-pr-note">وصف الأعمال المنجزة (10 أحرف على الأقل)</label>
+                <textarea class="mi-input" id="mi-pr-note" rows="3" placeholder="ما أُنجز ميدانيًا منذ التقرير السابق، وأي معوقات…"></textarea></div>
+              <div class="mi-form-field"><label>الصور الميدانية (حتى ${String(MAX_REPORT_PHOTOS)} — تُضغط تلقائيًا)</label>
+                <div class="mi-photo-picks" data-picks></div>
+                <label class="mi-btn mi-btn--ghost mi-btn--sm mi-file-btn">إضافة صور<input type="file" accept="image/png,image/jpeg,image/webp" multiple hidden data-photos></label></div>
+            </form>`,
+          footerHtml: html`
+            <button class="mi-btn mi-btn--ghost" data-act="cancel">إلغاء</button>
+            <button class="mi-btn mi-btn--primary" data-act="send">إرسال التقرير للاعتماد</button>`
+        });
+        const picks = dialog.querySelector('[data-picks]');
+        dialog.querySelector('[data-photos]').addEventListener('change', async (e) => {
+          for (const file of [...e.target.files]) {
+            if (photos.length >= MAX_REPORT_PHOTOS) { toastError(`الحد الأقصى ${MAX_REPORT_PHOTOS} صور`); break; }
+            try { photos.push(await compressImage(file)); } catch (err) { toastError(err.message); }
+          }
+          picks.innerHTML = photos.map((p) => `<img alt="" src='${p}'>`).join('');
+          e.target.value = '';
+        });
+        dialog.querySelector('[data-act="cancel"]').addEventListener('click', close);
+        dialog.querySelector('[data-act="send"]').addEventListener('click', async () => {
+          try {
+            await submitProgressReport({
+              initiative: ini, session,
+              milestoneId: dialog.querySelector('#mi-pr-ms').value || null,
+              percent: dialog.querySelector('#mi-pr-pct').value,
+              note: dialog.querySelector('#mi-pr-note').value,
+              photos
+            });
+            close();
+            toastSuccess('أُرسل التقرير — يُعتمد من مكتب إدارة المبادرات ثم يُنشر الإنجاز');
+            location.reload();
+          } catch (err) { toastError(err.message); }
         });
       }
 

@@ -23,9 +23,11 @@ export const MIGRATIONS = [
           if (name === 'notifications') store.createIndex('at', 'at', { unique: false });
           if (['reviews', 'decisions', 'gateChecklists', 'kpis', 'benefits', 'risks',
             'milestones', 'deliverables', 'qualityChecks', 'changeRequests',
-            'comments', 'attachments', 'initiativePartners'].includes(name)) {
+            'comments', 'attachments', 'initiativePartners',
+            'progressReports', 'agreements'].includes(name)) {
             store.createIndex('initiativeId', 'initiativeId', { unique: false });
           }
+          if (name === 'needApplications') store.createIndex('needId', 'needId', { unique: false });
         }
       }
     }
@@ -57,12 +59,44 @@ export const MIGRATIONS = [
         store.createIndex('needId', 'needId', { unique: false });
       }
     }
+  },
+  {
+    version: 5,
+    describe: 'تقارير التقدم الميدانية من الشركاء progressReports واتفاقيات الشراكة الرقمية agreements',
+    run(db) {
+      for (const name of ['progressReports', 'agreements']) {
+        if (!db.objectStoreNames.contains(name)) {
+          const store = db.createObjectStore(name, { keyPath: 'id' });
+          store.createIndex('initiativeId', 'initiativeId', { unique: false });
+        }
+      }
+    }
+  },
+  {
+    version: 6,
+    describe: 'ضمان فهرس initiativeId على المخازن التي أُنشئت في الترحيل الأول دون فهرس (تصحيح)',
+    run(db, tx) {
+      for (const name of ['progressReports', 'agreements']) {
+        if (!db.objectStoreNames.contains(name)) {
+          const store = db.createObjectStore(name, { keyPath: 'id' });
+          store.createIndex('initiativeId', 'initiativeId', { unique: false });
+          continue;
+        }
+        const store = tx?.objectStore(name);
+        if (store && !store.indexNames.contains('initiativeId')) {
+          store.createIndex('initiativeId', 'initiativeId', { unique: false });
+        }
+      }
+      const apps = db.objectStoreNames.contains('needApplications') ? tx?.objectStore('needApplications') : null;
+      if (apps && !apps.indexNames.contains('needId')) apps.createIndex('needId', 'needId', { unique: false });
+    }
   }
 ];
 
 // تُستدعى من onupgradeneeded: تنفّذ الترحيلات من oldVersion+1 حتى الإصدار الحالي
-export function runMigrations(db, oldVersion) {
+// tx: معاملة versionchange — تتيح تعديل مخازن قائمة (إضافة فهارس)
+export function runMigrations(db, oldVersion, tx = null) {
   for (const m of MIGRATIONS) {
-    if (m.version > oldVersion) m.run(db);
+    if (m.version > oldVersion) m.run(db, tx);
   }
 }

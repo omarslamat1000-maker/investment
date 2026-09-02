@@ -48,3 +48,9 @@
   background-size: 72px 72px;
 }
 [data-mi-theme="dark"] .mi-toast { background: var(--mi-surface-2); }
+
+[data-mi-theme="dark"] .mi-sla[data-level="overdue"],
+[data-mi-theme="dark"] .mi-gap-tag[data-gap="critical"] { background: rgba(168, 58, 58, 0.25); color: #F1B3B3; }
+[data-mi-theme="dark"] .mi-field-report[data-status="pending"] { background: rgba(201, 162, 39, 0.12); border-color: rgba(201, 162, 39, 0.4); }
+[data-mi-theme="dark"] .mi-heat__cell[data-level="1"] { background: rgba(30, 122, 95, 0.2); }
+[data-mi-theme="dark"] .mi-heat__cell[data-level="2"] { background: rgba(30, 122, 95, 0.4); }

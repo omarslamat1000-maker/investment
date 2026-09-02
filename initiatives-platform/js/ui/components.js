@@ -37,6 +37,21 @@ export function gateTrackHtml(status, { compact = false } = {}) {
   return html`<ol class="mi-gate-track${compact ? ' mi-gate-track--compact' : ''}" aria-label="مسار البوابات المرحلية">${raw(items)}</ol>`;
 }
 
+// شارة SLA: أيام في المرحلة مقابل الحد — sla من domain/sla.js (null إذا لا مؤقت)
+export function slaChip(sla, { compact = false } = {}) {
+  if (!sla) return '';
+  const text = sla.level === 'overdue'
+    ? `متجاوز بـ ${fmtNumber(sla.overdueDays)} يومًا`
+    : sla.level === 'warn' ? `متبقٍ ${fmtNumber(sla.remaining)} يومًا` : `${fmtNumber(sla.days)} / ${fmtNumber(sla.limit)} يومًا`;
+  return html`<span class="mi-sla" data-level="${sla.level}" title="في المرحلة منذ ${fmtNumber(sla.days)} يومًا — الحد ${fmtNumber(sla.limit)} يومًا">${compact ? '' : raw('<i aria-hidden="true">⏱</i> ')}${text}</span>`;
+}
+
+// نجوم تقييم الشريك المحسوب
+export function ratingStarsHtml(rating, { label = '' } = {}) {
+  if (!rating) return html`<span class="mi-stars mi-stars--none" title="${label || 'لا سجل تنفيذي بعد'}">جديد</span>`;
+  return html`<span class="mi-stars" title="${label}" aria-label="تقييم ${String(rating)} من 5">${'★'.repeat(rating)}<i>${'★'.repeat(5 - rating)}</i></span>`;
+}
+
 export function progressBar(percentValue, label = '') {
   const p = Math.max(0, Math.min(100, Number(percentValue) || 0));
   return html`

@@ -12,10 +12,13 @@ import { fmtDateTime } from '../../core/date-time.js';
 import { toastSuccess, toastError } from '../../ui/toast.js';
 import { confirmModal } from '../../ui/modal.js';
 import { providerName } from '../../data/data-provider.js';
+import { getSlaConfig, saveSlaConfig, defaultSlaConfig } from '../../services/sla-service.js';
+import { statusLabel } from '../../domain/workflow.js';
 
 export async function renderSettings(container) {
   const role = getRole();
-  const logs = await getAuditLogs({ limit: 25 });
+  const [logs, slaConfig] = await Promise.all([getAuditLogs({ limit: 25 }), getSlaConfig()]);
+  const canSla = can(role, 'settings.view') || role === 'admin';
 
   container.innerHTML = html`
     ${raw(sectionHeader('الإعدادات', 'الدور التجريبي، المظهر، النسخ الاحتياطي، وسجل التدقيق'))}
@@ -71,6 +74,21 @@ export async function renderSettings(container) {
       </section>`) : ''}
 
       <section class="mi-card mi-card--span">
+        <h3>مدد البوابات المعلنة (SLA)</h3>
+        <p class="mi-muted">الحد الأقصى بالأيام لبقاء المبادرة في كل مرحلة انتظار — يظهر العدّاد في السجل والتفاصيل، ويُصعَّد إشعار تلقائي عند التجاوز، وتُجمع المتجاوزات في لوحة المتابعة.</p>
+        <form class="mi-form mi-sla-form" id="mi-sla-form">
+          <div class="mi-sla-form__grid">
+            ${raw(Object.entries(slaConfig).map(([status, cfg]) => `
+              <div class="mi-form-field">
+                <label for="mi-sla-${escapeHtml(status)}">${escapeHtml(statusLabel(status))} <small class="mi-muted">— ${escapeHtml(cfg.label)}</small></label>
+                <input class="mi-input" id="mi-sla-${escapeHtml(status)}" name="${escapeHtml(status)}" type="number" min="1" max="365" value="${escapeHtml(String(cfg.days))}" ${canSla ? '' : 'readonly'}>
+              </div>`).join(''))}
+          </div>
+          ${canSla ? raw('<div class="mi-settings-actions"><button class="mi-btn mi-btn--primary" type="submit">حفظ المدد</button><button class="mi-btn mi-btn--ghost" type="button" data-act="sla-reset">استعادة الافتراضي</button></div>') : ''}
+        </form>
+      </section>
+
+      <section class="mi-card mi-card--span">
         <h3>سجل التدقيق (آخر 25 حركة)</h3>
         ${logs.length ? raw(`<div class="mi-table-wrap"><table class="mi-table"><thead><tr><th>الوقت</th><th>المستخدم</th><th>الفعل</th><th>الكيان</th><th>السجل</th></tr></thead><tbody>` +
       logs.map((l) => `<tr><td>${escapeHtml(fmtDateTime(l.at))}</td><td>${escapeHtml(l.actor)}</td><td>${escapeHtml(l.action)}</td><td>${escapeHtml(l.store)}</td><td dir="ltr">${escapeHtml(l.recordId || '')}</td></tr>`).join('') +
@@ -85,6 +103,23 @@ export async function renderSettings(container) {
   });
   container.querySelector('#mi-set-theme').addEventListener('change', (e) => {
     setTheme(e.target.value);
+  });
+
+  // مدد SLA
+  container.querySelector('#mi-sla-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!canSla) return;
+    const form = e.target;
+    const stages = {};
+    for (const status of Object.keys(slaConfig)) stages[status] = { days: Number(form[status].value) };
+    await saveSlaConfig(stages);
+    toastSuccess('حُفظت مدد البوابات — تُطبق فورًا على العدادات والتصعيد');
+    renderSettings(container);
+  });
+  container.querySelector('[data-act="sla-reset"]')?.addEventListener('click', async () => {
+    await saveSlaConfig(defaultSlaConfig());
+    toastSuccess('استُعيدت المدد الافتراضية');
+    renderSettings(container);
   });
 
   container.querySelector('[data-act="backup"]')?.addEventListener('click', async () => {

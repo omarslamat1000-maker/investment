@@ -111,3 +111,68 @@ export const DEMO_CAMPAIGNS = [
     portfolioId: 'pf-madinah-proposed'
   }
 ];
+
+// تقارير تقدم ميدانية تجريبية من الشركاء — واحد معتمد وآخران بانتظار اعتماد مكتب المبادرات
+const DEMO_PHOTO = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="480" height="320"><rect width="480" height="320" fill="#DCE9E0"/>' +
+  '<rect x="0" y="220" width="480" height="100" fill="#8FB59E"/><circle cx="120" cy="150" r="60" fill="#2C7A63"/>' +
+  '<rect x="112" y="200" width="16" height="60" fill="#5A3E1B"/><circle cx="330" cy="130" r="70" fill="#4E8F7B"/>' +
+  '<rect x="322" y="190" width="16" height="70" fill="#5A3E1B"/><text x="240" y="300" text-anchor="middle" font-size="18" fill="#073B2E">صورة ميدانية توضيحية</text></svg>');
+
+export const DEMO_PROGRESS_REPORTS = [
+  {
+    id: 'pr-001', initiativeId: 'MDN-INIT-2026-0001', partnerId: 'MDN-PRT-2026-0002', partnerName: 'جمعية سقيا وظل',
+    milestoneId: 'ms-102', percent: 55, note: 'اكتملت زراعة القطاع الأول (400 شجرة) وتشغيل شبكة الري — بدأ التحضير للقطاع الثاني.',
+    photos: [DEMO_PHOTO], status: 'approved', at: '2026-07-05T09:00:00Z',
+    reviewedAt: '2026-07-06T08:30:00Z', reviewedBy: 'أ. ريم الجهني', reviewNote: 'مطابق للزيارة الميدانية.'
+  },
+  {
+    id: 'pr-002', initiativeId: 'MDN-INIT-2026-0001', partnerId: 'MDN-PRT-2026-0004', partnerName: 'فريق «دربك أخضر» التطوعي',
+    milestoneId: 'ms-103', percent: 62, note: 'يوم تطوعي ثالث: زُرعت 140 شجرة إضافية من القطاع الثاني بمشاركة 60 متطوعًا.',
+    photos: [DEMO_PHOTO], status: 'pending', at: '2026-08-28T10:00:00Z',
+    reviewedAt: null, reviewedBy: '', reviewNote: ''
+  },
+  {
+    id: 'pr-003', initiativeId: 'MDN-INIT-2026-0003', partnerId: 'MDN-PRT-2026-0001', partnerName: 'شركة واحة البناء للمقاولات',
+    milestoneId: 'ms-303', percent: 72, note: 'رُصف 900 م من المقطع الثاني وتركيب 9 منحدرات — متبقٍ 300 م وتشطيب المنحدرات.',
+    photos: [], status: 'pending', at: '2026-08-30T07:30:00Z',
+    reviewedAt: null, reviewedBy: '', reviewNote: ''
+  }
+];
+
+// اتفاقيات شراكة تجريبية — موقعتان تاريخيًا وواحدة صادرة بانتظار اعتماد الشريك (مبادرة في مرحلة الاعتماد)
+export const DEMO_AGREEMENTS = [
+  {
+    id: 'MDN-AGR-2026-0001', initiativeId: 'MDN-INIT-2026-0001', initiativeTitle: 'تشجير محور طريق قباء بالمشاركة المجتمعية',
+    district: 'قباء', budget: 3200000, joint: true, models: ['coFunding', 'inKind'], durationMonths: 24, startDate: '2026-04-01',
+    parties: [
+      { partnerId: 'MDN-PRT-2026-0002', name: 'جمعية سقيا وظل', representative: 'أ. مها الصاعدي', model: 'coFunding', modelLabel: 'تمويل مشترك', contribution: 'تمويل 40% + التشغيل والصيانة لسنتين', approvedAt: '2026-03-08T09:00:00Z', approvedBy: 'أ. مها الصاعدي' },
+      { partnerId: 'MDN-PRT-2026-0004', name: 'فريق «دربك أخضر» التطوعي', representative: 'أ. سارة الحسيني', model: 'inKind', modelLabel: 'تبرع عيني', contribution: 'أيام تطوعية للزراعة (120 متطوعًا)', approvedAt: '2026-03-09T11:00:00Z', approvedBy: 'أ. سارة الحسيني' }
+    ],
+    clauses: [], status: 'signed', issuedAt: '2026-03-05T08:00:00Z', issuedBy: 'أ. ريم الجهني',
+    amanah: { approvedAt: '2026-03-10T08:00:00Z', approvedBy: 'م. عبدالله الحربي' }, signedAt: '2026-03-10T08:00:00Z', version: 1
+  },
+  {
+    id: 'MDN-AGR-2026-0002', initiativeId: 'MDN-INIT-2026-0002', initiativeTitle: 'إنارة LED ذكية لممرات حي العوالي',
+    district: 'العوالي', budget: 1450000, joint: false, models: ['fullFunding'], durationMonths: 12, startDate: '2026-09-01',
+    parties: [
+      { partnerId: 'MDN-PRT-2026-0003', name: 'مجموعة نور المدينة', representative: 'أ. عمر البلوي', model: 'fullFunding', modelLabel: 'تمويل كامل', contribution: 'تمويل كامل ضمن برنامج المسؤولية المجتمعية', approvedAt: '2026-07-28T09:00:00Z', approvedBy: 'أ. عمر البلوي' }
+    ],
+    clauses: [], status: 'signed', issuedAt: '2026-07-25T08:00:00Z', issuedBy: 'أ. ريم الجهني',
+    amanah: { approvedAt: '2026-08-01T08:00:00Z', approvedBy: 'م. عبدالله الحربي' }, signedAt: '2026-08-01T08:00:00Z', version: 1
+  },
+  {
+    id: 'MDN-AGR-2026-0003', initiativeId: 'MDN-INIT-2026-0007', initiativeTitle: 'ممر ظليل يربط قباء بالمسار النبوي',
+    district: 'قباء', budget: 5400000, joint: false, models: ['coFunding'], durationMonths: 18, startDate: null,
+    parties: [
+      { partnerId: 'MDN-PRT-2026-0005', name: 'شركة مسارات الذكية للتقنية', representative: 'م. يوسف قاضي', model: 'coFunding', modelLabel: 'تمويل مشترك', contribution: 'تمويل 35% والتصميم التفصيلي والإشراف', approvedAt: null, approvedBy: '' }
+    ],
+    clauses: [], status: 'issued', issuedAt: '2026-08-27T08:00:00Z', issuedBy: 'أ. ريم الجهني',
+    amanah: { approvedAt: null, approvedBy: '' }, signedAt: null, version: 1
+  }
+];
+
+// ربط شريك بمبادرة الاعتماد (للاتفاقية الصادرة) — يُضاف مع الزرع التكميلي v7
+export const DEMO_EXTRA_LINKS_V7 = [
+  { id: 'ip-009', initiativeId: 'MDN-INIT-2026-0007', partnerId: 'MDN-PRT-2026-0005', model: 'coFunding', contribution: 'تمويل 35% والتصميم التفصيلي والإشراف', signedAt: null }
+];

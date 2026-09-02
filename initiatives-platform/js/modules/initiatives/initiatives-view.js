@@ -27,10 +27,18 @@ import { notify } from '../../services/notification-service.js';
 import { downloadCsv } from '../../services/export-service.js';
 import { openReportViewer } from '../../ui/report-viewer.js';
 import { toHtmlTable } from '../../services/export-service.js';
+import { slaChip } from '../../ui/components.js';
+import { slaStatus } from '../../domain/sla.js';
+import { getSlaConfig } from '../../services/sla-service.js';
+import { renderAgreementPanel } from './agreement-panel.js';
+import { agreementForInitiative } from '../../services/agreement-service.js';
+import { isSigned } from '../../domain/agreement.js';
+import { progressReportsHtml, bindProgressReportActions } from '../execution/progress-reports-panel.js';
 
 export async function renderInitiativesList(container) {
-  const initiatives = await repos.initiatives.getAll();
+  const [initiatives, slaConfig] = await Promise.all([repos.initiatives.getAll(), getSlaConfig()]);
   const role = getRole();
+  const slaOf = (r) => slaStatus(r, slaConfig);
 
   container.innerHTML = html`
     ${raw(sectionHeader('سجل المبادرات', 'جميع المبادرات المقدمة عبر القنوات الداخلية والعامة وقنوات الشركاء',
@@ -54,6 +62,7 @@ export async function renderInitiativesList(container) {
     { key: 'category', label: 'التصنيف', map: (r) => categoryLabel(r.category) },
     { key: 'district', label: 'الحي' },
     { key: 'status', label: 'الحالة', htmlMap: (r) => statusBadge(r.status), sortValue: (r) => r.status, map: (r) => statusLabel(r.status) },
+    { key: 'sla', label: 'مدة المرحلة', htmlMap: (r) => slaChip(slaOf(r), { compact: true }) || '<span class="mi-muted">—</span>', map: (r) => { const s = slaOf(r); return s ? `${s.days}/${s.limit}` : ''; }, sortValue: (r) => { const s = slaOf(r); return s ? (s.level === 'overdue' ? 1000 + s.overdueDays : s.percent) : -1; } },
     ...(cloud ? [
       { key: 'currentStage', label: 'المرحلة الحالية', map: (r) => r.currentStage || '—' },
       { key: 'progressPercentage', label: 'الإنجاز', map: (r) => `${fmtNumber(r.progressPercentage || 0)}٪`, sortValue: (r) => Number(r.progressPercentage) || 0 }
@@ -106,7 +115,10 @@ export async function renderInitiativeDetails(container, id) {
     repos.reviews.byInitiative(id), repos.gateChecklists.byInitiative(id),
     repos.qualityChecks.byInitiative(id), repos.portfolios.getAll()
   ]);
-  const campaigns = await repos.campaigns.getAll();
+  const [campaigns, slaConfig, fieldReports] = await Promise.all([
+    repos.campaigns.getAll(), getSlaConfig(), repos.progressReports.byInitiative(id).catch(() => [])
+  ]);
+  const sla = slaStatus(initiative, slaConfig);
   const portfolio = initiative.portfolioId ? portfolios.find((p) => p.id === initiative.portfolioId) : null;
   const campaign = initiative.campaignId ? campaigns.find((c) => c.id === initiative.campaignId) : null;
 
@@ -138,6 +150,7 @@ export async function renderInitiativeDetails(container, id) {
       </div>
       <div class="mi-detail-head__badges">
         ${raw(statusBadge(initiative.status))}
+        ${raw(slaChip(sla))}
         ${['execution', 'benefits'].includes(initiative.status) ? raw(healthBadge(health)) : ''}
       </div>
     </header>
@@ -230,6 +243,17 @@ export async function renderInitiativeDetails(container, id) {
             <small>${l.contribution || ''}</small>
           </div>`).join('')) : raw('<p class="mi-muted">لا يوجد شركاء مرتبطون بعد</p>')}
       </section>
+
+      <section class="mi-card" data-agreement-panel hidden></section>
+
+      ${['execution', 'benefits', 'closed'].includes(initiative.status) ? raw(html`
+      <section class="mi-card mi-card--span" data-field-reports>
+        <h3>تقارير التقدم الميدانية من الشركاء
+          ${fieldReports.some((r) => r.status === 'pending') ? raw(`<span class="mi-tag" data-benefit="onTrack">${escapeHtml(fmtNumber(fieldReports.filter((r) => r.status === 'pending').length))} بانتظار الاعتماد</span>`) : ''}
+          ${initiative.progressPercentage ? raw(`<small class="mi-muted">— الإنجاز المعلن ${escapeHtml(fmtNumber(initiative.progressPercentage))}٪</small>`) : ''}
+        </h3>
+        ${raw(progressReportsHtml(sortBy(fieldReports, (r) => r.at, 'desc'), { milestones, canReview: can(role, 'execution.edit') }))}
+      </section>`) : ''}
 
       ${nextGate ? raw(html`
       <section class="mi-card">
@@ -326,6 +350,18 @@ export async function renderInitiativeDetails(container, id) {
   const geoHost = container.querySelector('[data-geo]');
   if (geoHost) renderSitesPreview(geoHost, getSites(initiative));
 
+  // اتفاقية الشراكة الرقمية (من مرحلة الاعتماد فصاعدًا)
+  renderAgreementPanel(container.querySelector('[data-agreement-panel]'), {
+    initiative, links,
+    canIssue: can(role, 'decisions.create') || can(role, 'partners.edit'),
+    canApprove: can(role, 'decisions.create'),
+    onChange: () => renderInitiativeDetails(container, id)
+  }).catch((err) => console.warn('تعذر تحميل لوحة الاتفاقية', err));
+
+  // اعتماد/رفض التقارير الميدانية
+  const reportsHost = container.querySelector('[data-field-reports]');
+  if (reportsHost) bindProgressReportActions(reportsHost, () => renderInitiativeDetails(container, id));
+
   // لوحات وضع السحابة: الحوكمة الرسمية، لوحة المشرف، الملاحظات، المرفقات
   (async () => {
     const { isCloudMode } = await import('../../config.js');
@@ -417,6 +453,17 @@ export async function renderInitiativeDetails(container, id) {
     btn.addEventListener('click', async () => {
       const to = btn.dataset.transition;
       const meta = transitionMeta(initiative.status, to);
+      // بوابة G2: التحذير إن لم تُوقَّع اتفاقية الشراكة من الطرفين
+      if (meta?.gate === 'G2' && to === 'readiness') {
+        const agreement = await agreementForInitiative(initiative.id);
+        if (!isSigned(agreement)) {
+          const proceed = await confirmModal('اتفاقية الشراكة غير موقعة',
+            agreement ? `الاتفاقية ${agreement.id} لم تكتمل اعتماداتها بعد. اجتياز بوابة الاعتماد قبل التوقيع يخالف الإجراء المعتمد — هل تريد المتابعة بقرار مسبب؟`
+              : 'لم تصدر اتفاقية شراكة لهذه المبادرة بعد. أصدرها من لوحة «اتفاقية الشراكة الرقمية» واعتمدها الطرفان قبل اجتياز G2. هل تريد المتابعة رغم ذلك؟',
+            { confirmLabel: 'متابعة بقرار مسبب', danger: true });
+          if (!proceed) return;
+        }
+      }
       if (meta?.gate && readiness && !readiness.ready) {
         const proceed = await confirmModal('قائمة التحقق غير مكتملة',
           `أُنجز ${readiness.done} من ${readiness.total} بنود بوابة ${meta.gate}. هل تريد تسجيل القرار رغم ذلك؟`,

@@ -4,12 +4,12 @@ import { dataProvider } from '../data/data-provider.js';
 import { DEMO_INITIATIVES, DEMO_PROPOSED_INITIATIVES, DEMO_PORTFOLIOS, DEMO_INITIATIVE_PARTNERS, DEMO_MILESTONES, DEMO_BENEFITS, DEMO_RISKS, DEMO_KPIS, DEMO_REVIEWS, DEMO_DECISIONS, DEMO_QUALITY_CHECKS } from '../../data/demo-initiatives.js';
 import { DEMO_NEEDS } from '../../data/demo-needs.js';
 import { DEMO_PARTNERS } from '../../data/demo-partners.js';
-import { ORG_UNITS, DEMO_USERS, DEMO_CAMPAIGNS, DEMO_GALLERY, DEMO_NEED_APPLICATIONS } from '../../data/reference-data.js';
+import { ORG_UNITS, DEMO_USERS, DEMO_CAMPAIGNS, DEMO_GALLERY, DEMO_NEED_APPLICATIONS, DEMO_PROGRESS_REPORTS, DEMO_AGREEMENTS, DEMO_EXTRA_LINKS_V7 } from '../../data/reference-data.js';
 import { nowIso } from '../core/date-time.js';
 import { hashPassword, DEFAULT_PASSWORD } from './auth-service.js';
 
 const SEED_FLAG_ID = 'seed-status';
-export const SEED_VERSION = 6; // v6: طلبات التقديم على الفرص (المفاضلة)
+export const SEED_VERSION = 7; // v7: تقارير التقدم الميدانية واتفاقيات الشراكة
 
 const stamp = (r) => ({ createdAt: nowIso(), updatedAt: nowIso(), ...r });
 
@@ -30,6 +30,7 @@ export async function seedDemoDataIfEmpty() {
     if (version < 4) await topUpToV4();
     if (version < 5) await topUpToV5();
     if (version < 6) await topUpToV6();
+    if (version < 7) await topUpToV7();
   }
   await dataProvider.put('settings', { id: SEED_FLAG_ID, seeded: true, version: SEED_VERSION, at: nowIso() });
   return true;
@@ -44,7 +45,7 @@ async function fullSeed() {
   await dataProvider.bulkPut('infrastructureNeeds', DEMO_NEEDS.map(stamp));
   await dataProvider.bulkPut('portfolios', DEMO_PORTFOLIOS.map(stamp));
   await dataProvider.bulkPut('initiatives', [...DEMO_INITIATIVES, ...DEMO_PROPOSED_INITIATIVES].map(stamp));
-  await dataProvider.bulkPut('initiativePartners', DEMO_INITIATIVE_PARTNERS.map(stamp));
+  await dataProvider.bulkPut('initiativePartners', [...DEMO_INITIATIVE_PARTNERS, ...DEMO_EXTRA_LINKS_V7].map(stamp));
   await dataProvider.bulkPut('milestones', DEMO_MILESTONES.map(stamp));
   await dataProvider.bulkPut('benefits', DEMO_BENEFITS.map(stamp));
   await dataProvider.bulkPut('risks', DEMO_RISKS.map(stamp));
@@ -54,6 +55,22 @@ async function fullSeed() {
   await dataProvider.bulkPut('qualityChecks', DEMO_QUALITY_CHECKS.map(stamp));
   await dataProvider.bulkPut('gallery', DEMO_GALLERY.map(stamp));
   await dataProvider.bulkPut('needApplications', DEMO_NEED_APPLICATIONS.map(stamp));
+  await dataProvider.bulkPut('progressReports', DEMO_PROGRESS_REPORTS.map(stamp));
+  await dataProvider.bulkPut('agreements', DEMO_AGREEMENTS.map(stamp));
+}
+
+// v6 → v7: تقارير التقدم والاتفاقيات التجريبية + ربط شريك مبادرة الاعتماد (للمتصفحات القائمة)
+async function topUpToV7() {
+  const users = await dataProvider.getAll('users');
+  if (!users.length) return; // منصة مُفرغة عمدًا
+  const [reports, agreements, links] = await Promise.all([
+    dataProvider.getAll('progressReports'), dataProvider.getAll('agreements'), dataProvider.getAll('initiativePartners')
+  ]);
+  if (!reports.length) await dataProvider.bulkPut('progressReports', DEMO_PROGRESS_REPORTS.map(stamp));
+  if (!agreements.length) await dataProvider.bulkPut('agreements', DEMO_AGREEMENTS.map(stamp));
+  const ids = new Set(links.map((l) => l.id));
+  const fresh = DEMO_EXTRA_LINKS_V7.filter((l) => !ids.has(l.id));
+  if (fresh.length) await dataProvider.bulkPut('initiativePartners', fresh.map(stamp));
 }
 
 // v5 → v6: طلبات التقديم التجريبية للمتصفحات القائمة

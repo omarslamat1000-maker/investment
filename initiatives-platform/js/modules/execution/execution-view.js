@@ -1,6 +1,6 @@
 // متابعة التنفيذ — معالم المبادرات قيد التنفيذ وتحديث الإنجاز والمنصرف
 import { repos } from '../../data/repositories.js';
-import { html, raw } from '../../core/sanitizer.js';
+import { html, raw, escapeHtml } from '../../core/sanitizer.js';
 import { sectionHeader, statusBadge, progressBar, emptyState } from '../../ui/components.js';
 import { fmtDate, isOverdue } from '../../core/date-time.js';
 import { fmtMoney, percent, sortBy } from '../../core/utils.js';
@@ -8,16 +8,29 @@ import { getRole } from '../../core/state.js';
 import { can } from '../../core/permissions.js';
 import { toastSuccess } from '../../ui/toast.js';
 import { navigate } from '../../router.js';
+import { progressReportsHtml, bindProgressReportActions } from './progress-reports-panel.js';
+import { fmtNumber } from '../../core/utils.js';
 
 export async function renderExecution(container) {
-  const [initiatives, milestones] = await Promise.all([repos.initiatives.getAll(), repos.milestones.getAll()]);
+  const [initiatives, milestones, allReports] = await Promise.all([
+    repos.initiatives.getAll(), repos.milestones.getAll(), repos.progressReports.getAll().catch(() => [])
+  ]);
   const role = getRole();
   const editable = can(role, 'execution.edit');
   const running = initiatives.filter((i) => ['execution', 'benefits'].includes(i.status));
+  const pending = sortBy(allReports.filter((r) => r.status === 'pending'), (r) => r.at, 'desc');
 
   container.innerHTML = html`
-    ${raw(sectionHeader('متابعة التنفيذ', 'معالم الإنجاز والمنصرف للمبادرات الجارية'))}
+    ${raw(sectionHeader('متابعة التنفيذ', 'معالم الإنجاز والمنصرف للمبادرات الجارية، واعتماد تقارير الشركاء الميدانية'))}
+    <section class="mi-card mi-field-queue" data-field-queue>
+      <h3>تقارير ميدانية بانتظار الاعتماد ${pending.length ? raw(`<span class="mi-tag" data-benefit="onTrack">${escapeHtml(fmtNumber(pending.length))}</span>`) : ''}</h3>
+      ${pending.length
+        ? raw(progressReportsHtml(pending, { milestones, initiatives, canReview: editable, showInitiative: true }))
+        : raw('<p class="mi-muted">لا تقارير معلقة — ما يرفعه الشركاء من بوابتهم يظهر هنا للاعتماد قبل نشره</p>')}
+    </section>
     <div class="mi-exec-list"></div>`;
+
+  bindProgressReportActions(container.querySelector('[data-field-queue]'), () => renderExecution(container));
 
   const list = container.querySelector('.mi-exec-list');
   if (!running.length) {
@@ -39,6 +52,7 @@ export async function renderExecution(container) {
           ${raw(statusBadge(ini.status))}
         </header>
         ${ms.length ? raw(progressBar(p, `إنجاز ${ini.title}`)) : ''}
+        ${ini.progressPercentage ? raw(`<small class="mi-muted">الإنجاز المعلن من التقارير الميدانية المعتمدة: <b>${escapeHtml(fmtNumber(ini.progressPercentage))}٪</b>${ini.lastFieldUpdateAt ? ' — آخر تحديث ' + escapeHtml(fmtDate(ini.lastFieldUpdateAt)) : ''}</small>`) : ''}
         <div class="mi-ms-list">
           ${ms.length ? raw(ms.map((m) => html`
             <label class="mi-ms" data-done="${m.done ? 'yes' : 'no'}" data-overdue="${isOverdue(m.due, m.doneAt) ? 'yes' : 'no'}">

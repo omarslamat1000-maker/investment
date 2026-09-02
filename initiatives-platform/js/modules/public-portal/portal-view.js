@@ -81,7 +81,10 @@ export async function renderRunningInitiatives(container, { limit = 6 } = {}) {
   container.innerHTML = running.map((i) => {
     const ms = milestones.filter((m) => m.initiativeId === i.id);
     const done = ms.filter((m) => m.done).length;
-    const p = ms.length ? percent(done, ms.length) : null;
+    // الإنجاز المعلن: أعلى ما بين المعالم المنجزة وآخر تقرير ميداني معتمد من الشريك
+    const fromMs = ms.length ? percent(done, ms.length) : null;
+    const fromField = Number(i.progressPercentage) || null;
+    const p = fromMs === null && fromField === null ? null : Math.max(fromMs || 0, fromField || 0);
     return html`
       <article class="mi-progress-card">
         ${i.imageDataUrl ? raw(`<img class="mi-progress-card__img" src="${i.imageDataUrl}" alt="">`) : raw('<div class="mi-progress-card__img mi-progress-card__img--empty" aria-hidden="true"><span class="mi-gate__arch"></span></div>')}
@@ -93,6 +96,7 @@ export async function renderRunningInitiatives(container, { limit = 6 } = {}) {
               <div class="mi-progress__fill" style="width:${p}%"></div>
               <span class="mi-progress__text">${escapeHtml(fmtNumber(p))}٪</span>
             </div>`) : raw(`<p class="mi-muted">${i.status === 'benefits' ? 'اكتمل التنفيذ — جارٍ قياس المنافع' : 'انطلقت الأعمال'}</p>`)}
+          ${i.lastFieldUpdateAt ? raw(`<small class="mi-muted">آخر تحديث ميداني معتمد: ${escapeHtml(fmtDate(i.lastFieldUpdateAt))}</small>`) : ''}
         </div>
       </article>`;
   }).join('');
