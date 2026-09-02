@@ -117,3 +117,4 @@ textarea.mi-input { resize: vertical; line-height: 1.6; }
   .mi-perm-row { grid-template-columns: 1fr 6.5rem; }
   .mi-perm-row__role { display: none; }
 }
+.mi-form-field--wide { grid-column: 1 / -1; flex-basis: 100%; }

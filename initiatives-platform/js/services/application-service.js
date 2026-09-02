@@ -6,6 +6,7 @@ import { uid } from '../core/utils.js';
 import { nowIso } from '../core/date-time.js';
 import { newInitiative, sanitizeInitiative } from '../domain/initiative-model.js';
 import { notify } from './notification-service.js';
+import { sanitizeDetails } from '../domain/application-details.js';
 
 export const APPLICATION_STATUS = {
   applied: { id: 'applied', label: 'بانتظار الفرز' },
@@ -14,7 +15,7 @@ export const APPLICATION_STATUS = {
 };
 
 // تقديم شريك على فرصة — يمنع التكرار ويتحقق من الطرح
-export async function applyToNeed({ need, session, model, proposal }) {
+export async function applyToNeed({ need, session, model, proposal, details = {} }) {
   if (!session?.partnerId) throw new Error('التقديم متاح لحسابات الجهات الشريكة المعتمدة فقط');
   if (need.status !== 'published') throw new Error('هذه الفرصة غير مطروحة للتقديم حاليًا');
   if (String(proposal || '').trim().length < 20) {
@@ -32,6 +33,13 @@ export async function applyToNeed({ need, session, model, proposal }) {
     partnerName: partner?.name || session.name,
     model: model || 'coFunding',
     proposal: String(proposal).trim(),
+    // البيانات الأساسية للجهة تُلتقط تلقائيًا من الحساب، والتفصيلية من نموذج التقديم
+    basic: partner ? {
+      name: partner.name, type: partner.type, contactName: partner.contactName,
+      contactEmail: partner.contactEmail, contactPhone: partner.contactPhone,
+      models: partner.models || [], interests: partner.interests || []
+    } : null,
+    details: sanitizeDetails(details),
     status: 'applied',
     at: nowIso()
   });
@@ -52,6 +60,15 @@ export async function scoreApplication(applicationId, { scores = {}, note = '', 
   return repos.needApplications.update(applicationId, {
     scores: clean, screeningNote: String(note || '').trim(), scoredBy: by, scoredAt: nowIso()
   });
+}
+
+// تحديث البيانات التفصيلية لطلب قائم (من بوابة الشريك قبل البت فيه)
+export async function updateApplicationDetails(applicationId, details, session) {
+  const app = await repos.needApplications.get(applicationId);
+  if (!app) throw new Error('الطلب غير موجود');
+  if (session?.partnerId && app.partnerId !== session.partnerId) throw new Error('لا يمكن تعديل طلب جهة أخرى');
+  if (app.status !== 'applied') throw new Error('لا يمكن تعديل طلب تم البت فيه');
+  return repos.needApplications.update(applicationId, { details: sanitizeDetails(details), detailsUpdatedAt: nowIso() });
 }
 
 // استبعاد متقدم واحد من الفرز دون إغلاق الفرصة

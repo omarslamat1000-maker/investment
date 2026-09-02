@@ -62,7 +62,8 @@
     import { fmtDate } from './js/core/date-time.js';
     import { PRIORITY_LABELS } from './js/domain/infrastructure-need-model.js';
     import { PARTNERSHIP_MODELS } from './js/core/constants.js';
-    import { applyToNeed, APPLICATION_STATUS } from './js/services/application-service.js';
+    import { applyToNeed, APPLICATION_STATUS, updateApplicationDetails } from './js/services/application-service.js';
+    import { APPLICATION_FIELDS, formatDetail, detailsCompleteness } from './js/domain/application-details.js';
     import { openModal } from './js/ui/modal.js';
     import { toastSuccess, toastError } from './js/ui/toast.js';
     import { partnerApprove, openAgreementViewer, computeAgreementStatus, agreementStatusLabel } from './js/services/agreement-service.js';
@@ -177,11 +178,21 @@
           const need = needs.find((n) => n.id === a.needId);
           const st = APPLICATION_STATUS[a.status] || APPLICATION_STATUS.applied;
           const badge = a.status === 'accepted' ? 'achieved' : a.status === 'rejected' ? 'atRisk' : 'onTrack';
+          const comp = detailsCompleteness(a.details || {});
+          const FMT = { fmtMoney, fmtNumber, fmtDate };
+          const filled = APPLICATION_FIELDS.filter((f) => a.details?.[f.id] !== undefined && a.details?.[f.id] !== '' && f.type !== 'text');
           return html`
-            <div class="mi-ms" data-done="${a.status === 'accepted' ? 'yes' : 'no'}">
-              <span class="mi-ms__dot" aria-hidden="true"></span>
-              <span>«${need?.title || a.needId}» — ${modelLabel(a.model)}
-                ${a.status === 'accepted' ? raw(' <small class="mi-muted">(اعتُمد وأُنشئت مبادرة الشراكة — تظهر ضمن مبادراتكم أعلاه)</small>') : ''}</span>
+            <div class="mi-ms" data-done="${a.status === 'accepted' ? 'yes' : 'no'}" style="align-items:flex-start">
+              <span class="mi-ms__dot" aria-hidden="true" style="margin-top:0.45rem"></span>
+              <span style="flex:1">«${need?.title || a.needId}» — ${modelLabel(a.model)}
+                ${a.status === 'accepted' ? raw(' <small class="mi-muted">(اعتُمد وأُنشئت مبادرة الشراكة — تظهر ضمن مبادراتكم أعلاه)</small>') : ''}
+                ${a.status === 'rejected' && a.decisionReason ? raw(` <small class="mi-muted">— ${escapeHtml(a.decisionReason)}</small>`) : ''}
+                <div class="mi-details-summary">
+                  ${raw(filled.slice(0, 6).map((f) => `<span>${escapeHtml(f.label)}: <b>${escapeHtml(formatDetail(f, a.details[f.id], FMT))}</b></span>`).join(''))}
+                  <span>اكتمال البيانات التفصيلية: <b>${fmtNumber(comp.percent)}٪</b>${comp.percent < 100 && a.status === 'applied' ? raw(' <small class="mi-compare__missing">— استكملوها لتقوية موقفكم في المفاضلة</small>') : ''}</span>
+                </div>
+                ${a.status === 'applied' ? raw(`<button class="mi-btn mi-btn--ghost mi-btn--sm" type="button" data-edit-app="${escapeHtml(a.id)}">تعديل البيانات التفصيلية</button>`) : ''}
+              </span>
               <span class="mi-tag" data-benefit="${badge}">${st.label}</span>
               <small>${fmtDate(a.at)}</small>
             </div>`;
@@ -198,19 +209,58 @@
       }
 
       // نافذة التقديم على فرصة: نموذج الشراكة + مقترح المساهمة
+      // حقول البيانات التفصيلية مجمّعة حسب المجموعة — تُستخدم في التقديم والتعديل
+      function detailsFieldsHtml(values = {}) {
+        const groups = [...new Set(APPLICATION_FIELDS.map((f) => f.group))];
+        return groups.map((g) => html`
+          <fieldset class="mi-form-field mi-apply-group"><legend>${g}</legend>
+            <div class="mi-form-row">
+              ${raw(APPLICATION_FIELDS.filter((f) => f.group === g).map((f) => {
+                const v = values[f.id] ?? '';
+                const id = `mi-d-${f.id}`;
+                let input;
+                if (f.type === 'select') input = `<select class="mi-input" id="${id}" data-detail="${f.id}"><option value="">—</option>${f.options.map((o) => `<option value="${o.id}" ${o.id === v ? 'selected' : ''}>${escapeHtml(o.label)}</option>`).join('')}</select>`;
+                else if (f.type === 'text') input = `<textarea class="mi-input" id="${id}" data-detail="${f.id}" rows="2">${escapeHtml(v)}</textarea>`;
+                else if (f.type === 'date') input = `<input class="mi-input" id="${id}" data-detail="${f.id}" type="date" value="${escapeHtml(v)}">`;
+                else input = `<input class="mi-input" id="${id}" data-detail="${f.id}" type="number" min="0" ${f.type === 'percent' ? 'max="100"' : ''} step="${f.type === 'money' ? '1000' : '1'}" value="${escapeHtml(String(v))}">`;
+                return `<div class="mi-form-field ${f.type === 'text' ? 'mi-form-field--wide' : ''}"><label for="${id}">${escapeHtml(f.label)}${f.unit ? ` <small class="mi-muted">(${escapeHtml(f.unit)})</small>` : ''}</label>${input}</div>`;
+              }).join(''))}
+            </div>
+          </fieldset>`).join('');
+      }
+      function readDetails(dialog) {
+        const out = {};
+        dialog.querySelectorAll('[data-detail]').forEach((el) => { if (el.value !== '') out[el.dataset.detail] = el.value; });
+        return out;
+      }
+
+      // نافذة التقديم على فرصة: بيانات الجهة (تلقائيًا) + البيانات التفصيلية + المقترح
       function openApplyModal(need, partnerId) {
         if (!need) return;
+        const partner = partners.find((p) => p.id === partnerId) || {};
         const { dialog, close } = openModal({
           title: `التقديم على «${need.title}»`,
+          wide: true,
           bodyHtml: html`
             <form class="mi-form" id="mi-apply-form">
               <p class="mi-muted">${categoryLabel(need.category)} • حي ${need.district} • التكلفة التقديرية ${fmtMoney(need.estimatedCost)}</p>
+              <h4 class="mi-subhead">1) بيانات الجهة الأساسية <small class="mi-muted">— تُسجَّل تلقائيًا من حسابكم</small></h4>
+              <div class="mi-apply-basic">
+                <div><span>الجهة</span>${partner.name || '—'}</div>
+                <div><span>النوع</span>${partnerTypeLabel(partner.type)}</div>
+                <div><span>الممثل</span>${partner.contactName || '—'}</div>
+                <div><span>التواصل</span>${partner.contactEmail || '—'} ${partner.contactPhone ? raw(' • ' + escapeHtml(partner.contactPhone)) : ''}</div>
+                <div><span>نماذج الشراكة المتاحة</span>${(partner.models || []).map(modelLabel).join('، ') || '—'}</div>
+              </div>
+              <h4 class="mi-subhead">2) بيانات المقترح التفصيلية <small class="mi-muted">— تُقارن بها الطلبات في الفرز</small></h4>
               <div class="mi-form-field">
                 <label for="mi-apply-model">نموذج الشراكة المقترح</label>
                 <select class="mi-input" id="mi-apply-model" name="model">
                   ${raw(PARTNERSHIP_MODELS.map((m) => `<option value="${m.id}" ${(need.preferredModels || [])[0] === m.id ? 'selected' : ''}>${m.label}</option>`).join(''))}
                 </select>
               </div>
+              ${raw(detailsFieldsHtml({}))}
+              <h4 class="mi-subhead">3) المقترح</h4>
               <div class="mi-form-field">
                 <label for="mi-apply-proposal">مقترح مساهمتكم (20 حرفًا على الأقل)</label>
                 <textarea class="mi-input" id="mi-apply-proposal" name="proposal" rows="4" required
@@ -228,7 +278,8 @@
               need,
               session,
               model: dialog.querySelector('#mi-apply-model').value,
-              proposal: dialog.querySelector('#mi-apply-proposal').value
+              proposal: dialog.querySelector('#mi-apply-proposal').value,
+              details: readDetails(dialog)
             });
             toastSuccess('أُرسل طلبكم — يُبَت فيه في مرحلة الفرز');
             close();
@@ -236,6 +287,28 @@
           } catch (err) {
             toastError(err.message || 'تعذر إرسال الطلب');
           }
+        });
+      }
+
+      // تعديل البيانات التفصيلية لطلب قائم لم يُبت فيه
+      function openDetailsEditModal(app) {
+        if (!app) return;
+        const { dialog, close } = openModal({
+          title: `البيانات التفصيلية — «${needs.find((n) => n.id === app.needId)?.title || app.needId}»`,
+          wide: true,
+          bodyHtml: html`<form class="mi-form">${raw(detailsFieldsHtml(app.details || {}))}</form>`,
+          footerHtml: html`
+            <button class="mi-btn mi-btn--ghost" data-act="cancel">إلغاء</button>
+            <button class="mi-btn mi-btn--primary" data-act="save">حفظ البيانات</button>`
+        });
+        dialog.querySelector('[data-act="cancel"]').addEventListener('click', close);
+        dialog.querySelector('[data-act="save"]').addEventListener('click', async () => {
+          try {
+            await updateApplicationDetails(app.id, readDetails(dialog), session);
+            close();
+            toastSuccess('حُفظت البيانات التفصيلية');
+            location.reload();
+          } catch (err) { toastError(err.message); }
         });
       }
 
@@ -400,6 +473,9 @@
         content.querySelectorAll('[data-apply-need]').forEach((btn) =>
           btn.addEventListener('click', () => openApplyModal(
             needs.find((n) => n.id === btn.dataset.applyNeed), partnerId)));
+
+        content.querySelectorAll('[data-edit-app]').forEach((btn) => btn.addEventListener('click', () =>
+          openDetailsEditModal(allApplications.find((a) => a.id === btn.dataset.editApp))));
 
         // الاتفاقيات: عرض واعتماد إلكتروني
         content.querySelectorAll('[data-agr-view]').forEach((btn) => btn.addEventListener('click', () => {
