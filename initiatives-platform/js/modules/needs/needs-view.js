@@ -88,7 +88,8 @@ export async function renderNeeds(container) {
             </label>`;
         }).join('')) : raw('<p class="mi-muted">لا طلبات تقديم على هذه الفرصة بعد — تصل الطلبات من بوابة الشركاء.</p>')}
         ${decidable ? raw(`
-          <p class="mi-muted" style="margin-top:0.75rem">حدد جهة واحدة لاعتمادها منفردة، أو أكثر من جهة لاعتماد شراكة مشتركة — تُنشأ مبادرة واحدة يرتبط بها كل المعتمدين وتُرفض بقية الطلبات.</p>
+          <p class="mi-muted" style="margin-top:0.75rem">حدد جهة واحدة لاعتمادها منفردة، أو أكثر من جهة لاعتماد شراكة مشتركة — تُنشأ مبادرة واحدة يرتبط بها كل المعتمدين وتُرفض بقية الطلبات.
+            للمقارنة التفصيلية بالمعايير الموزونة والنسب افتح <a href="#/screening/${escapeHtml(existing.id)}" data-close-modal>شاشة الفرز</a>.</p>
           <button type="button" class="mi-btn mi-btn--gold" data-act="adopt" disabled>اعتماد المحدد وإنشاء المبادرة</button>`) : ''}
         ${existing.status === 'matched' && existing.matchedInitiativeId
         ? raw(`<p class="mi-muted" style="margin-top:0.75rem">اكتملت المفاضلة — المبادرة الناتجة: <a href="#/initiatives/${escapeHtml(existing.matchedInitiativeId)}" data-close-modal>${escapeHtml(existing.matchedInitiativeId)}</a></p>`)

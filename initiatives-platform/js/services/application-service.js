@@ -40,6 +40,32 @@ export async function applyToNeed({ need, session, model, proposal }) {
   return application;
 }
 
+// حفظ درجات المفاضلة (1..5 لكل معيار) وملاحظة لجنة الفرز على طلب
+export async function scoreApplication(applicationId, { scores = {}, note = '', by = '' } = {}) {
+  const app = await repos.needApplications.get(applicationId);
+  if (!app) throw new Error('الطلب غير موجود');
+  const clean = {};
+  for (const [k, v] of Object.entries(scores)) {
+    const n = Number(v);
+    if (Number.isFinite(n) && n >= 1 && n <= 5) clean[k] = Math.round(n);
+  }
+  return repos.needApplications.update(applicationId, {
+    scores: clean, screeningNote: String(note || '').trim(), scoredBy: by, scoredAt: nowIso()
+  });
+}
+
+// استبعاد متقدم واحد من الفرز دون إغلاق الفرصة
+export async function rejectApplication(applicationId, { reason = '', by = '' } = {}) {
+  const app = await repos.needApplications.get(applicationId);
+  if (!app) throw new Error('الطلب غير موجود');
+  if (app.status !== 'applied') throw new Error('سبق البت في هذا الطلب');
+  const updated = await repos.needApplications.update(applicationId, {
+    status: 'rejected', decidedAt: nowIso(), decidedBy: by, decisionReason: String(reason || '').trim(), resultInitiativeId: null
+  });
+  await notify('استبعاد من المفاضلة', `${app.partnerName} — ${reason || 'قرار لجنة الفرز'}`, 'warn');
+  return updated;
+}
+
 export async function applicationsForNeed(needId) {
   const all = await repos.needApplications.getAll();
   return all.filter((a) => a.needId === needId);
