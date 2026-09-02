@@ -77,18 +77,21 @@ export const DEMO_NEED_APPLICATIONS = [
     id: 'app-001', needId: 'MDN-NEED-2026-0001', partnerId: 'MDN-PRT-2026-0001',
     partnerName: 'شركة واحة البناء للمقاولات', model: 'execution',
     proposal: 'تنفيذ كامل للمظلات خلال 4 أشهر بفريقنا الإنشائي، مع ضمان 5 سنوات على الهياكل والقماش.',
+    details: { contributionAmount: 950000, contributionPercent: 100, durationMonths: 4, startReadyDate: '2026-10-01', readinessLevel: 'designed', teamSize: 18, teamExperience: 'فريق إنشائي بخبرة 12 عامًا في المظلات والهياكل المعدنية', similarProjectsCount: 6, similarProjectsDesc: 'مظلات ساحات 3 مساجد ومحطتين للنقل بالمدينة', warrantyMonths: 60, addedValue: 'صيانة دورية مجانية للسنة الأولى' },
     status: 'applied', at: '2026-08-10T09:00:00Z'
   },
   {
     id: 'app-002', needId: 'MDN-NEED-2026-0001', partnerId: 'MDN-PRT-2026-0006',
     partnerName: 'مؤسسة عمران للتطوير العقاري', model: 'fullFunding',
     proposal: 'تمويل كامل للمشروع ضمن برنامج مسؤوليتنا المجتمعية، بشرط لوحة تعريف بالممول في الموقع.',
+    details: { contributionAmount: 950000, contributionPercent: 100, durationMonths: 7, startReadyDate: '2026-11-15', readinessLevel: 'sited', teamSize: 6, teamExperience: 'فريق إدارة مشاريع مع مقاول من الباطن', similarProjectsCount: 2, similarProjectsDesc: 'مظلات ساحة مسجد الميقات وممشى سكني', warrantyMonths: 24, addedValue: 'لوحة تعريف بالممول ونشاط تطوعي افتتاحي' },
     status: 'applied', at: '2026-08-14T09:00:00Z'
   },
   {
     id: 'app-003', needId: 'MDN-NEED-2026-0002', partnerId: 'MDN-PRT-2026-0003',
     partnerName: 'مجموعة نور المدينة القابضة', model: 'fullFunding',
     proposal: 'توريد وتركيب 320 وحدة LED ذكية مع منصة تحكم سحابية وصيانة 3 سنوات.',
+    details: { contributionAmount: 1200000, contributionPercent: 100, durationMonths: 5, startReadyDate: '2026-10-15', readinessLevel: 'studied', teamSize: 10, teamExperience: 'مهندسو كهرباء وإنارة معتمدون', similarProjectsCount: 4, similarProjectsDesc: 'إنارة LED لأربعة أحياء سكنية', warrantyMonths: 36, addedValue: 'نظام تحكم عن بعد مجاني' },
     status: 'applied', at: '2026-08-20T09:00:00Z'
   }
 ];

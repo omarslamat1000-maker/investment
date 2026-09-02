@@ -9,7 +9,7 @@ import { nowIso } from '../core/date-time.js';
 import { hashPassword, DEFAULT_PASSWORD } from './auth-service.js';
 
 const SEED_FLAG_ID = 'seed-status';
-export const SEED_VERSION = 7; // v7: تقارير التقدم الميدانية واتفاقيات الشراكة
+export const SEED_VERSION = 8; // v8: البيانات التفصيلية لطلبات التقديم التجريبية
 
 const stamp = (r) => ({ createdAt: nowIso(), updatedAt: nowIso(), ...r });
 
@@ -31,6 +31,7 @@ export async function seedDemoDataIfEmpty() {
     if (version < 5) await topUpToV5();
     if (version < 6) await topUpToV6();
     if (version < 7) await topUpToV7();
+    if (version < 8) await topUpToV8();
   }
   await dataProvider.put('settings', { id: SEED_FLAG_ID, seeded: true, version: SEED_VERSION, at: nowIso() });
   return true;
@@ -57,6 +58,17 @@ async function fullSeed() {
   await dataProvider.bulkPut('needApplications', DEMO_NEED_APPLICATIONS.map(stamp));
   await dataProvider.bulkPut('progressReports', DEMO_PROGRESS_REPORTS.map(stamp));
   await dataProvider.bulkPut('agreements', DEMO_AGREEMENTS.map(stamp));
+}
+
+// v7 → v8: إضافة البيانات التفصيلية لطلبات التقديم التجريبية التي لا تملكها
+async function topUpToV8() {
+  const apps = await dataProvider.getAll('needApplications');
+  for (const demo of DEMO_NEED_APPLICATIONS) {
+    const current = apps.find((a) => a.id === demo.id);
+    if (current && !current.details && demo.details) {
+      await dataProvider.put('needApplications', { ...current, details: demo.details, updatedAt: nowIso() });
+    }
+  }
 }
 
 // v6 → v7: تقارير التقدم والاتفاقيات التجريبية + ربط شريك مبادرة الاعتماد (للمتصفحات القائمة)

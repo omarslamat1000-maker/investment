@@ -328,3 +328,23 @@
 .mi-screening__top { color: var(--mi-gold-700); }
 @media (max-width: 900px) { .mi-screening { grid-template-columns: 1fr; } .mi-screening__list { position: static; } }
 .mi-screening__btns { display: flex; gap: var(--mi-sp-2); flex-wrap: wrap; }
+
+/* بيانات المقارنة التفصيلية في الفرز */
+.mi-compare__group th { background: var(--mi-green-100); color: var(--mi-green-900); font-family: var(--mi-font-display); font-size: var(--mi-fs-xs); }
+.mi-compare__data td { text-align: center; font-size: var(--mi-fs-sm); }
+.mi-compare__data td[data-best="yes"] { background: var(--mi-green-100); font-weight: 700; }
+.mi-compare__data td[data-best="yes"]::after { content: ' ✔'; color: var(--mi-green-700); }
+.mi-compare__data td.mi-compare__text { text-align: right; font-size: var(--mi-fs-xs); color: var(--mi-ink-soft); }
+.mi-compare__basic td { text-align: center; font-size: var(--mi-fs-xs); color: var(--mi-muted); }
+.mi-compare__missing { color: var(--mi-bad); font-size: var(--mi-fs-xs); }
+.mi-crit-row { display: grid; grid-template-columns: 1.6fr 5rem 1.6fr auto; gap: var(--mi-sp-2); align-items: center; padding: var(--mi-sp-1) 0; border-bottom: 1px dashed var(--mi-line); }
+.mi-crit-row[data-scope="need"] { background: var(--mi-gold-100); border-radius: var(--mi-radius); padding-inline: var(--mi-sp-2); }
+.mi-crit-row .mi-input--sm { padding: 0.25rem 0.4rem; }
+.mi-crit-total { display: flex; justify-content: space-between; margin-top: var(--mi-sp-2); font-size: var(--mi-fs-sm); }
+.mi-apply-basic { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: var(--mi-sp-2); font-size: var(--mi-fs-sm); background: var(--mi-surface-2); padding: var(--mi-sp-3); border-radius: var(--mi-radius); }
+.mi-apply-basic span { color: var(--mi-muted); font-size: var(--mi-fs-xs); display: block; }
+.mi-apply-group { margin-top: var(--mi-sp-3); }
+.mi-apply-group legend { font-family: var(--mi-font-display); color: var(--mi-green-900); font-size: var(--mi-fs-sm); }
+.mi-details-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 2px var(--mi-sp-3); font-size: var(--mi-fs-xs); color: var(--mi-ink-soft); margin: var(--mi-sp-1) 0; }
+.mi-details-summary b { color: var(--mi-ink); }
+@media (max-width: 640px) { .mi-crit-row { grid-template-columns: 1fr 4rem; } }
