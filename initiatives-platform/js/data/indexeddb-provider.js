@@ -8,7 +8,7 @@ function openDb() {
   if (dbPromise) return dbPromise;
   dbPromise = new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onupgradeneeded = (e) => runMigrations(req.result, e.oldVersion);
+    req.onupgradeneeded = (e) => runMigrations(req.result, e.oldVersion, req.transaction);
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
     req.onblocked = () => console.warn('قاعدة بيانات المنصة محجوزة من تبويب آخر بإصدار أقدم');

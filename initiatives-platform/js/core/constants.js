@@ -1,6 +1,6 @@
 // الثوابت المرجعية لمنصة المبادرات — مصدر الحقيقة الوحيد للمعرّفات والتسميات
 export const DB_NAME = 'madinah-initiatives-platform-db';
-export const DB_VERSION = 4; // v4: طلبات التقديم على الفرص needApplications
+export const DB_VERSION = 6; // v5: progressReports + agreements، v6: ضمان فهارسهما
 
 export const STORAGE_PREFIX = 'madinahInitiativesPlatform:';
 export const CHANNELS = {
@@ -15,7 +15,8 @@ export const OBJECT_STORES = [
   'campaigns', 'reviews', 'decisions', 'gateChecklists', 'kpis', 'benefits',
   'risks', 'milestones', 'deliverables', 'qualityChecks', 'changeRequests',
   'comments', 'attachments', 'users', 'organizationalUnits', 'notifications',
-  'auditLogs', 'settings', 'savedViews', 'portfolios', 'gallery', 'needApplications'
+  'auditLogs', 'settings', 'savedViews', 'portfolios', 'gallery', 'needApplications',
+  'progressReports', 'agreements'
 ];
 
 // حالات المبادرة عبر دورة الحياة
@@ -105,6 +106,22 @@ export const DISTRICTS = [
   'المنطقة المركزية', 'قباء', 'العوالي', 'الحرة الشرقية', 'الحرة الغربية',
   'العيون', 'سيد الشهداء', 'الملك فهد', 'النخيل', 'الرانوناء', 'العزيزية', 'الجرف'
 ];
+
+// مراكز تقريبية للأحياء (خط عرض، خط طول) — تُستخدم لخريطة التغطية عند غياب مواقع مسجلة
+export const DISTRICT_CENTROIDS = {
+  'المنطقة المركزية': [24.4680, 39.6110],
+  'قباء': [24.4390, 39.6170],
+  'العوالي': [24.4450, 39.6400],
+  'الحرة الشرقية': [24.4780, 39.6400],
+  'الحرة الغربية': [24.4700, 39.5750],
+  'العيون': [24.5200, 39.6050],
+  'سيد الشهداء': [24.5000, 39.6150],
+  'الملك فهد': [24.5000, 39.6500],
+  'النخيل': [24.4550, 39.5800],
+  'الرانوناء': [24.4250, 39.5600],
+  'العزيزية': [24.4500, 39.6600],
+  'الجرف': [24.5250, 39.5750]
+};
 
 // نطاقات قالب تعريف المبادرة (من النموذج المعتمد)
 export const COST_BANDS = [

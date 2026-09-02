@@ -212,3 +212,83 @@
   font-size: 0.6rem; padding: 0 4px; min-width: 14px; text-align: center;
 }
 .mi-notif-btn { position: relative; }
+
+/* شارة SLA البوابات */
+.mi-sla {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  padding: 0.1rem 0.6rem; border-radius: 999px;
+  font-size: var(--mi-fs-xs); font-weight: 700; white-space: nowrap;
+  background: var(--mi-green-100); color: var(--mi-green-800);
+}
+.mi-sla[data-level="warn"] { background: var(--mi-gold-100); color: var(--mi-gold-700); }
+.mi-sla[data-level="overdue"] { background: #F3DDDD; color: var(--mi-bad); animation: mi-sla-pulse 2.4s ease-in-out infinite; }
+.mi-sla i { font-style: normal; }
+@keyframes mi-sla-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(168, 58, 58, 0.25); } 50% { box-shadow: 0 0 0 5px rgba(168, 58, 58, 0); } }
+.mi-sla-stages { display: grid; grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); gap: var(--mi-sp-3); margin: var(--mi-sp-3) 0; }
+.mi-sla-stage {
+  border: 1px solid var(--mi-line); border-radius: var(--mi-radius); padding: var(--mi-sp-3);
+  display: flex; flex-direction: column; gap: 2px; border-top: 3px solid var(--mi-green-500);
+}
+.mi-sla-stage[data-level="warn"] { border-top-color: var(--mi-gold-500); }
+.mi-sla-stage[data-level="overdue"] { border-top-color: var(--mi-bad); }
+.mi-sla-stage__count { font: 700 var(--mi-fs-xl) var(--mi-font-display); color: var(--mi-green-900); }
+.mi-sla-stage small { color: var(--mi-muted); font-size: var(--mi-fs-xs); }
+.mi-sla-form__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: var(--mi-sp-3); }
+
+/* نجوم بطاقة الأداء */
+.mi-stars { color: var(--mi-gold-500); letter-spacing: 0.05em; font-size: var(--mi-fs-sm); white-space: nowrap; }
+.mi-stars i { font-style: normal; color: var(--mi-line); }
+.mi-stars--none { color: var(--mi-muted); font-size: var(--mi-fs-xs); letter-spacing: 0; }
+.mi-scorecard { border: 1px solid var(--mi-line); border-radius: var(--mi-radius-lg); padding: var(--mi-sp-4); margin-top: var(--mi-sp-3); background: var(--mi-surface-2); }
+.mi-scorecard__head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--mi-sp-3); flex-wrap: wrap; }
+.mi-scorecard__head .mi-subhead { margin-top: 0; }
+.mi-scorecard__overall { text-align: center; }
+.mi-scorecard__overall b { font: 700 var(--mi-fs-2xl) var(--mi-font-display); color: var(--mi-green-900); }
+.mi-scorecard__overall small { color: var(--mi-muted); }
+.mi-scorecard__row { display: grid; grid-template-columns: 1.4fr 2fr auto; align-items: center; gap: var(--mi-sp-3); padding: var(--mi-sp-1) 0; font-size: var(--mi-fs-sm); }
+.mi-scorecard__row[data-available="no"] { opacity: 0.55; }
+.mi-scorecard__row .mi-hbar__fill { background: linear-gradient(90deg, var(--mi-green-700), var(--mi-gold-500)); }
+.mi-applicant-score { display: inline-flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; color: var(--mi-ink-soft); }
+
+/* تقارير التقدم الميدانية */
+.mi-field-queue { margin-bottom: var(--mi-sp-4); border-inline-start: 4px solid var(--mi-gold-500); }
+.mi-field-report { border: 1px solid var(--mi-line); border-radius: var(--mi-radius-lg); padding: var(--mi-sp-3) var(--mi-sp-4); margin: var(--mi-sp-2) 0; background: var(--mi-surface); }
+.mi-field-report[data-status="pending"] { border-color: var(--mi-gold-300, #E2CF8A); background: var(--mi-gold-100); }
+.mi-field-report[data-status="rejected"] { opacity: 0.75; }
+.mi-field-report__head { display: flex; justify-content: space-between; gap: var(--mi-sp-3); align-items: flex-start; flex-wrap: wrap; }
+.mi-field-report__meta { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.mi-field-report__pct { font: 700 var(--mi-fs-lg) var(--mi-font-display); color: var(--mi-green-800); }
+.mi-field-report__ini { font-size: var(--mi-fs-xs); color: var(--mi-green-700); }
+.mi-field-report__note { margin: var(--mi-sp-2) 0; font-size: var(--mi-fs-sm); }
+.mi-field-report__photos { display: flex; gap: var(--mi-sp-2); flex-wrap: wrap; margin: var(--mi-sp-2) 0; }
+.mi-field-report__photos img { width: 120px; height: 84px; object-fit: cover; border-radius: var(--mi-radius); border: 2px solid var(--mi-line); cursor: zoom-in; }
+.mi-field-report__actions { display: flex; gap: var(--mi-sp-2); margin-top: var(--mi-sp-2); }
+.mi-field-photo-full { width: 100%; max-height: 70vh; object-fit: contain; border-radius: var(--mi-radius-lg); }
+.mi-photo-picks { display: flex; gap: var(--mi-sp-2); flex-wrap: wrap; margin: var(--mi-sp-2) 0; }
+.mi-photo-picks img { width: 96px; height: 68px; object-fit: cover; border-radius: var(--mi-radius); border: 2px solid var(--mi-gold-500); }
+
+/* الاتفاقية */
+.mi-agr-parties { margin: var(--mi-sp-2) 0; }
+.mi-agr-issue { display: flex; gap: var(--mi-sp-3); align-items: center; flex-wrap: wrap; margin-top: var(--mi-sp-2); }
+.mi-agr-issue label { display: flex; gap: var(--mi-sp-2); align-items: center; font-size: var(--mi-fs-sm); }
+.mi-agr-issue .mi-input--sm { width: 5rem; }
+.mi-agr-clauses li { margin: 0.35rem 0; }
+.mi-agr-status { margin-top: var(--mi-sp-3); padding-top: var(--mi-sp-2); border-top: 1px dashed var(--mi-line); }
+.mi-agr-consent { display: flex; gap: var(--mi-sp-2); align-items: flex-start; font-size: var(--mi-fs-sm); margin: var(--mi-sp-3) 0; }
+
+/* تحليل التغطية */
+.mi-map-real--coverage { min-height: 420px; }
+.mi-heat th, .mi-heat td { text-align: center; }
+.mi-heat th:first-child { text-align: right; white-space: nowrap; }
+.mi-heat thead th { font-size: var(--mi-fs-xs); writing-mode: initial; }
+.mi-heat__cell { font-weight: 700; }
+.mi-heat__cell[data-level="1"] { background: #E4EFE8; }
+.mi-heat__cell[data-level="2"] { background: #BFDCCB; }
+.mi-heat__cell[data-level="3"] { background: #7FB89A; color: #fff; }
+.mi-heat__cell[data-level="4"] { background: var(--mi-green-700); color: #fff; }
+.mi-gap-tag { display: inline-block; padding: 0.05rem 0.55rem; border-radius: 6px; font-size: var(--mi-fs-xs); font-weight: 700; white-space: nowrap; }
+.mi-gap-tag[data-gap="covered"] { background: var(--mi-green-100); color: var(--mi-green-800); }
+.mi-gap-tag[data-gap="medium"] { background: var(--mi-gold-100); color: var(--mi-gold-700); }
+.mi-gap-tag[data-gap="high"] { background: #F6ECD4; color: #8A6D1F; }
+.mi-gap-tag[data-gap="critical"] { background: #F3DDDD; color: var(--mi-bad); }
+.mi-cov-tip { font-family: var(--mi-font-body); direction: rtl; }

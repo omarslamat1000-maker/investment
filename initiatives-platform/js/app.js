@@ -28,6 +28,8 @@ import { renderSettings } from './modules/settings/settings-view.js';
 import { renderUsers } from './modules/users/users-view.js';
 import { renderPortfolios } from './modules/portfolios/portfolios-view.js';
 import { renderGalleryAdmin } from './modules/gallery/gallery-admin-view.js';
+import { renderCoverage } from './modules/coverage/coverage-view.js';
+import { runSlaEscalations } from './services/sla-service.js';
 
 // perm: الصلاحية اللازمة لظهور الرابط — بدونها يظهر للجميع
 const NAV = [
@@ -43,6 +45,7 @@ const NAV = [
   { path: 'risks', label: 'المخاطر', icon: '△', perm: 'risks.view' },
   { path: 'quality', label: 'الجودة', icon: '✓', perm: 'quality.view' },
   { path: 'map', label: 'الخريطة', icon: '◎' },
+  { path: 'coverage', label: 'تحليل التغطية', icon: '⊞', perm: 'reports.view' },
   { path: 'reports', label: 'التقارير', icon: '≡', perm: 'reports.view' },
   { path: 'gallery', label: 'معرض الصور', icon: '▣', perm: 'gallery.manage' },
   { path: 'users', label: 'المستخدمون', icon: '◉', perm: 'users.view' },
@@ -179,6 +182,7 @@ async function boot() {
   route('risks', () => renderRisks(m()), 'سجل المخاطر');
   route('quality', () => renderQuality(m()), 'فحوص الجودة');
   route('map', () => renderMap(m()), 'الخريطة');
+  route('coverage', () => renderCoverage(m()), 'تحليل التغطية والفجوات');
   route('reports', () => renderReports(m()), 'التقارير');
   route('gallery', () => renderGalleryAdmin(m()), 'إدارة معرض الصور');
   route('users', () => renderUsers(m()), 'المستخدمون والصلاحيات');
@@ -197,6 +201,10 @@ async function boot() {
 
   const last = getLastRoute().replace(/^\//, '');
   startRouter(last || 'dashboard');
+
+  // تصعيد SLA البوابات: إشعار لكل مبادرة تجاوزت حد مرحلتها (لا يعطل التشغيل)
+  runSlaEscalations().then((r) => { if (r.escalated) refreshNotifBadge(); })
+    .catch((err) => console.warn('تعذر فحص SLA', err));
 
   // تسجيل Service Worker بنطاق المجلد الحالي فقط
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
