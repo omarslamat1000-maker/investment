@@ -6,7 +6,8 @@ import { join, extname, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(fileURLToPath(new URL('.', import.meta.url)), '..');
-const PORT = Number(process.argv[2]) || 8210;
+// المنفذ: وسيط سطر الأوامر ← متغير البيئة PORT ← 8210
+const PORT = Number(process.argv[2]) || Number(process.env.PORT) || 8210;
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
