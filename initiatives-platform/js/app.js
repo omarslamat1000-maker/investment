@@ -29,6 +29,7 @@ import { renderUsers } from './modules/users/users-view.js';
 import { renderPortfolios } from './modules/portfolios/portfolios-view.js';
 import { renderGalleryAdmin } from './modules/gallery/gallery-admin-view.js';
 import { renderCoverage } from './modules/coverage/coverage-view.js';
+import { renderScreening } from './modules/screening/screening-view.js';
 import { runSlaEscalations } from './services/sla-service.js';
 
 // perm: الصلاحية اللازمة لظهور الرابط — بدونها يظهر للجميع
@@ -37,6 +38,7 @@ const NAV = [
   { path: 'initiatives', label: 'المبادرات', icon: '▤', perm: 'initiatives.view' },
   { path: 'portfolios', label: 'المحافظ', icon: '▦', perm: 'portfolios.view' },
   { path: 'needs', label: 'الاحتياجات', icon: '◇', perm: 'needs.view' },
+  { path: 'screening', label: 'الفرز', icon: '⚖', perm: 'decisions.view' },
   { path: 'partners', label: 'الشركاء', icon: '◔', perm: 'partners.view' },
   { path: 'reviews', label: 'المراجعات', icon: '✎', perm: 'reviews.view' },
   { path: 'decisions', label: 'القرارات', icon: '⚖', perm: 'decisions.view' },
@@ -174,6 +176,8 @@ async function boot() {
   route('initiatives/:id', (p) => renderInitiativeDetails(m(), p.id), 'تفاصيل المبادرة');
   route('portfolios', () => renderPortfolios(m()), 'محافظ المبادرات');
   route('needs', () => renderNeeds(m()), 'الاحتياجات');
+  route('screening', () => renderScreening(m()), 'الفرز والمفاضلة');
+  route('screening/:id', (p) => renderScreening(m(), p.id), 'الفرز والمفاضلة');
   route('partners', () => renderPartners(m()), 'الشركاء');
   route('reviews', () => renderReviews(m()), 'المراجعات');
   route('decisions', () => renderDecisions(m()), 'القرارات');
