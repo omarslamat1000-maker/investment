@@ -4,7 +4,8 @@ import { html, raw, escapeHtml } from '../../core/sanitizer.js';
 import { sectionHeader, statusBadge, gateTrackHtml, definitionList, progressBar, healthBadge, emptyState } from '../../ui/components.js';
 import { renderTable } from '../../ui/table.js';
 import { statusLabel, allowedTransitions, transitionMeta } from '../../domain/workflow.js';
-import { categoryLabel, historyEntry, costBandLabel, durationBandLabel, readinessLabel, getSites, firstLatLng } from '../../domain/initiative-model.js';
+import { categoryLabel, historyEntry, costBandLabel, durationBandLabel, readinessLabel, getSites, firstLatLng, validateInitiative, sanitizeInitiative } from '../../domain/initiative-model.js';
+import { CATEGORIES, DISTRICTS, COST_BANDS, DURATION_BANDS, READINESS_LEVELS, PARTNERSHIP_MODELS } from '../../core/constants.js';
 import { openLocationPicker, renderSitesPreview } from '../../ui/location-picker.js';
 import { pickInitiativeImage } from '../../services/image-service.js';
 import { measureLabel, sitesSummaryLabel } from '../../core/geo.js';
@@ -341,6 +342,7 @@ export async function renderInitiativeDetails(container, id) {
 
     <div class="mi-detail-actions">
       <button class="mi-btn mi-btn--ghost" data-act="print">تقرير طباعة</button>
+      ${canEditRec ? raw('<button class="mi-btn mi-btn--gold" data-act="edit">تعديل البيانات</button>') : ''}
       ${initiative.status === 'closed' ? raw('<button class="mi-btn mi-btn--gold" data-act="certificate">شهادة الإنجاز 🏅</button>') : ''}
       ${raw(transitions.map((t) => html`
         <button class="mi-btn ${t.to === 'rejected' ? 'mi-btn--danger' : 'mi-btn--primary'}" data-transition="${t.to}">${t.label}</button>`).join(''))}
@@ -426,6 +428,10 @@ export async function renderInitiativeDetails(container, id) {
     await saveSites(sites);
     toastSuccess('حُذف الموقع');
   }));
+
+  // تعديل بيانات المبادرة (قالب التعريف كاملًا)
+  container.querySelector('[data-act="edit"]')?.addEventListener('click', () =>
+    openEditModal(initiative, () => renderInitiativeDetails(container, id)));
 
   // شهادة الإنجاز (للمبادرات المغلقة)
   container.querySelector('[data-act="certificate"]')?.addEventListener('click', () =>
@@ -553,6 +559,98 @@ export async function renderInitiativeDetails(container, id) {
       renderInitiativeDetails(container, ini.id);
     });
   }
+}
+
+// نافذة تعديل بيانات المبادرة — كل حقول قالب التعريف المعتمد مع التحقق قبل الحفظ
+function openEditModal(initiative, onSaved) {
+  const v = (x) => x ?? '';
+  const sel = (name, list, selected, { getLabel = (o) => o.label, getValue = (o) => o.id, empty = 'اختر…' } = {}) =>
+    `<select class="mi-input" name="${name}"><option value="">${empty}</option>${list.map((o) => `<option value="${escapeHtml(getValue(o))}" ${getValue(o) === selected ? 'selected' : ''}>${escapeHtml(getLabel(o))}</option>`).join('')}</select>`;
+  const field = (label, inner, wide = false) => `<div class="mi-form-field${wide ? ' mi-form-field--wide' : ''}"><label>${escapeHtml(label)}</label>${inner}</div>`;
+  const input = (name, value, type = 'text', extra = '') => `<input class="mi-input" name="${name}" type="${type}" value="${escapeHtml(String(v(value)))}" ${extra}>`;
+  const area = (name, value, rows = 3) => `<textarea class="mi-input" name="${name}" rows="${rows}">${escapeHtml(String(v(value)))}</textarea>`;
+
+  const { dialog, close } = openModal({
+    title: `تعديل بيانات — ${initiative.id}`,
+    wide: true,
+    bodyHtml: `
+      <form class="mi-form" id="mi-edit-form">
+        <h4 class="mi-subhead">التعريف</h4>
+        ${field('1. اسم المبادرة', input('title', initiative.title), true)}
+        <div class="mi-form-row">
+          ${field('2. الجهة المقدمة', input('submitterEntity', initiative.submitterEntity))}
+          ${field('اسم مقدّم المبادرة', input('submitterName', initiative.submitterName))}
+          ${field('3. مجال المبادرة', sel('category', CATEGORIES, initiative.category))}
+        </div>
+        ${field('4. المشكلة أو الاحتياج', area('problem', initiative.problem), true)}
+        ${field('5. وصف المبادرة والحل المقترح', area('summary', initiative.summary), true)}
+        ${field('نطاق العمل', area('scope', initiative.scope, 2), true)}
+        <h4 class="mi-subhead">الموقع والمستفيدون</h4>
+        <div class="mi-form-row">
+          ${field('6. الحي / المنطقة', sel('district', DISTRICTS, initiative.district, { getLabel: (d) => d, getValue: (d) => d }))}
+          ${field('الطريق / المعلم', input('location', initiative.location))}
+        </div>
+        ${field('7. الفئات المستفيدة', area('beneficiaryGroups', initiative.beneficiaryGroups, 2), true)}
+        ${field('8. الأثر المتوقع', area('expectedImpact', initiative.expectedImpact, 3), true)}
+        <h4 class="mi-subhead">التقديرات</h4>
+        <div class="mi-form-row">
+          ${field('9. التكلفة التقديرية', sel('costBand', COST_BANDS, initiative.costBand, { empty: 'غير مؤشَّرة' }))}
+          ${field('10. المدة التقديرية', sel('durationBand', DURATION_BANDS, initiative.durationBand, { empty: 'غير مؤشَّرة' }))}
+          ${field('11. مستوى الجاهزية', sel('readinessLevel', READINESS_LEVELS, initiative.readinessLevel, { empty: 'غير مؤشَّرة' }))}
+        </div>
+        <div class="mi-form-row">
+          ${field('الميزانية (ريال)', input('budget', initiative.budget, 'number', 'min="0" step="1000"'))}
+          ${field('المستفيدون المقدَّرون', input('beneficiaries', initiative.beneficiaries, 'number', 'min="0"'))}
+          ${field('نموذج الشراكة', sel('fundingModel', PARTNERSHIP_MODELS, initiative.fundingModel, { empty: 'غير محدد' }))}
+        </div>
+        <div class="mi-form-row">
+          ${field('تاريخ البداية', input('startDate', initiative.startDate, 'date'))}
+          ${field('تاريخ النهاية', input('endDate', initiative.endDate, 'date'))}
+          ${field('الوحدة المشرفة / المسؤول', input('ownerName', initiative.ownerName))}
+        </div>
+        <div class="mi-form-row">
+          ${field('بريد مقدّم المبادرة', input('submitterEmail', initiative.submitterEmail, 'email', 'dir="ltr"'))}
+          ${field('جوال مقدّم المبادرة', input('submitterPhone', initiative.submitterPhone, 'tel', 'dir="ltr"'))}
+        </div>
+        ${field('ملاحظات', area('notes', initiative.notes, 2), true)}
+        <p class="mi-muted">الحالة والمواقع الجغرافية والصورة تُعدَّل من أزرارها المخصصة في صفحة التفاصيل — يُسجَّل التعديل في سجل التدقيق.</p>
+      </form>`,
+    footerHtml: html`
+      <button class="mi-btn mi-btn--ghost" data-act="cancel">إلغاء</button>
+      <button class="mi-btn mi-btn--primary" data-act="save">حفظ التعديلات</button>`
+  });
+  dialog.querySelector('[data-act="cancel"]').addEventListener('click', close);
+  dialog.querySelector('[data-act="save"]').addEventListener('click', async () => {
+    const f = dialog.querySelector('#mi-edit-form');
+    const val = (n) => f.elements[n].value.trim();
+    const num = (n) => (val(n) === '' ? null : Number(val(n)));
+    const record = sanitizeInitiative({
+      ...initiative,
+      title: val('title'), submitterEntity: val('submitterEntity'), submitterName: val('submitterName'),
+      category: val('category'), problem: val('problem'), summary: val('summary'), scope: val('scope'),
+      district: val('district'), location: val('location'),
+      beneficiaryGroups: val('beneficiaryGroups'), expectedImpact: val('expectedImpact'),
+      costBand: val('costBand'), durationBand: val('durationBand'), readinessLevel: val('readinessLevel'),
+      budget: num('budget'), beneficiaries: num('beneficiaries'), fundingModel: val('fundingModel'),
+      startDate: val('startDate') || null, endDate: val('endDate') || null, ownerName: val('ownerName'),
+      submitterEmail: val('submitterEmail'), submitterPhone: val('submitterPhone'), notes: val('notes')
+    });
+    const check = validateInitiative(record);
+    if (!check.valid) { toastError(Object.values(check.errors)[0]); return; }
+    try {
+      // إرسال الحقول المتغيرة فقط ليبقى سجل التدقيق دالًا على ما تغيّر فعلًا
+      const patch = {};
+      for (const [k, val2] of Object.entries(record)) {
+        if (['id', 'createdAt', 'updatedAt'].includes(k)) continue;
+        if (JSON.stringify(val2 ?? null) !== JSON.stringify(initiative[k] ?? null)) patch[k] = val2;
+      }
+      if (!Object.keys(patch).length) { close(); toastSuccess('لا تغييرات'); return; }
+      await repos.initiatives.update(initiative.id, patch);
+      close();
+      toastSuccess('حُفظت تعديلات المبادرة');
+      onSaved?.();
+    } catch (err) { toastError(err.message); }
+  });
 }
 
 // نافذة شهادة الإنجاز: معاينة فاخرة + تنزيل PNG للجميع، وتحرير البيانات لمدير النظام فقط
