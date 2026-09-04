@@ -1,476 +1,308 @@
-// مبادرات تجريبية عبر كامل دورة الحياة + السجلات المرتبطة — بيانات توضيحية
+// المبادرات المستقبلية لوكالة البنية التحتية — أمانة منطقة المدينة المنورة
+// مستخرجة حرفيًا من «نموذج احتياج المبادرات المستقبلية» (عرضا الوكالة المساعدة للطرق
+// والوكالة المساعدة للحدائق والأنسنة + مبادرة الإنارة) — 19 مبادرة بحالة «مقدَّمة» بانتظار الفرز.
+// الحقول الاختيارية (التكلفة/المدة/الجاهزية) كما أُشِّرت في النماذج؛ الإحداثيات من روابط الخرائط المرفقة.
 
-// محفظة المبادرات المقترحة — تجميع المبادرات ذات الهدف الواحد وتتبعها كمجموعة
 export const DEMO_PORTFOLIOS = [
   {
-    id: 'pf-madinah-proposed',
-    title: 'محفظة المبادرات المقترحة لأمانة منطقة المدينة المنورة',
-    goal: 'رفع جودة الحياة وكفاءة البنية التحتية في المدينة المنورة عبر شراكات مجتمعية ممنهجة',
-    description: 'محفظة ثابتة تضم المبادرات المقترحة المعتمدة مبدئيًا، وتتفرع منها الحملات الموسمية مثل «المدينة تُزهر» و«طرق آمنة لمدارسنا».'
+    id: 'pf-infra-future',
+    title: 'المبادرات المستقبلية لوكالة البنية التحتية',
+    goal: 'رفع كفاءة شبكة الطرق وسلامتها وأنسنة الطرق والحدائق في المدينة المنورة عبر مبادرات مدروسة وشراكات فاعلة',
+    description: 'محفظة تضم مبادرات الوكالة المساعدة للطرق والوكالة المساعدة للحدائق والأنسنة المرصودة في نموذج احتياج المبادرات المستقبلية، لدراستها وترتيب أولوياتها وطرح المناسب منها للشراكة.'
   }
 ];
 
-const PF = 'pf-madinah-proposed';
-const PMO_SUBMITTER = {
-  submitterName: 'أ. ريم الجهني', submitterEntity: 'مكتب إدارة المبادرات',
-  submitterEmail: 'pmo@amana.example', submitterPhone: '0551000010',
-  channel: 'internal', status: 'draft', budget: null, spent: 0,
-  startDate: null, endDate: null, orgUnitId: 'ou-pmo', ownerName: '', scores: {}, statusHistory: []
-};
+const PF = 'pf-infra-future';
+const ROADS = 'وكالة البنية التحتية — الوكالة المساعدة للطرق';
+const PARKS = 'وكالة البنية التحتية — الوكالة المساعدة للحدائق والأنسنة';
+const SUBMITTED_AT = '2026-08-30T08:00:00Z';
 
-// المبادرات المقترحة في المحفظة (من وثيقة المحفظة المعتمدة)
-export const DEMO_PROPOSED_INITIATIVES = [
-  {
-    id: 'MDN-INIT-2026-0101', title: 'مبادرة ظلّ المدينة', category: 'shading', district: 'المنطقة المركزية',
-    summary: 'إنشاء مظلات حضرية وتشجير ومقاعد وأرضيات منخفضة الامتصاص الحراري ونقاط مياه وريّ ذكي في مسارات المشاة والمواقع عالية الكثافة.',
-    beneficiaryGroups: 'المشاة وزوار المواقع عالية الكثافة',
-    expectedImpact: 'نسبة تغطية الظل، انخفاض الحرارة السطحية، زيادة حركة المشاة، رضا المستفيدين.',
-    notes: 'الشركات الأنسب: البنوك، شركات مواد البناء، الطاقة، التطوير العقاري، الضيافة.'
-  },
-  {
-    id: 'MDN-INIT-2026-0102', title: 'مبادرة مسار آمن', category: 'safety', district: 'العزيزية',
-    summary: 'معالجة مواقع الخطورة المرورية حول المدارس والمساجد والمستشفيات، وإنشاء معابر ذكية وتهدئة السرعة وتحسين الإنارة.',
-    beneficiaryGroups: 'طلاب المدارس ومرتادو المساجد والمستشفيات',
-    expectedImpact: 'انخفاض الحوادث والملاحظات، الالتزام بالسرعة، عدد المواقع المعالجة، رضا المشاة.',
-    notes: 'الشركات الأنسب: التأمين، السيارات، النقل، الخدمات اللوجستية، المقاولون.'
-  },
-  {
-    id: 'MDN-INIT-2026-0103', title: 'مبادرة المدينة بلا عوائق', category: 'sidewalks', district: 'المنطقة المركزية',
-    summary: 'تهيئة مسارات متصلة للأشخاص ذوي الإعاقة وكبار السن، تشمل المنحدرات ومسارات المكفوفين والإشارات الصوتية ودورات المياه المهيأة.',
-    beneficiaryGroups: 'الأشخاص ذوو الإعاقة وكبار السن',
-    expectedImpact: 'نسبة المسار المطابق، عدد العوائق المزالة، استمرارية المسار، رضا الأشخاص ذوي الإعاقة.',
-    notes: 'الشركات الأنسب: البنوك، الاتصالات، الرعاية الصحية، التأمين، المجمعات التجارية.'
-  },
-  {
-    id: 'MDN-INIT-2026-0104', title: 'مبادرة محطات ضيافة المدينة', category: 'furniture', district: 'قباء',
-    summary: 'محطات نقل وانتظار مظللة وذكية، مزودة بالمقاعد والمعلومات متعددة اللغات والشحن والإنارة ومعلومات الرحلات.',
-    beneficiaryGroups: 'مستخدمو النقل العام والزوار',
-    expectedImpact: 'جاهزية المحطات، عدد المستخدمين، زمن الأعطال، رضا الزوار، استهلاك الطاقة.',
-    notes: 'الشركات الأنسب: الاتصالات، التقنية، الطيران، الفنادق، البنوك، النقل.'
-  },
-  {
-    id: 'MDN-INIT-2026-0105', title: 'مبادرة شريك الممر الحضري', category: 'greening', district: 'العوالي',
-    summary: 'تبني شركة لممر أو شارع محدد لمدة 3–5 سنوات، يشمل صيانة التشجير والأثاث الحضري والنظافة والإنارة وفق هوية الأمانة.',
-    beneficiaryGroups: 'سكان الأحياء ومرتادو الممرات المتبناة',
-    expectedImpact: 'حالة الأصول، زمن الاستجابة، نظافة الموقع، بقاء الأشجار، انخفاض البلاغات.',
-    notes: 'الشركات الأنسب: المطورون، الفنادق، المجمعات التجارية، الشركات الكبرى القريبة من الموقع.'
-  },
-  {
-    id: 'MDN-INIT-2026-0106', title: 'مبادرة نور المدينة الذكي', category: 'lighting', district: 'الحرة الغربية',
-    summary: 'استبدال أو دعم الإنارة عالية الكفاءة والطاقة الشمسية وأنظمة التحكم والمراقبة عن بعد في المواقع المناسبة.',
-    beneficiaryGroups: 'سكان الأحياء ومستخدمو الطرق ليلًا',
-    expectedImpact: 'وفر الطاقة، نسبة الأعطال، مطابقة مستويات الإنارة، خفض الانبعاثات والتكاليف.',
-    notes: 'الشركات الأنسب: شركات الطاقة، الكهرباء، التقنية، الاتصالات.'
-  },
-  {
-    id: 'MDN-INIT-2026-0107', title: 'مبادرة واحات المطر', category: 'rehab', district: 'الرانوناء',
-    summary: 'حدائق مطرية وأحواض احتجاز وأسطح نفاذة وحساسات للأمطار والسيول في مواقع تجريبية.',
-    beneficiaryGroups: 'سكان الأحياء المعرضة لتجمعات الأمطار',
-    expectedImpact: 'كمية مياه الجريان المحتجزة، انخفاض تجمعات المياه، زمن الإنذار، عدد المواقع المحمية.',
-    notes: 'الشركات الأنسب: التأمين، البنوك، شركات المياه، المقاولون، الشركات البيئية.'
-  },
-  {
-    id: 'MDN-INIT-2026-0108', title: 'مبادرة قطرة مستدامة', category: 'greening', district: 'النخيل',
-    summary: 'شبكات ري ذكية واكتشاف التسرب واستخدام المياه المجددة وخزانات ومراقبة الاستهلاك.',
-    beneficiaryGroups: 'مرتادو الحدائق والمسطحات الخضراء العامة',
-    expectedImpact: 'كمية المياه الموفرة، انخفاض التسرب، كفاءة الري، تكلفة المتر المربع المزروع.',
-    notes: 'الشركات الأنسب: شركات المياه، الزراعة، التقنية، الطاقة، المقاولون.'
-  },
-  {
-    id: 'MDN-INIT-2026-0109', title: 'مبادرة نبض الأصول', category: 'rehab', district: 'الملك فهد',
-    summary: 'دعم منصة GIS/BIM وإنترنت الأشياء لمراقبة الطرق والإنارة والري والأرصفة وتصريف الأمطار والصيانة التنبؤية.',
-    beneficiaryGroups: 'إدارات التشغيل والصيانة وسكان المدينة',
-    expectedImpact: 'نسبة الأصول المسجلة، الأعطال المتنبأ بها، انخفاض زمن الإصلاح، اكتمال بيانات الأصول.',
-    notes: 'الشركات الأنسب: الاتصالات، التقنية، الشركات الجيومكانية، الاستشاريون.'
-  },
-  {
-    id: 'MDN-INIT-2026-0110', title: 'مبادرة تنسيق بلا حفر', category: 'rehab', district: 'العيون',
-    summary: 'رفع مساحي للمرافق تحت الأرض واستخدام الرادار الأرضي وربط تصاريح الحفر وتجربة ممر خدمات مشترك.',
-    beneficiaryGroups: 'مقدمو الخدمات وسكان الأحياء المتأثرة بالحفريات',
-    expectedImpact: 'انخفاض الحفر المتكرر، زمن تنسيق التصاريح، جودة إعادة السفلتة، تعارضات المرافق المكتشفة مبكرًا.',
-    notes: 'الشركات الأنسب: شركات الخدمات، الكهرباء، المياه، الاتصالات، الاستشاريون.'
-  },
-  {
-    id: 'MDN-INIT-2026-0111', title: 'مبادرة دروب السيرة', category: 'mobility', district: 'سيد الشهداء',
-    summary: 'تحسين الوصول إلى المواقع التاريخية عبر مسارات مشاة مظللة ومهيأة وإرشاد متعدد اللغات ومناطق جلوس وخدمات.',
-    beneficiaryGroups: 'الزوار والمعتمرون ومرتادو المواقع التاريخية',
-    expectedImpact: 'رضا الزائر، سهولة الوصول، عدد مستخدمي المسار، نسبة المواقع المهيأة.',
-    notes: 'الشركات الأنسب: الضيافة، الطيران، البنوك، الشركات الثقافية، التقنية.'
-  },
-  {
-    id: 'MDN-INIT-2026-0112', title: 'مبادرة دوّرها للمدينة', category: 'cleanliness', district: 'الجرف',
-    summary: 'إعادة تدوير مخلفات الإنشاء والهدم واستخدامها في الأرصفة والبلدورات والأثاث الحضري وفق مواصفات معتمدة.',
-    beneficiaryGroups: 'قطاع الإنشاءات وسكان المدينة',
-    expectedImpact: 'الأطنان المحولة عن المرادم، نسبة المحتوى المعاد تدويره، تكلفة دورة الحياة.',
-    notes: 'الشركات الأنسب: الأسمنت، المقاولون، شركات إدارة النفايات، المصانع.'
-  },
-  {
-    id: 'MDN-INIT-2026-0113', title: 'مبادرة مختبر المدينة الحي', category: 'mobility', district: 'الملك فهد',
-    summary: 'مواقع تجريبية لاختبار حلول البنية التحتية الذكية قبل التوسع، بالشراكة مع الجامعات والشركات الناشئة.',
-    beneficiaryGroups: 'الجامعات والشركات الناشئة وإدارات الأمانة',
-    expectedImpact: 'عدد التجارب، نسبة الحلول الناجحة، الوفر المحقق، مدة الانتقال من التجربة إلى التوسع.',
-    notes: 'الشركات الأنسب: التقنية، الاتصالات، الجامعات، شركات الهندسة والابتكار.'
-  },
-  {
-    id: 'MDN-INIT-2026-0114', title: 'مبادرة كفاءات البنية التحتية', category: 'rehab', district: 'المنطقة المركزية',
-    summary: 'تدريب وتأهيل الخريجين والموظفين في إدارة المشاريع وBIM وGIS وإدارة الأصول والسلامة والتشغيل والصيانة.',
-    beneficiaryGroups: 'الخريجون وموظفو الأمانة',
-    expectedImpact: 'عدد المتدربين، الشهادات المكتسبة، التوظيف، ساعات نقل المعرفة، نسبة الكفاءات المحلية.',
-    notes: 'الشركات الأنسب: جميع الشركات الكبرى والجامعات والمكاتب الاستشارية.'
-  }
-].map((p) => ({
-  ...PMO_SUBMITTER, ...p, portfolioId: PF,
-  // التدرج الهرمي: بعض المبادرات المقترحة تتبع الحملتين الموسميتين مباشرة
-  campaignId: {
-    'MDN-INIT-2026-0101': 'cmp-green-madinah',
-    'MDN-INIT-2026-0105': 'cmp-green-madinah',
-    'MDN-INIT-2026-0108': 'cmp-green-madinah',
-    'MDN-INIT-2026-0102': 'cmp-safe-paths',
-    'MDN-INIT-2026-0103': 'cmp-safe-paths',
-    'MDN-INIT-2026-0106': 'cmp-safe-paths'
-  }[p.id] || null,
-  location: '', lat: null, lng: null, fundingModel: 'coFunding', beneficiaries: null,
-  sites: [], geometry: null, imageDataUrl: null, problem: '', costBand: 'tbd',
-  durationBand: '', readinessLevel: 'idea', scope: ''
-}));
+const base = (entity) => ({
+  scope: '', channel: 'internal', status: 'submitted',
+  submitterName: entity, submitterEntity: entity, submitterEmail: '', submitterPhone: '',
+  budget: null, spent: 0, fundingModel: '', startDate: null, endDate: null,
+  orgUnitId: 'ou-projects', ownerName: '', scores: {}, beneficiaries: null,
+  portfolioId: PF, campaignId: null, sites: [], geometry: null, imageDataUrl: null,
+  statusHistory: [{ from: 'draft', to: 'submitted', at: SUBMITTED_AT, by: entity }]
+});
+
+const point = (id, name, lat, lng) => ({ id, name, geometry: { type: 'point', coords: [[lat, lng]] } });
+
+const BRIDGE_IMPACT = 'تحسين الانسيابية المرورية، تقليل الازدحام، رفع مستوى السلامة، وتقليل زمن الرحلة في التقاطع الحيوي.';
+const BRIDGE_SOLUTION = 'تنفيذ جسر علوي عند التقاطع لتحرير الحركة المرورية وتحسين الانسيابية.';
 
 export const DEMO_INITIATIVES = [
   {
-    id: 'MDN-INIT-2026-0001', title: 'تشجير محور طريق قباء بالمشاركة المجتمعية',
-    summary: 'زراعة 1200 شجرة ظل محلية على جانبي محور قباء مع شبكة ري بالتنقيط وصيانة تشغيلية لمدة سنتين يتكفل بها الشريك.',
-    scope: 'المرحلة الأولى: من ميدان قباء حتى تقاطع الهجرة (3.2 كم).',
-    category: 'greening', district: 'قباء', location: 'محور طريق قباء', lat: 24.4425, lng: 39.6120,
-    sites: [
-      { id: 'site-0001-a', name: 'محور قباء — القطاع الشمالي', geometry: { type: 'line', coords: [[24.4425, 39.6120], [24.4372, 39.6131], [24.4300, 39.6140]] } },
-      { id: 'site-0001-b', name: 'محور قباء — القطاع الجنوبي', geometry: { type: 'line', coords: [[24.4300, 39.6140], [24.4231, 39.6153]] } }
-    ],
-    portfolioId: 'pf-madinah-proposed', campaignId: 'cmp-green-madinah',
-    status: 'execution', channel: 'partner',
-    submitterName: 'أ. مها الصاعدي', submitterEntity: 'جمعية سقيا وظل الأهلية',
-    submitterEmail: 'maha@suqya.example', submitterPhone: '0551000002',
-    budget: 1850000, spent: 1010000, fundingModel: 'coFunding',
-    startDate: '2026-04-01', endDate: '2026-11-30',
-    orgUnitId: 'ou-projects', ownerName: 'م. فهد المطيري', beneficiaries: 40000,
-    scores: { strategic: 5, impact: 5, feasibility: 4, readiness: 5, risk: 4 },
-    notes: 'ضمن حملة «المدينة تُزهر».',
-    statusHistory: [
-      { from: 'submitted', to: 'screening', at: '2026-01-12T08:00:00Z', by: 'أ. ريم الجهني' },
-      { from: 'screening', to: 'study', at: '2026-01-25T08:00:00Z', by: 'لجنة المبادرات', decisionId: 'MDN-DEC-2026-0001' },
-      { from: 'study', to: 'approval', at: '2026-02-20T08:00:00Z', by: 'لجنة المبادرات', decisionId: 'MDN-DEC-2026-0002' },
-      { from: 'approval', to: 'readiness', at: '2026-03-10T08:00:00Z', by: 'لجنة المبادرات', decisionId: 'MDN-DEC-2026-0003' },
-      { from: 'readiness', to: 'execution', at: '2026-04-01T08:00:00Z', by: 'لجنة المبادرات', decisionId: 'MDN-DEC-2026-0004' }
-    ]
+    ...base(ROADS), id: 'MDN-INIT-2026-0001',
+    title: 'تنفيذ جسر مشاة لربط الجامعة الإسلامية وجامعة طيبة على طريق الأمير نايف',
+    category: 'roads', district: 'البيداء',
+    location: 'طريق الأمير نايف — المنطقة الواقعة بين الجامعة الإسلامية وجامعة طيبة', lat: 24.482960, lng: 39.552206,
+    sites: [point('site-0001', 'طريق الأمير نايف بين الجامعتين', 24.482960, 39.552206)],
+    problem: 'عدم وجود جسر مشاة بين الجامعتين يسبب عبورًا خطِرًا وازدحامًا وتوقفات عشوائية على طريق الأمير نايف، مما يرفع احتمالية الحوادث ويؤثر على سلامة الطلاب وانسيابية الطريق.',
+    summary: 'إنشاء جسر أو نفق مشاة يربط بين الجامعة الإسلامية وجامعة طيبة على طريق الأمير نايف.',
+    beneficiaryGroups: 'طلاب الجامعتين، والموظفون، السكان، ومستخدمو الطريق، ومستخدمو النقل الجماعي على طريق الأمير نايف.',
+    expectedImpact: 'عبور آمن يخدم آلاف المستفيدين يوميًا. رفع كفاءة النقل الجماعي والتنقل بين الجامعتين. تحسين المشهد الحضري وتقليل نقاط التعارض. تحسين جودة الحياة في منطقة تعليمية حيوية داخل المدينة المنورة.',
+    costBand: '1to5m', durationBand: '3to6m', readinessLevel: 'idea',
+    imageDataUrl: './assets/initiatives/i01.jpg',
+    notes: 'مجال المبادرة في النموذج: مرافق. رابط الموقع: https://maps.app.goo.gl/Wyh5Q8uDC176H1Yg9'
   },
   {
-    id: 'MDN-INIT-2026-0002', title: 'إنارة LED ذكية لممرات حي العوالي',
-    summary: 'تمويل كامل من القطاع الخاص لاستبدال 450 وحدة إنارة بممرات العوالي بوحدات LED ذكية تُدار مركزيًا وتخفض الاستهلاك 60%.',
-    scope: 'جميع الممرات الداخلية للمربعات السكنية 12–18.',
-    category: 'lighting', district: 'العوالي', location: 'ممرات العوالي الداخلية', lat: 24.4210, lng: 39.6290,
-    status: 'readiness', channel: 'partner',
-    submitterName: 'أ. عمر البلوي', submitterEntity: 'مجموعة نور المدينة القابضة',
-    submitterEmail: 'omar@noor.example', submitterPhone: '0551000003',
-    budget: 1350000, spent: 0, fundingModel: 'fullFunding',
-    startDate: '2026-10-01', endDate: '2027-03-31',
-    orgUnitId: 'ou-services', ownerName: 'م. هند العمري', beneficiaries: 26000,
-    scores: { strategic: 4, impact: 4, feasibility: 5, readiness: 4, risk: 4 },
-    notes: '',
-    statusHistory: [
-      { from: 'submitted', to: 'screening', at: '2026-05-05T08:00:00Z', by: 'أ. ريم الجهني' },
-      { from: 'screening', to: 'study', at: '2026-05-18T08:00:00Z', by: 'لجنة المبادرات', decisionId: 'MDN-DEC-2026-0005' },
-      { from: 'study', to: 'approval', at: '2026-06-22T08:00:00Z', by: 'لجنة المبادرات', decisionId: 'MDN-DEC-2026-0006' },
-      { from: 'approval', to: 'readiness', at: '2026-08-02T08:00:00Z', by: 'لجنة المبادرات', decisionId: 'MDN-DEC-2026-0007' }
-    ]
+    ...base(ROADS), id: 'MDN-INIT-2026-0002',
+    title: 'تنفيذ جسر مشاة لربط مجمع النور مول ومجمع العروبة على طريق الملك عبدالله',
+    category: 'roads', district: 'العيون',
+    location: 'طريق الملك عبدالله — المنطقة الواقعة بين مجمع النور مول ومجمع العروبة', lat: 24.494500, lng: 39.595544,
+    sites: [point('site-0002', 'طريق الملك عبدالله بين المجمعين', 24.494500, 39.595544)],
+    problem: 'عدم وجود جسر مشاة بين المجمعين يسبب عبورًا خطِرًا وازدحامًا وتوقفات عشوائية على طريق الملك عبدالله، مما يرفع احتمالية الحوادث ويؤثر على سلامة الزوار وانسيابية الطريق.',
+    summary: 'إنشاء جسر مشاة لربط مجمع النور مول بمجمع العروبة على طريق الملك عبدالله.',
+    beneficiaryGroups: 'السكان، ومستخدمو الطريق، ومستخدمو النقل الجماعي.',
+    expectedImpact: 'عبور آمن يخدم آلاف المستفيدين يوميًا. رفع كفاءة النقل الجماعي والتنقل بين المجمعين. تحسين المشهد الحضري وتقليل نقاط التعارض. تحسين جودة الحياة في منطقة تجارية حيوية داخل المدينة المنورة.',
+    costBand: '1to5m', durationBand: '3to6m', readinessLevel: 'idea',
+    imageDataUrl: './assets/initiatives/i02.jpg',
+    notes: 'مجال المبادرة في النموذج: مرافق. رابط الموقع: https://maps.app.goo.gl/7vXgiKxXkb63MMz4A'
   },
   {
-    id: 'MDN-INIT-2026-0003', title: 'تأهيل أرصفة شارع السلام وممرات المدارس',
-    summary: 'إعادة رصف 2.4 كم من أرصفة شارع السلام مع منحدرات وصول شامل وتشجير جانبي، تنفيذًا مباشرًا من شريك مقاولات.',
-    scope: 'شارع السلام كاملًا مع تقاطعاته الست.',
-    category: 'sidewalks', district: 'الحرة الشرقية', location: 'شارع السلام', lat: 24.4720, lng: 39.6350,
-    sites: [
-      { id: 'site-0003-a', name: 'المقطع الأول — من التقاطع الأول', geometry: { type: 'line', coords: [[24.4720, 39.6350], [24.4752, 39.6392]] } },
-      { id: 'site-0003-b', name: 'المقطع الثاني — حتى الدوار', geometry: { type: 'line', coords: [[24.4752, 39.6392], [24.4790, 39.6440]] } }
-    ],
-    portfolioId: 'pf-madinah-proposed', campaignId: 'cmp-safe-paths',
-    status: 'execution', channel: 'internal',
-    submitterName: 'أ. ريم الجهني', submitterEntity: 'مكتب إدارة المبادرات',
-    submitterEmail: 'pmo@amana.example', submitterPhone: '0551000010',
-    budget: 1800000, spent: 1560000, fundingModel: 'execution',
-    startDate: '2026-03-15', endDate: '2026-09-15',
-    orgUnitId: 'ou-projects', ownerName: 'م. فهد المطيري', beneficiaries: 18000,
-    scores: { strategic: 5, impact: 4, feasibility: 4, readiness: 4, risk: 3 },
-    notes: 'مرتبطة بالاحتياج MDN-NEED-2026-0003 وحملة «طرق آمنة لمدارسنا».',
-    statusHistory: [
-      { from: 'submitted', to: 'screening', at: '2025-12-01T08:00:00Z', by: 'أ. ريم الجهني' },
-      { from: 'screening', to: 'study', at: '2025-12-15T08:00:00Z', by: 'لجنة المبادرات' },
-      { from: 'study', to: 'approval', at: '2026-01-20T08:00:00Z', by: 'لجنة المبادرات' },
-      { from: 'approval', to: 'readiness', at: '2026-02-15T08:00:00Z', by: 'لجنة المبادرات' },
-      { from: 'readiness', to: 'execution', at: '2026-03-15T08:00:00Z', by: 'لجنة المبادرات', decisionId: 'MDN-DEC-2026-0008' }
-    ]
+    ...base(ROADS), id: 'MDN-INIT-2026-0003',
+    title: 'تنفيذ جسر تقاطع طريق الملك خالد مع طريق الملك عبدالعزيز',
+    category: 'roads', district: 'غير محدد',
+    location: 'تقاطع طريق الملك خالد مع طريق الملك عبدالعزيز — المدينة المنورة', lat: 24.475712, lng: 39.708829,
+    sites: [point('site-0003', 'تقاطع الملك خالد × الملك عبدالعزيز', 24.475712, 39.708829)],
+    problem: 'يشهد التقاطع كثافة مرورية عالية وتداخلًا في الحركات، مما يؤدي إلى ازدحام وتأخر في زمن الرحلة، خصوصًا في أوقات الذروة.',
+    summary: BRIDGE_SOLUTION,
+    beneficiaryGroups: 'سكان المدينة ومستخدمو الطرق الرئيسة والأنشطة التجارية في المنطقة.',
+    expectedImpact: BRIDGE_IMPACT,
+    costBand: 'gt20m', durationBand: 'gt1y', readinessLevel: 'sited',
+    imageDataUrl: './assets/initiatives/i03.jpg',
+    notes: 'الحي غير مذكور في النموذج. رابط الموقع: https://maps.app.goo.gl/LKMJzbi3b6aCAsJL7'
   },
   {
-    id: 'MDN-INIT-2026-0004', title: 'مظلات ساحة مسجد الميقات',
-    summary: 'تصميم وتركيب مظلات شراعية تغطي 2800 م² من ساحات الميقات لخدمة الحجاج والمعتمرين، برعاية شريك خاص.',
-    scope: 'الساحة الشمالية والشرقية.',
-    category: 'shading', district: 'الرانوناء', location: 'ساحات مسجد الميقات', lat: 24.4139, lng: 39.5424,
-    status: 'benefits', channel: 'partner',
-    submitterName: 'أ. بدر العوفي', submitterEntity: 'مؤسسة عمران للتطوير العقاري',
-    submitterEmail: 'badr@omran.example', submitterPhone: '0551000006',
-    budget: 2200000, spent: 2150000, fundingModel: 'fullFunding',
-    startDate: '2025-10-01', endDate: '2026-05-30',
-    orgUnitId: 'ou-projects', ownerName: 'م. فهد المطيري', beneficiaries: 120000,
-    scores: { strategic: 5, impact: 5, feasibility: 4, readiness: 4, risk: 4 },
-    notes: 'اكتمل التنفيذ — جارٍ قياس المنافع قبل الإقفال عند بوابة G4.',
-    statusHistory: [
-      { from: 'submitted', to: 'screening', at: '2025-06-10T08:00:00Z', by: 'أ. ريم الجهني' },
-      { from: 'screening', to: 'study', at: '2025-06-25T08:00:00Z', by: 'لجنة المبادرات' },
-      { from: 'study', to: 'approval', at: '2025-07-30T08:00:00Z', by: 'لجنة المبادرات' },
-      { from: 'approval', to: 'readiness', at: '2025-09-01T08:00:00Z', by: 'لجنة المبادرات' },
-      { from: 'readiness', to: 'execution', at: '2025-10-01T08:00:00Z', by: 'لجنة المبادرات' },
-      { from: 'execution', to: 'benefits', at: '2026-06-05T08:00:00Z', by: 'م. فهد المطيري' }
-    ]
+    ...base(ROADS), id: 'MDN-INIT-2026-0004',
+    title: 'إنشاء جسر تقاطع طريق الأمير سلطان مع طريق العباس بن عبادة',
+    category: 'roads', district: 'الرانوناء',
+    location: 'تقاطع طريق الأمير سلطان مع طريق العباس بن عبادة', lat: null, lng: null,
+    problem: 'يشهد تقاطع طريق الأمير سلطان مع طريق العباس بن عبادة حركة مرورية متزايدة، مما يؤدي إلى تداخل الحركات المرورية وارتفاع مستويات التأخير والانتظار، خصوصًا خلال أوقات الذروة. كما أن استمرار الحركة على مستوى التقاطع يحد من كفاءة الطريقين ويؤثر على انسيابية الحركة المرورية.',
+    summary: BRIDGE_SOLUTION,
+    beneficiaryGroups: 'جميع مستخدمي شبكة الطرق في نطاق التقاطع، بما في ذلك السكان، الزوار، النقل العام، مركبات الطوارئ، ومركبات النقل والخدمات، إضافة إلى المنشآت التجارية والخدمية المحيطة بالموقع.',
+    expectedImpact: 'رفع كفاءة التقاطع وتحسين انسيابية الحركة المرورية، وتقليل زمن التأخير والتعارضات، وزيادة الطاقة الاستيعابية للطريق، بما يعزز السلامة المرورية ويدعم النمو المستقبلي لمدينة المدينة المنورة.',
+    costBand: 'gt20m', durationBand: 'gt1y', readinessLevel: 'sited',
+    imageDataUrl: './assets/initiatives/i04.jpg',
+    notes: 'رابط الموقع في النموذج مكرر من مبادرة جسر مشاة الجامعتين (يشير إلى طريق الأمير نايف) فلم تُعتمد إحداثياته — يلزم تصحيحه من الوكالة.'
   },
   {
-    id: 'MDN-INIT-2026-0005', title: 'حديقة حي الجرف المجتمعية',
-    summary: 'إنشاء حديقة حي (5600 م²) بتمويل مشترك وتشغيل من جمعية أهلية: مسطحات خضراء وألعاب ومسار مشي 400 م.',
-    scope: 'الأرض البلدية رقم 118 بحي الجرف.',
-    category: 'parks', district: 'الجرف', location: 'الأرض البلدية 118', lat: 24.5230, lng: 39.5710,
-    sites: [
-      { id: 'site-0005-a', name: 'أرض الحديقة', geometry: { type: 'polygon', coords: [[24.5233, 39.5706], [24.5233, 39.5714], [24.5227, 39.5715], [24.5226, 39.5706]] } }
-    ],
-    status: 'closed', channel: 'public',
-    submitterName: 'أ. سارة الحسيني', submitterEntity: 'فريق «دربك أخضر» التطوعي',
-    submitterEmail: 'sara@darbak.example', submitterPhone: '0551000004',
-    budget: 2450000, spent: 2380000, fundingModel: 'coFunding',
-    startDate: '2025-03-01', endDate: '2025-12-15',
-    orgUnitId: 'ou-community', ownerName: 'أ. ريم الجهني', beneficiaries: 14000,
-    scores: { strategic: 4, impact: 5, feasibility: 4, readiness: 4, risk: 4 },
-    notes: 'أُقفلت بتحقق منافع 96% — نموذج يحتذى للتشغيل الأهلي.',
-    statusHistory: [
-      { from: 'submitted', to: 'screening', at: '2024-11-01T08:00:00Z', by: 'أ. ريم الجهني' },
-      { from: 'screening', to: 'study', at: '2024-11-20T08:00:00Z', by: 'لجنة المبادرات' },
-      { from: 'study', to: 'approval', at: '2024-12-25T08:00:00Z', by: 'لجنة المبادرات' },
-      { from: 'approval', to: 'readiness', at: '2025-02-01T08:00:00Z', by: 'لجنة المبادرات' },
-      { from: 'readiness', to: 'execution', at: '2025-03-01T08:00:00Z', by: 'لجنة المبادرات' },
-      { from: 'execution', to: 'benefits', at: '2025-12-20T08:00:00Z', by: 'م. فهد المطيري' },
-      { from: 'benefits', to: 'closed', at: '2026-04-10T08:00:00Z', by: 'لجنة المبادرات', decisionId: 'MDN-DEC-2026-0009' }
-    ]
+    ...base(ROADS), id: 'MDN-INIT-2026-0005',
+    title: 'إنشاء جسر تقاطع طريق الأمير سلطان مع طريق عمر بن الخطاب',
+    category: 'roads', district: 'عروة',
+    location: 'تقاطع طريق الأمير سلطان مع طريق عمر بن الخطاب', lat: 24.447011, lng: 39.573571,
+    sites: [point('site-0005', 'تقاطع الأمير سلطان × عمر بن الخطاب', 24.447011, 39.573571)],
+    problem: 'يشهد تقاطع طريق الأمير سلطان مع طريق عمر بن الخطاب حركة مرورية متزايدة، مما يؤدي إلى تداخل الحركات المرورية وارتفاع مستويات التأخير والانتظار، خصوصًا خلال أوقات الذروة. كما أن استمرار الحركة على مستوى التقاطع يحد من كفاءة الطريقين ويؤثر على انسيابية الحركة المرورية.',
+    summary: BRIDGE_SOLUTION,
+    beneficiaryGroups: 'جميع مستخدمي شبكة الطرق في نطاق التقاطع، بما في ذلك السكان، الزوار، النقل العام، مركبات الطوارئ، ومركبات النقل والخدمات، إضافة إلى المنشآت التجارية والخدمية المحيطة بالموقع.',
+    expectedImpact: 'رفع كفاءة التقاطع وتحسين انسيابية الحركة المرورية، وتقليل زمن التأخير والتعارضات، وزيادة الطاقة الاستيعابية للطريق، بما يعزز السلامة المرورية ويدعم النمو المستقبلي لمدينة المدينة المنورة.',
+    costBand: 'gt20m', durationBand: 'gt1y', readinessLevel: 'sited',
+    imageDataUrl: './assets/initiatives/i05.jpg',
+    notes: 'رابط الموقع: https://maps.app.goo.gl/juf5eSiYNqtj5PYQ9'
   },
   {
-    id: 'MDN-INIT-2026-0006', title: 'نقاط الفرز الذكية لإعادة التدوير',
-    summary: 'تبنّي احتياج نقاط الفرز: 40 نقطة ثلاثية الحاويات بتبرع عيني من شريك صناعي وحملة توعية مرافقة.',
-    scope: 'أحياء العزيزية والحرة الغربية والعيون.',
-    category: 'cleanliness', district: 'العزيزية', location: 'مواقع موزعة', lat: 24.4570, lng: 39.6480,
-    status: 'study', channel: 'partner',
-    submitterName: 'م. لينا مغربي', submitterEntity: 'شركة الينابيع للمياه والري',
-    submitterEmail: 'lina@yanabea.example', submitterPhone: '0551000008',
-    budget: 480000, spent: 0, fundingModel: 'inKind',
-    startDate: null, endDate: null,
-    orgUnitId: 'ou-services', ownerName: 'م. هند العمري', beneficiaries: 30000,
-    scores: { strategic: 3, impact: 4, feasibility: 4, readiness: 2, risk: 3 },
-    notes: 'بانتظار استكمال دراسة مواقع التوزيع.',
-    statusHistory: [
-      { from: 'submitted', to: 'screening', at: '2026-08-01T08:00:00Z', by: 'أ. ريم الجهني' },
-      { from: 'screening', to: 'study', at: '2026-08-14T08:00:00Z', by: 'لجنة المبادرات', decisionId: 'MDN-DEC-2026-0010' }
-    ]
+    ...base(ROADS), id: 'MDN-INIT-2026-0006',
+    title: 'تنفيذ جسر أو نفق تقاطع طريق الأمير عبدالمجيد بن عبدالعزيز مع طريق الأمير عبدالمحسن بن عبدالعزيز',
+    category: 'roads', district: 'قربان',
+    location: 'تقاطع طريق الأمير عبدالمجيد مع طريق الأمير عبدالمحسن — قربان/العالية', lat: 24.447046, lng: 39.622753,
+    sites: [point('site-0006', 'تقاطع الأمير عبدالمجيد × الأمير عبدالمحسن', 24.447046, 39.622753)],
+    problem: 'يشهد تقاطع الأمير عبدالمجيد مع الأمير عبدالمحسن كثافة مرورية عالية ونقاط تعارض خطرة، مما يسبب تأخر الحركة وازدحامًا مستمرًا، خصوصًا في أوقات الذروة، ويؤثر على انسيابية المرور وسلامة مستخدمي الطريق.',
+    summary: 'تنفيذ جسر أو نفق علوي عند التقاطع لتحرير الحركة المرورية وتحسين الانسيابية.',
+    beneficiaryGroups: 'سكان الأحياء المحيطة، ومستخدمو الطريق، ومرتادو المنطقة التجارية والخدمية.',
+    expectedImpact: 'تحسين الانسيابية المرورية، تقليل الازدحام، رفع مستوى السلامة، تقليل زمن الرحلة، ودعم كفاءة شبكة الطرق في المدينة المنورة.',
+    costBand: 'gt20m', durationBand: 'gt1y', readinessLevel: 'sited',
+    imageDataUrl: './assets/initiatives/i06.jpg',
+    notes: 'رابط الموقع: https://maps.app.goo.gl/BKUxJGF99zTGbDmn6'
   },
   {
-    id: 'MDN-INIT-2026-0007', title: 'ممر ظليل يربط قباء بالمسار النبوي',
-    summary: 'مقترح مجتمعي لممر مشاة مظلل بطول 1.8 كم يربط ساحات قباء بالمسار النبوي مع محطات استراحة تفاعلية.',
-    scope: 'يتطلب تنسيقًا مع هيئة تطوير المنطقة.',
-    category: 'mobility', district: 'قباء', location: 'الرابط بين قباء والمسار النبوي', lat: 24.4460, lng: 39.6090,
-    status: 'approval', channel: 'public',
-    submitterName: 'م. يوسف قاضي', submitterEntity: 'شركة مسارات الذكية للتقنية',
-    submitterEmail: 'y.qadi@masarat.example', submitterPhone: '0551000005',
-    budget: 5200000, spent: 0, fundingModel: 'coFunding',
-    startDate: null, endDate: null,
-    orgUnitId: 'ou-projects', ownerName: 'أ. ريم الجهني', beneficiaries: 60000,
-    scores: { strategic: 5, impact: 5, feasibility: 3, readiness: 3, risk: 2 },
-    notes: 'درجة الجدوى مشروطة بموافقات جهات خارجية.',
-    statusHistory: [
-      { from: 'submitted', to: 'screening', at: '2026-06-20T08:00:00Z', by: 'أ. ريم الجهني' },
-      { from: 'screening', to: 'study', at: '2026-07-01T08:00:00Z', by: 'لجنة المبادرات' },
-      { from: 'study', to: 'approval', at: '2026-08-10T08:00:00Z', by: 'لجنة المبادرات', decisionId: 'MDN-DEC-2026-0011' }
-    ]
+    ...base(ROADS), id: 'MDN-INIT-2026-0007',
+    title: 'تنفيذ جسر تقاطع طريق الأمير عبدالمجيد مع طريق الأمير محمد بن سلمان',
+    category: 'roads', district: 'غير محدد',
+    location: 'تقاطع طريق الأمير عبدالمجيد مع طريق الأمير محمد بن سلمان — المدينة المنورة', lat: 24.480642, lng: 39.628684,
+    sites: [point('site-0007', 'تقاطع الأمير عبدالمجيد × الأمير محمد بن سلمان', 24.480642, 39.628684)],
+    problem: 'يشهد التقاطع ازدحامًا مروريًا عاليًا ونقاط تعارض خطرة بسبب تداخل الحركات، مما يسبب بطء الحركة وتأخر زمن الرحلة في أوقات الذروة.',
+    summary: BRIDGE_SOLUTION,
+    beneficiaryGroups: 'سكان الأحياء المحيطة ومستخدمو الطريق والأنشطة التجارية في المنطقة.',
+    expectedImpact: BRIDGE_IMPACT,
+    costBand: 'gt20m', durationBand: 'gt1y', readinessLevel: 'sited',
+    imageDataUrl: './assets/initiatives/i07.jpg',
+    notes: 'الحي غير مذكور في النموذج. رابط الموقع: https://maps.app.goo.gl/Xj9qdsoDhGHgN8JEA'
   },
   {
-    id: 'MDN-INIT-2026-0008', title: 'صيانة وتشغيل دورات مياه الحدائق بالشراكة',
-    summary: 'عقد تشغيل وصيانة لدورات مياه 12 حديقة عامة لمدة 3 سنوات مع مؤشرات جودة شهرية معلنة.',
-    scope: 'حدائق وكالة الخدمات — القائمة أ.',
-    category: 'furniture', district: 'المنطقة المركزية', location: 'حدائق متعددة', lat: 24.4680, lng: 39.6110,
-    status: 'screening', channel: 'partner',
-    submitterName: 'د. أحمد خياط', submitterEntity: 'جمعية إعمار المدينة للتنمية',
-    submitterEmail: 'ahmad@emaar-m.example', submitterPhone: '0551000007',
-    budget: 900000, spent: 0, fundingModel: 'operation',
-    startDate: null, endDate: null,
-    orgUnitId: 'ou-services', ownerName: 'أ. ريم الجهني', beneficiaries: 50000,
-    scores: {},
-    notes: '',
-    statusHistory: [
-      { from: 'submitted', to: 'screening', at: '2026-08-22T08:00:00Z', by: 'أ. ريم الجهني' }
-    ]
+    ...base(ROADS), id: 'MDN-INIT-2026-0008',
+    title: 'رفع كفاءة وصيانة الطرق داخل أحياء المغيسلة والسقيا والسيح والأصفرين وبني معاوية',
+    category: 'roads', district: 'المغيسلة',
+    location: 'أحياء المغيسلة والسقيا والسيح والأصفرين وبني معاوية', lat: 24.4623159, lng: 39.6025763,
+    sites: [point('site-0008', 'نطاق الأحياء (السقيا)', 24.4623159, 39.6025763)],
+    problem: 'تعاني الطرق داخل الأحياء من تهالك طبقات الأسفلت، وتشققات، وهبوطات، وضعف تصريف مياه الأمطار، مما يسبب انخفاض مستوى السلامة وصعوبة الحركة للسكان.',
+    summary: 'تنفيذ أعمال إعادة تأهيل وصيانة الطرق داخل الأحياء، تشمل كشط وإعادة سفلتة، معالجة التشققات والهبوطات، تحسين التصريف، ورفع جودة الأرصفة والإنارة لضمان طرق آمنة وسلسة.',
+    beneficiaryGroups: 'سكان الأحياء ومستخدمو الطرق الداخلية.',
+    expectedImpact: 'تحسين جودة الطرق، رفع مستوى السلامة، تقليل الأعطال المرورية، وتحسين انسيابية الحركة داخل الأحياء.',
+    costBand: 'gt20m', durationBand: 'gt1y', readinessLevel: 'sited',
+    imageDataUrl: './assets/initiatives/i08.jpg',
+    notes: 'مجال المبادرة في النموذج: طرق ومرافق. رابط الموقع: https://maps.app.goo.gl/PD1eCqRJxQPEZ8PVA'
   },
   {
-    id: 'MDN-INIT-2026-0009', title: 'ملاعب أحياء مصغرة فوق أراضٍ مهملة',
-    summary: 'تحويل 5 أراضٍ فضاء إلى ملاعب مصغرة بأرضيات مطاطية وإنارة، بتمويل رعاة محليين وإشراف بلدي.',
-    scope: 'أحياء الحرة الغربية وسيد الشهداء والجرف.',
-    category: 'parks', district: 'الحرة الغربية', location: 'خمسة مواقع مرشحة', lat: 24.4620, lng: 39.5850,
-    status: 'submitted', channel: 'public',
-    submitterName: 'أ. ناصر الزهراني', submitterEntity: 'مبادرة فردية',
-    submitterEmail: 'partner@example.com', submitterPhone: '0551000009',
-    budget: 1500000, spent: 0, fundingModel: 'sponsorship',
-    startDate: null, endDate: null,
-    orgUnitId: null, ownerName: '', beneficiaries: 20000,
-    scores: {},
-    notes: '',
-    statusHistory: []
+    ...base(ROADS), id: 'MDN-INIT-2026-0009',
+    title: 'تشغيل وصيانة الطرق داخل أحياء المدينة المنورة',
+    category: 'roads', district: 'عموم المدينة',
+    location: 'جميع أحياء المدينة المنورة ضمن نطاق الأمانة', lat: null, lng: null,
+    problem: 'تحتاج الطرق داخل الأحياء إلى صيانة دورية بسبب ظهور تشققات، هبوطات، ضعف في الأرصفة، تآكل الدهانات الأرضية، ونقص اللوحات الإرشادية، مما يؤثر على السلامة وكفاءة الحركة المرورية.',
+    summary: 'تنفيذ برنامج تشغيل وصيانة شامل يشمل: إعادة سفلتة المواقع المتضررة، صيانة الأرصفة ومسارات المشاة وذوي الإعاقة، تركيب وصيانة اللوحات الإرشادية والتحذيرية، معالجة طبقات الإسفلت والدهانات الحرارية، صيانة أعمدة الإنارة والحواجز المعدنية والخرسانية، وتنظيف وصيانة العبارات وتصريف مياه الأمطار.',
+    beneficiaryGroups: 'سكان الأحياء ومستخدمو الطرق الداخلية والخدمات المحلية.',
+    expectedImpact: 'رفع مستوى السلامة، تحسين جودة الطرق، تقليل الأعطال المرورية، تعزيز انسيابية الحركة، ورفع جاهزية البنية التحتية.',
+    costBand: 'gt20m', durationBand: 'gt1y', readinessLevel: 'idea',
+    imageDataUrl: './assets/initiatives/i09.jpg',
+    notes: ''
   },
   {
-    id: 'MDN-INIT-2026-0010', title: 'محطات شرب مبردة على طريق الهجرة',
-    summary: 'مقترح تركيب 25 محطة شرب مبردة تعمل بالطاقة الشمسية — اعتُذر عنه لتعارضه مع مشروع قائم للمياه الوطنية.',
-    scope: '—',
-    category: 'furniture', district: 'العوالي', location: 'طريق الهجرة', lat: 24.4300, lng: 39.6000,
-    status: 'rejected', channel: 'public',
-    submitterName: 'أ. ماجد السحيمي', submitterEntity: 'مبادرة فردية',
-    submitterEmail: 'majed@example.com', submitterPhone: '0551000011',
-    budget: 620000, spent: 0, fundingModel: 'fullFunding',
-    startDate: null, endDate: null,
-    orgUnitId: null, ownerName: '', beneficiaries: 35000,
-    scores: { strategic: 2, impact: 3, feasibility: 2, readiness: 3, risk: 2 },
-    notes: 'يُعاد توجيه المقترح إلى شركة المياه الوطنية.',
-    statusHistory: [
-      { from: 'submitted', to: 'screening', at: '2026-07-05T08:00:00Z', by: 'أ. ريم الجهني' },
-      { from: 'screening', to: 'rejected', at: '2026-07-19T08:00:00Z', by: 'لجنة المبادرات', decisionId: 'MDN-DEC-2026-0012' }
-    ]
+    ...base(ROADS), id: 'MDN-INIT-2026-0010',
+    title: 'تنفيذ جسر على تقاطع طريق الصناعية مع طريق عمر بن الخطاب',
+    category: 'roads', district: 'العزيزية',
+    location: 'طريق عمر بن الخطاب مع طريق الصناعية — المنطقة الصناعية', lat: 24.405188, lng: 39.520428,
+    sites: [point('site-0010', 'تقاطع الصناعية × عمر بن الخطاب', 24.405188, 39.520428)],
+    problem: 'الازدحام المروري الذي يشهده التقاطع عند توقف الإشارات مما يسبب اختناقات مرورية وبالتالي يزيد من احتمالية وقوع حوادث.',
+    summary: BRIDGE_SOLUTION,
+    beneficiaryGroups: 'شركات نقل البضائع وقاصدو المنطقة الصناعية والسكان بالمناطق المحيطة.',
+    expectedImpact: BRIDGE_IMPACT,
+    costBand: 'gt20m', durationBand: 'gt1y', readinessLevel: 'sited',
+    imageDataUrl: './assets/initiatives/i10.jpg',
+    notes: 'رابط الموقع: https://maps.app.goo.gl/3Qxn4gJpV9oNK5LW8'
   },
   {
-    id: 'MDN-INIT-2026-0011', title: 'تحسين السلامة المرورية حول 8 مدارس',
-    summary: 'مطبات ذكية وعلامات مضيئة وممرات ملونة حول 8 مدارس ضمن حملة «طرق آمنة لمدارسنا»، بتمويل مشترك.',
-    scope: 'مدارس الحرة الشرقية والعزيزية.',
-    category: 'safety', district: 'العزيزية', location: 'محيط 8 مدارس', lat: 24.4550, lng: 39.6440,
-    sites: [
-      { id: 'site-0011-a', name: 'مدرسة العزيزية الابتدائية', geometry: { type: 'point', coords: [[24.4550, 39.6440]] } },
-      { id: 'site-0011-b', name: 'مجمع مدارس الحرة الشرقية', geometry: { type: 'point', coords: [[24.4705, 39.6368]] } },
-      { id: 'site-0011-c', name: 'متوسطة العزيزية للبنات', geometry: { type: 'point', coords: [[24.4512, 39.6475]] } }
-    ],
-    portfolioId: 'pf-madinah-proposed', campaignId: 'cmp-safe-paths',
-    status: 'onHold', channel: 'partner',
-    submitterName: 'م. خالد الرشيدي', submitterEntity: 'شركة واحة البناء للمقاولات',
-    submitterEmail: 'k.r@waha.example', submitterPhone: '0551000001',
-    budget: 780000, spent: 0, fundingModel: 'coFunding',
-    startDate: null, endDate: null,
-    orgUnitId: 'ou-projects', ownerName: 'م. هند العمري', beneficiaries: 9500,
-    scores: { strategic: 4, impact: 5, feasibility: 4, readiness: 3, risk: 3 },
-    notes: 'معلقة لحين اعتماد وزارة التعليم لقائمة المدارس النهائية.',
-    statusHistory: [
-      { from: 'submitted', to: 'screening', at: '2026-06-01T08:00:00Z', by: 'أ. ريم الجهني' },
-      { from: 'screening', to: 'study', at: '2026-06-12T08:00:00Z', by: 'لجنة المبادرات' },
-      { from: 'study', to: 'approval', at: '2026-07-08T08:00:00Z', by: 'لجنة المبادرات' },
-      { from: 'approval', to: 'onHold', at: '2026-07-25T08:00:00Z', by: 'لجنة المبادرات', decisionId: 'MDN-DEC-2026-0013' }
-    ]
+    ...base(ROADS), id: 'MDN-INIT-2026-0011',
+    title: 'تنفيذ جسر على طريق الأمير نايف بن عبدالعزيز عند تقاطعه مع طريق سليم بن عمرو مقابل المستشفى السعودي الألماني',
+    category: 'roads', district: 'العزيزية',
+    location: 'طريق الأمير نايف بن عبدالعزيز — مقابل المستشفى السعودي الألماني', lat: 24.420735, lng: 39.530132,
+    sites: [point('site-0011', 'طريق الأمير نايف × سليم بن عمرو', 24.420735, 39.530132)],
+    problem: 'يحتاج الداخل على طريق الأمير نايف من الميقات إلى جهة المعارض إلى السير طويلًا في طريق الأمير نايف للعودة، وكذلك الحال للقادم من طريق سليم بن عمرو متجهًا إلى الصناعية والميقات.',
+    summary: 'تنفيذ جسر على طريق الأمير نايف بن عبدالعزيز عند المستشفى السعودي الألماني لتسهيل حركة المرور للقادمين من جهة المعارض والدعيثة إلى الصناعية والميقات والهجرة وكذلك العكس.',
+    beneficiaryGroups: 'المتجهون إلى وسط المدينة من جهة المعارض والدعيثة والقادمون إليها ناحية الميقات والصناعية.',
+    expectedImpact: 'تقليص زمن التنقل بنسب قد تتجاوز 70% في أوقات الذروة. خفض معدلات الحوادث الناتجة عن تداخل مسارات السيارات عند الالتفافات (U-turns).',
+    costBand: 'gt20m', durationBand: 'gt1y', readinessLevel: 'sited',
+    imageDataUrl: './assets/initiatives/i11.jpg',
+    notes: 'رابط الموقع: https://maps.app.goo.gl/XN3x1ucuokvkYoM68'
   },
   {
-    id: 'MDN-INIT-2026-0012', title: 'واجهة سيد الشهداء — أثاث وخدمات زوار',
-    summary: 'تبنّي احتياج الأثاث البلدي للواجهة المطلة على جبل أحد: جلسات ومظلات ونوافير شرب برعاية شريكين.',
-    scope: 'الواجهة الشمالية كاملة.',
-    category: 'furniture', district: 'سيد الشهداء', location: 'واجهة جبل أحد', lat: 24.5040, lng: 39.6130,
-    status: 'draft', channel: 'internal',
-    submitterName: 'أ. ريم الجهني', submitterEntity: 'مكتب إدارة المبادرات',
-    submitterEmail: 'pmo@amana.example', submitterPhone: '0551000010',
-    budget: 540000, spent: 0, fundingModel: 'sponsorship',
-    startDate: null, endDate: null,
-    orgUnitId: 'ou-community', ownerName: '', beneficiaries: 25000,
-    scores: {},
-    notes: 'مسودة داخلية قبل الطرح.',
-    statusHistory: []
+    ...base(ROADS), id: 'MDN-INIT-2026-0012',
+    title: 'تنفيذ جسر تقاطع طريق قباء مع طريق صلاح الدين',
+    category: 'roads', district: 'قباء',
+    location: 'تقاطع طريق قباء مع طريق صلاح الدين — المدينة المنورة', lat: 24.395701, lng: 39.636368,
+    sites: [point('site-0012', 'تقاطع قباء × صلاح الدين', 24.395701, 39.636368)],
+    problem: 'يشهد التقاطع كثافة مرورية وتداخلًا في الحركات، مما يسبب ازدحامًا وتأخرًا في زمن الرحلة، خصوصًا خلال الفترات الصباحية والمسائية.',
+    summary: BRIDGE_SOLUTION,
+    beneficiaryGroups: 'سكان الأحياء المحيطة ومستخدمو الطريق والأنشطة التجارية في المنطقة.',
+    expectedImpact: BRIDGE_IMPACT,
+    costBand: 'gt20m', durationBand: 'gt1y', readinessLevel: 'sited',
+    imageDataUrl: './assets/initiatives/i12.jpg',
+    notes: 'رابط الموقع: https://maps.app.goo.gl/7YGBejQvhMdts4uY6'
+  },
+  {
+    ...base(ROADS), id: 'MDN-INIT-2026-0013',
+    title: 'تنفيذ جسر تقاطع طريق الأمير عبدالمحسن مع طريق صلاح الدين',
+    category: 'roads', district: 'غير محدد',
+    location: 'تقاطع طريق الأمير عبدالمحسن مع طريق صلاح الدين — المدينة المنورة', lat: 24.399247, lng: 39.644052,
+    sites: [point('site-0013', 'تقاطع الأمير عبدالمحسن × صلاح الدين', 24.399247, 39.644052)],
+    problem: 'يشهد التقاطع كثافة مرورية عالية وتداخلًا في الحركات، مما يؤدي إلى ازدحام وتأخر في زمن الرحلة، خصوصًا في أوقات الذروة، إضافة إلى ارتفاع نقاط التعارض التي تؤثر على السلامة المرورية.',
+    summary: BRIDGE_SOLUTION,
+    beneficiaryGroups: 'سكان الأحياء المحيطة، مستخدمو الطريق، والأنشطة التجارية والخدمية في المنطقة.',
+    expectedImpact: 'تحسين الانسيابية المرورية، تقليل الازدحام، رفع مستوى السلامة، تقليل زمن الرحلة، ودعم كفاءة شبكة الطرق في المدينة المنورة.',
+    costBand: 'gt20m', durationBand: 'gt1y', readinessLevel: 'sited',
+    imageDataUrl: './assets/initiatives/i13.jpg',
+    notes: 'الحي غير مذكور في النموذج. رابط الموقع: https://maps.app.goo.gl/8fsXAxcFz9pcTaXX9'
+  },
+  {
+    ...base(PARKS), id: 'MDN-INIT-2026-0014',
+    title: 'تطوير وأنسنة طريق عبدالله بن جبير من سيد الشهداء إلى حديقة الأمير محمد بن عبدالعزيز',
+    category: 'humanization', district: 'سيد الشهداء',
+    location: 'طريق عبدالله بن جبير باتجاه حديقة الأمير محمد بن عبدالعزيز', lat: 24.504631, lng: 39.608601,
+    sites: [point('site-0014', 'طريق عبدالله بن جبير', 24.504631, 39.608601)],
+    problem: 'الطريق يتجه من سيد الشهداء ويوازي جبل أحد مما يجعل من موقعه جاذبًا لتعزيز الحياة الترفيهية والسياحة الدينية.',
+    summary: 'تطوير وأنسنة الطريق وزيادة الغطاء النباتي والتشجير وتكثيف الإضاءة باتجاه جبل أحد وخلق ممرات آمنة تقرب إليه وتعزيزها بوسائل السلامة والترفيه.',
+    beneficiaryGroups: 'سكان المنطقة وزوار المدينة المنورة وقاصدو منطقة سيد الشهداء وجبل أحد إلى حديقة الأمير محمد بن عبدالعزيز.',
+    expectedImpact: 'الاستفادة من الدور الذي يمكن أن يلعبه تطوير الطريق وإطلالته على معلم ديني ذي أهمية عظيمة. تخفيف الكثافة المرورية على طريق عثمان بن عفان الرابط بين وسط المدينة وشمالها. بناء الثقة وتقديم تجربة مستفيد سلسة وخالية من التعقيدات.',
+    costBand: 'tbd', durationBand: '', readinessLevel: '',
+    imageDataUrl: './assets/initiatives/i14.jpg',
+    notes: 'مجال المبادرة في النموذج: طرق. لم تُؤشَّر التكلفة والمدة والجاهزية في النموذج. رابط الموقع: https://maps.app.goo.gl/1NRspShD8DTVZUrD8'
+  },
+  {
+    ...base(PARKS), id: 'MDN-INIT-2026-0015',
+    title: 'تنفيذ حدائق داخل أحياء المدينة المنورة',
+    category: 'parks', district: 'عموم المدينة',
+    location: 'داخل أحياء المدينة المنورة', lat: null, lng: null,
+    problem: 'تفتقر بعض أحياء المدينة إلى مساحات خضراء وحدائق مجهزة، مما يقلل من جودة الحياة ويحد من الأنشطة الترفيهية والرياضية للسكان.',
+    summary: 'إنشاء حدائق متكاملة داخل الأحياء تشمل: مسطحات خضراء وأشجار ظل مناسبة للبيئة، ملاعب للأطفال والشباب، ممرات مشي وجلسات عائلية، إنارة حديثة وكاميرات مراقبة، وشبكات ري ذكية موفرة للمياه.',
+    beneficiaryGroups: 'سكان الأحياء من العائلات والأطفال والشباب والزوار.',
+    expectedImpact: 'رفع جودة الحياة، تعزيز الصحة العامة، زيادة المسطحات الخضراء، تحسين المشهد الحضري، ودعم أهداف الاستدامة البيئية.',
+    costBand: '5to20m', durationBand: '6to12m', readinessLevel: 'sited',
+    imageDataUrl: './assets/initiatives/i15.jpg',
+    notes: ''
+  },
+  {
+    ...base(PARKS), id: 'MDN-INIT-2026-0016',
+    title: 'تطوير طريق أبي ذر الغفاري — الجزء من طريق الملك عبدالله إلى المنطقة المركزية',
+    category: 'humanization', district: 'بني الأشهل',
+    location: 'طريق أبي ذر الغفاري من طريق الملك عبدالله إلى المنطقة المركزية', lat: 24.4768438, lng: 39.6170704,
+    sites: [point('site-0016', 'طريق أبي ذر الغفاري', 24.4768438, 39.6170704)],
+    problem: 'الطريق متهالك ويفتقر لوسائل السلامة، وانعدام اللوحات الإرشادية، وضعف الإضاءة الليلية قياسًا على موقعه المهم كطريق حيوي يؤدي إلى المنطقة المركزية للمسجد النبوي.',
+    summary: 'مشروع تطوير وأنسنة طريق أبي ذر الغفاري من المنطقة المركزية إلى طريق الملك عبدالله لرفع جودة الحياة وتسهيل حركة المصلين وزيادة الغطاء النباتي.',
+    beneficiaryGroups: 'السكان بالمنطقة والمصلون المتجهون إلى المسجد النبوي وزوار المنطقة المركزية والفنادق والتجمعات المحيطة.',
+    expectedImpact: 'تحسين تجربة ضيوف الرحمن وأنسنة المنطقة حول المركزية. تحسين البيئة المحيطة بالمستفيد وتسهيل الوصول للخدمات وتوفير الوقت والجهد. تعزيز الرفاهية النفسية والجسدية.',
+    costBand: '5to20m', durationBand: '6to12m', readinessLevel: 'idea',
+    imageDataUrl: './assets/initiatives/i16.jpg',
+    notes: 'مجال المبادرة في النموذج: طرق. رابط الموقع: https://maps.app.goo.gl/VL3SzeGgDbwHQmiB7'
+  },
+  {
+    ...base(PARKS), id: 'MDN-INIT-2026-0017',
+    title: 'زيادة التشجير والمسطحات الخضراء في حي شوران وحي السد',
+    category: 'greening', district: 'شوران',
+    location: 'أحياء شوران والسد — المدينة المنورة', lat: null, lng: null,
+    problem: 'تعاني الأحياء من انخفاض نصيب الفرد من المسطحات الخضراء وغياب مناطق مظللة، مما يؤثر على جودة الحياة ويحد من الأنشطة المجتمعية ويزيد من الحرارة في المناطق العمرانية.',
+    summary: 'تنفيذ برنامج تشجير وتوسعة المسطحات الخضراء في حي شوران وحي السد، يشمل زراعة الأشجار المناسبة للبيئة، إنشاء مسطحات خضراء جديدة، تركيب شبكات ري حديثة، وتحسين المشهد الحضري.',
+    beneficiaryGroups: 'سكان حي شوران وحي السد والزوار والمارة.',
+    expectedImpact: 'رفع جودة الحياة، تحسين المشهد الحضري، تقليل الحرارة، زيادة الظلال، وتعزيز البيئة الصحية داخل الأحياء.',
+    costBand: '1to5m', durationBand: '3to6m', readinessLevel: 'idea',
+    imageDataUrl: './assets/initiatives/i17.jpg',
+    notes: 'مجال المبادرة في النموذج: حدائق.'
+  },
+  {
+    ...base(PARKS), id: 'MDN-INIT-2026-0018',
+    title: 'تنفيذ حديقة بملاعب داخل حي السد',
+    category: 'parks', district: 'السد',
+    location: 'حي السد — المدينة المنورة', lat: 24.407878, lng: 39.643027,
+    sites: [point('site-0018', 'موقع الحديقة بحي السد', 24.407878, 39.643027)],
+    problem: 'يفتقر حي السد إلى مساحات ترفيهية آمنة ومجهزة، مما يحد من الأنشطة الرياضية والترفيهية ويؤثر على جودة الحياة للسكان.',
+    summary: 'إنشاء حديقة متكاملة داخل حي السد تضم ملاعب رياضية، مساحات خضراء، ممرات مشي، ومناطق جلوس، لتوفير بيئة ترفيهية آمنة ومناسبة لجميع الفئات العمرية.',
+    beneficiaryGroups: 'سكان حي السد من الأطفال والشباب والعائلات.',
+    expectedImpact: 'رفع جودة الحياة، تعزيز النشاط البدني، توفير بيئة ترفيهية آمنة، وتحسين المشهد الحضري داخل الحي.',
+    costBand: '1to5m', durationBand: '6to12m', readinessLevel: 'idea',
+    imageDataUrl: './assets/initiatives/i18.jpg',
+    notes: 'مجال المبادرة في النموذج: أنسنة وحدائق. رابط الموقع: https://maps.app.goo.gl/SpbpcYx4GX5jZypt8'
+  },
+  {
+    ...base(ROADS), id: 'MDN-INIT-2026-0019',
+    title: 'دهان أعمدة الإنارة بالشوارع الرئيسية',
+    category: 'lighting', district: 'عموم المدينة',
+    location: 'الطرق الرئيسية بالمدينة المنورة', lat: null, lng: null,
+    problem: 'تحسين المظهر الجمالي في الطرق الرئيسية بالمدينة المنورة.',
+    summary: 'توحيد الهوية البصرية للإنارة بالطرق الرئيسية للمدينة المنورة.',
+    beneficiaryGroups: 'زوار وساكنو المدينة المنورة.',
+    expectedImpact: 'تحسين المظهر العام وتوحيد الهوية البصرية للإنارة بمنطقة المدينة المنورة.',
+    costBand: 'lt1m', durationBand: 'lt3m', readinessLevel: 'ready',
+    imageDataUrl: './assets/initiatives/b01.jpg',
+    notes: 'مجال المبادرة في النموذج: طرق وإنارة.'
   }
 ];
 
-// ربط المبادرات بالشركاء
-export const DEMO_INITIATIVE_PARTNERS = [
-  { id: 'ip-001', initiativeId: 'MDN-INIT-2026-0001', partnerId: 'MDN-PRT-2026-0002', model: 'coFunding', contribution: 'تمويل 40% + التشغيل والصيانة لسنتين', signedAt: '2026-03-08' },
-  { id: 'ip-002', initiativeId: 'MDN-INIT-2026-0001', partnerId: 'MDN-PRT-2026-0004', model: 'inKind', contribution: 'أيام تطوعية للزراعة (120 متطوعًا)', signedAt: '2026-03-20' },
-  { id: 'ip-003', initiativeId: 'MDN-INIT-2026-0002', partnerId: 'MDN-PRT-2026-0003', model: 'fullFunding', contribution: 'تمويل كامل ضمن برنامج المسؤولية المجتمعية', signedAt: '2026-07-28' },
-  { id: 'ip-004', initiativeId: 'MDN-INIT-2026-0003', partnerId: 'MDN-PRT-2026-0001', model: 'execution', contribution: 'تنفيذ مباشر بأسعار تفضيلية', signedAt: '2026-03-01' },
-  { id: 'ip-005', initiativeId: 'MDN-INIT-2026-0004', partnerId: 'MDN-PRT-2026-0006', model: 'fullFunding', contribution: 'تمويل وتنفيذ كامل المظلات', signedAt: '2025-09-20' },
-  { id: 'ip-006', initiativeId: 'MDN-INIT-2026-0005', partnerId: 'MDN-PRT-2026-0004', model: 'inKind', contribution: 'تشغيل تطوعي وبرامج مجتمعية', signedAt: '2025-02-10' },
-  { id: 'ip-007', initiativeId: 'MDN-INIT-2026-0005', partnerId: 'MDN-PRT-2026-0007', model: 'coFunding', contribution: 'تمويل 50% من التجهيزات', signedAt: '2025-02-10' },
-  { id: 'ip-008', initiativeId: 'MDN-INIT-2026-0008', partnerId: 'MDN-PRT-2026-0007', model: 'operation', contribution: 'تشغيل وصيانة بمؤشرات جودة معلنة', signedAt: null }
-];
-
-// معالم التنفيذ
-export const DEMO_MILESTONES = [
-  { id: 'ms-101', initiativeId: 'MDN-INIT-2026-0001', title: 'تجهيز التربة وشبكة الري', due: '2026-05-15', done: true, doneAt: '2026-05-10' },
-  { id: 'ms-102', initiativeId: 'MDN-INIT-2026-0001', title: 'زراعة القطاع الأول (400 شجرة)', due: '2026-07-01', done: true, doneAt: '2026-07-05' },
-  { id: 'ms-103', initiativeId: 'MDN-INIT-2026-0001', title: 'زراعة القطاع الثاني (400 شجرة)', due: '2026-09-01', done: false, doneAt: null },
-  { id: 'ms-104', initiativeId: 'MDN-INIT-2026-0001', title: 'زراعة القطاع الثالث والتسليم', due: '2026-11-15', done: false, doneAt: null },
-  { id: 'ms-301', initiativeId: 'MDN-INIT-2026-0003', title: 'إزالة الرصف القديم', due: '2026-04-15', done: true, doneAt: '2026-04-12' },
-  { id: 'ms-302', initiativeId: 'MDN-INIT-2026-0003', title: 'رصف المقطع الأول (1.2 كم)', due: '2026-06-15', done: true, doneAt: '2026-06-25' },
-  { id: 'ms-303', initiativeId: 'MDN-INIT-2026-0003', title: 'رصف المقطع الثاني والمنحدرات', due: '2026-08-15', done: false, doneAt: null },
-  { id: 'ms-304', initiativeId: 'MDN-INIT-2026-0003', title: 'التشجير الجانبي والتسليم', due: '2026-09-10', done: false, doneAt: null },
-  { id: 'ms-401', initiativeId: 'MDN-INIT-2026-0004', title: 'تصنيع وتوريد المظلات', due: '2026-01-30', done: true, doneAt: '2026-01-25' },
-  { id: 'ms-402', initiativeId: 'MDN-INIT-2026-0004', title: 'التركيب والتشغيل التجريبي', due: '2026-05-15', done: true, doneAt: '2026-05-20' },
-  { id: 'ms-501', initiativeId: 'MDN-INIT-2026-0005', title: 'الأعمال الترابية والبنية', due: '2025-06-30', done: true, doneAt: '2025-06-28' },
-  { id: 'ms-502', initiativeId: 'MDN-INIT-2026-0005', title: 'المسطحات والألعاب والتسليم', due: '2025-12-10', done: true, doneAt: '2025-12-08' }
-];
-
-// المنافع المستهدفة والمتحققة
-export const DEMO_BENEFITS = [
-  { id: 'bn-101', initiativeId: 'MDN-INIT-2026-0001', title: 'خفض درجة الحرارة المحسوسة على المحور', unit: 'درجة مئوية', baseline: 0, target: 4, actual: 2.5, measuredAt: '2026-08-15', owner: 'م. فهد المطيري' },
-  { id: 'bn-102', initiativeId: 'MDN-INIT-2026-0001', title: 'أشجار مزروعة حية بعد 6 أشهر', unit: 'شجرة', baseline: 0, target: 1200, actual: 780, measuredAt: '2026-08-15', owner: 'جمعية سقيا وظل' },
-  { id: 'bn-401', initiativeId: 'MDN-INIT-2026-0004', title: 'مساحة مظللة مضافة', unit: 'م²', baseline: 0, target: 2800, actual: 2800, measuredAt: '2026-06-10', owner: 'م. فهد المطيري' },
-  { id: 'bn-402', initiativeId: 'MDN-INIT-2026-0004', title: 'رضا الزوار عن الساحات', unit: '%', baseline: 62, target: 85, actual: 81, measuredAt: '2026-08-01', owner: 'إدارة الشراكة المجتمعية' },
-  { id: 'bn-501', initiativeId: 'MDN-INIT-2026-0005', title: 'زوار الحديقة أسبوعيًا', unit: 'زائر', baseline: 0, target: 3500, actual: 4100, measuredAt: '2026-03-01', owner: 'فريق دربك أخضر' },
-  { id: 'bn-502', initiativeId: 'MDN-INIT-2026-0005', title: 'رضا سكان الحي عن المرافق', unit: '%', baseline: 48, target: 75, actual: 73, measuredAt: '2026-03-15', owner: 'إدارة الشراكة المجتمعية' },
-  { id: 'bn-301', initiativeId: 'MDN-INIT-2026-0003', title: 'طلاب يصلون مشيًا بأمان', unit: 'طالب', baseline: 900, target: 2400, actual: null, measuredAt: null, owner: 'م. هند العمري' }
-];
-
-// سجل المخاطر
-export const DEMO_RISKS = [
-  { id: 'rk-101', initiativeId: 'MDN-INIT-2026-0001', title: 'إجهاد حراري يهدد شتلات الصيف', probability: 3, impact: 3, response: 'جدولة الزراعة مساءً وزيادة دورات الري', owner: 'جمعية سقيا وظل', status: 'open' },
-  { id: 'rk-102', initiativeId: 'MDN-INIT-2026-0001', title: 'تعارض مع أعمال حفر لمزود اتصالات', probability: 2, impact: 3, response: 'تنسيق مسبق للمسارات مع إدارة التراخيص', owner: 'م. فهد المطيري', status: 'mitigated' },
-  { id: 'rk-301', initiativeId: 'MDN-INIT-2026-0003', title: 'تأخر توريد البلاط المطابق للمواصفة', probability: 3, impact: 4, response: 'اعتماد مورّدين بديلين وتقديم أوامر الشراء', owner: 'م. خالد الرشيدي', status: 'open' },
-  { id: 'rk-302', initiativeId: 'MDN-INIT-2026-0003', title: 'إغلاقات مرورية تربك محيط المدارس', probability: 2, impact: 3, response: 'جدولة الأعمال في الإجازة الصيفية', owner: 'م. فهد المطيري', status: 'mitigated' },
-  { id: 'rk-201', initiativeId: 'MDN-INIT-2026-0002', title: 'تأخر فسح الأجهزة الذكية جمركيًا', probability: 2, impact: 4, response: 'الشحن المبكر قبل موعد الإطلاق بشهرين', owner: 'مجموعة نور المدينة', status: 'open' },
-  { id: 'rk-401', initiativeId: 'MDN-INIT-2026-0004', title: 'تمدد القماش تحت الرياح الموسمية', probability: 2, impact: 2, response: 'فحص شد دوري ضمن عقد الصيانة', owner: 'مؤسسة عمران', status: 'open' }
-];
-
-// مؤشرات الأداء على مستوى المنصة
-export const DEMO_KPIS = [
-  { id: 'kpi-01', initiativeId: null, title: 'مبادرات نشطة', unit: 'مبادرة', target: 25, actual: 6, period: '2026' },
-  { id: 'kpi-02', initiativeId: null, title: 'قيمة مساهمات الشركاء', unit: 'ريال', target: 15000000, actual: 8100000, period: '2026' },
-  { id: 'kpi-03', initiativeId: null, title: 'متوسط أيام الفرز (G0)', unit: 'يوم', target: 14, actual: 12, period: '2026' },
-  { id: 'kpi-04', initiativeId: null, title: 'نسبة المنافع المتحققة عند الإقفال', unit: '%', target: 85, actual: 96, period: '2026' }
-];
-
-// المراجعات (تقييمات لجنة عند البوابات)
-export const DEMO_REVIEWS = [
-  { id: 'rv-001', initiativeId: 'MDN-INIT-2026-0007', gateId: 'G1', reviewer: 'د. سالم الأنصاري', at: '2026-08-05T08:00:00Z', recommendation: 'المضي للاعتماد بشرط موافقة هيئة التطوير', notes: 'الجدوى الفنية تحتاج مسحًا طبوغرافيًا للمقطع الأوسط.' },
-  { id: 'rv-002', initiativeId: 'MDN-INIT-2026-0007', gateId: 'G1', reviewer: 'م. هند العمري', at: '2026-08-06T08:00:00Z', recommendation: 'المضي للاعتماد', notes: 'الأثر المجتمعي مرتفع ويخدم مسارًا استراتيجيًا.' },
-  { id: 'rv-003', initiativeId: 'MDN-INIT-2026-0006', gateId: 'G1', reviewer: 'د. سالم الأنصاري', at: '2026-08-20T08:00:00Z', recommendation: 'استكمال المتطلبات', notes: 'قائمة المواقع الأولية تتداخل مع عقود نظافة قائمة.' },
-  { id: 'rv-004', initiativeId: 'MDN-INIT-2026-0008', gateId: 'G0', reviewer: 'أ. ريم الجهني', at: '2026-08-26T08:00:00Z', recommendation: 'المضي للدراسة', notes: 'الطلب مكتمل والجهة مؤهلة تشغيليًا.' }
-];
-
-// قرارات البوابات
-export const DEMO_DECISIONS = [
-  { id: 'MDN-DEC-2026-0001', initiativeId: 'MDN-INIT-2026-0001', gateId: 'G0', outcome: 'pass', at: '2026-01-25T08:00:00Z', by: 'لجنة المبادرات', rationale: 'طلب مكتمل ضمن نطاق حملة التشجير.' },
-  { id: 'MDN-DEC-2026-0002', initiativeId: 'MDN-INIT-2026-0001', gateId: 'G1', outcome: 'pass', at: '2026-02-20T08:00:00Z', by: 'لجنة المبادرات', rationale: 'درجة مفاضلة 92 — أولوية قصوى.' },
-  { id: 'MDN-DEC-2026-0003', initiativeId: 'MDN-INIT-2026-0001', gateId: 'G2', outcome: 'pass', at: '2026-03-10T08:00:00Z', by: 'لجنة المبادرات', rationale: 'وُقعت اتفاقية الشراكة مع الجمعية والفريق التطوعي.' },
-  { id: 'MDN-DEC-2026-0004', initiativeId: 'MDN-INIT-2026-0001', gateId: 'G3', outcome: 'pass', at: '2026-04-01T08:00:00Z', by: 'لجنة المبادرات', rationale: 'الخطة التنفيذية معتمدة والموقع جاهز.' },
-  { id: 'MDN-DEC-2026-0005', initiativeId: 'MDN-INIT-2026-0002', gateId: 'G0', outcome: 'pass', at: '2026-05-18T08:00:00Z', by: 'لجنة المبادرات', rationale: 'ضمن أولويات كفاءة الطاقة.' },
-  { id: 'MDN-DEC-2026-0006', initiativeId: 'MDN-INIT-2026-0002', gateId: 'G1', outcome: 'pass', at: '2026-06-22T08:00:00Z', by: 'لجنة المبادرات', rationale: 'جدوى ممتازة وعائد تشغيلي واضح.' },
-  { id: 'MDN-DEC-2026-0007', initiativeId: 'MDN-INIT-2026-0002', gateId: 'G2', outcome: 'pass', at: '2026-08-02T08:00:00Z', by: 'لجنة المبادرات', rationale: 'اتفاقية تمويل كامل موقعة.' },
-  { id: 'MDN-DEC-2026-0008', initiativeId: 'MDN-INIT-2026-0003', gateId: 'G3', outcome: 'pass', at: '2026-03-15T08:00:00Z', by: 'لجنة المبادرات', rationale: 'التصاريح مكتملة وجدولة الأعمال تراعي المدارس.' },
-  { id: 'MDN-DEC-2026-0009', initiativeId: 'MDN-INIT-2026-0005', gateId: 'G4', outcome: 'pass', at: '2026-04-10T08:00:00Z', by: 'لجنة المبادرات', rationale: 'تحقق منافع 96% وتوثيق دروس مستفادة.' },
-  { id: 'MDN-DEC-2026-0010', initiativeId: 'MDN-INIT-2026-0006', gateId: 'G0', outcome: 'pass', at: '2026-08-14T08:00:00Z', by: 'لجنة المبادرات', rationale: 'ضمن مستهدفات الفرز من المصدر.' },
-  { id: 'MDN-DEC-2026-0011', initiativeId: 'MDN-INIT-2026-0007', gateId: 'G1', outcome: 'pass', at: '2026-08-10T08:00:00Z', by: 'لجنة المبادرات', rationale: 'المضي للاعتماد مع اشتراط موافقة هيئة التطوير.' },
-  { id: 'MDN-DEC-2026-0012', initiativeId: 'MDN-INIT-2026-0010', gateId: 'G0', outcome: 'reject', at: '2026-07-19T08:00:00Z', by: 'لجنة المبادرات', rationale: 'تعارض مباشر مع مشروع قائم للمياه الوطنية.' },
-  { id: 'MDN-DEC-2026-0013', initiativeId: 'MDN-INIT-2026-0011', gateId: 'G2', outcome: 'hold', at: '2026-07-25T08:00:00Z', by: 'لجنة المبادرات', rationale: 'بانتظار اعتماد قائمة المدارس من الوزارة.' }
-];
-
-// فحوص الجودة
-export const DEMO_QUALITY_CHECKS = [
-  { id: 'qc-301', initiativeId: 'MDN-INIT-2026-0003', title: 'اختبار ميول المنحدرات وفق كود الوصول الشامل', at: '2026-06-28', result: 'pass', inspector: 'م. هند العمري', notes: 'مطابق في 14 من 15 منحدرًا — أُعيد منحدر واحد.' },
-  { id: 'qc-302', initiativeId: 'MDN-INIT-2026-0003', title: 'فحص سماكة البلاط ومقاومة الانزلاق', at: '2026-07-15', result: 'pass', inspector: 'مختبر معتمد', notes: '' },
-  { id: 'qc-401', initiativeId: 'MDN-INIT-2026-0004', title: 'اختبار شد المظلات تحت حمل رياح 90 كم/س', at: '2026-05-18', result: 'pass', inspector: 'استشاري الإنشاءات', notes: '' },
-  { id: 'qc-101', initiativeId: 'MDN-INIT-2026-0001', title: 'جودة شبكة الري ونسب التسرب', at: '2026-06-01', result: 'fail', inspector: 'م. فهد المطيري', notes: 'تسرب في الخط الفرعي 3 — أُصلح وأُعيد الفحص بنجاح في 2026-06-08.' }
-];
+// لا مبادرات مقترحة إضافية ولا سجلات تنفيذ مرتبطة — كل ما سبق بيانات تجريبية أُزيلت
+// حفاظًا على دقة المنصة؛ تُنشأ المعالم والمنافع والمخاطر والقرارات من العمل الفعلي على المبادرات.
+export const DEMO_PROPOSED_INITIATIVES = [];
+export const DEMO_INITIATIVE_PARTNERS = [];
+export const DEMO_MILESTONES = [];
+export const DEMO_BENEFITS = [];
+export const DEMO_RISKS = [];
+export const DEMO_KPIS = [];
+export const DEMO_REVIEWS = [];
+export const DEMO_DECISIONS = [];
+export const DEMO_QUALITY_CHECKS = [];

@@ -9,7 +9,7 @@ import { nowIso } from '../core/date-time.js';
 import { hashPassword, DEFAULT_PASSWORD } from './auth-service.js';
 
 const SEED_FLAG_ID = 'seed-status';
-export const SEED_VERSION = 8; // v8: البيانات التفصيلية لطلبات التقديم التجريبية
+export const SEED_VERSION = 9; // v9: استبدال المبادرات التجريبية بالمبادرات المستقبلية الحقيقية لوكالة البنية التحتية
 
 const stamp = (r) => ({ createdAt: nowIso(), updatedAt: nowIso(), ...r });
 
@@ -32,6 +32,7 @@ export async function seedDemoDataIfEmpty() {
     if (version < 6) await topUpToV6();
     if (version < 7) await topUpToV7();
     if (version < 8) await topUpToV8();
+    if (version < 9) await replaceWithRealInitiativesV9();
   }
   await dataProvider.put('settings', { id: SEED_FLAG_ID, seeded: true, version: SEED_VERSION, at: nowIso() });
   return true;
@@ -58,6 +59,31 @@ async function fullSeed() {
   await dataProvider.bulkPut('needApplications', DEMO_NEED_APPLICATIONS.map(stamp));
   await dataProvider.bulkPut('progressReports', DEMO_PROGRESS_REPORTS.map(stamp));
   await dataProvider.bulkPut('agreements', DEMO_AGREEMENTS.map(stamp));
+}
+
+// v8 → v9: حذف المبادرات التجريبية السابقة وكل سجلاتها التابعة (معالم، منافع، مخاطر، قرارات،
+// مراجعات، فحوص، روابط شركاء، اتفاقيات، تقارير ميدانية، مرفقات، معرض) وزرع المبادرات الحقيقية
+async function replaceWithRealInitiativesV9() {
+  const users = await dataProvider.getAll('users');
+  if (!users.length) return; // منصة مُفرغة عمدًا
+  for (const store of ['initiatives', 'initiativePartners', 'milestones', 'benefits', 'risks', 'kpis',
+    'reviews', 'decisions', 'qualityChecks', 'gateChecklists', 'attachments', 'comments',
+    'changeRequests', 'deliverables', 'agreements', 'progressReports', 'gallery', 'portfolios']) {
+    await dataProvider.clear(store);
+  }
+  // فك ارتباط الاحتياجات والطلبات بالمبادرات المحذوفة
+  for (const n of await dataProvider.getAll('infrastructureNeeds')) {
+    if (n.matchedInitiativeId) await dataProvider.put('infrastructureNeeds', { ...n, status: 'published', matchedInitiativeId: null, updatedAt: nowIso() });
+  }
+  for (const a of await dataProvider.getAll('needApplications')) {
+    if (a.resultInitiativeId) await dataProvider.put('needApplications', { ...a, resultInitiativeId: null, updatedAt: nowIso() });
+  }
+  for (const c of await dataProvider.getAll('campaigns')) {
+    await dataProvider.put('campaigns', { ...c, portfolioId: DEMO_PORTFOLIOS[0]?.id || null, updatedAt: nowIso() });
+  }
+  await dataProvider.bulkPut('portfolios', DEMO_PORTFOLIOS.map(stamp));
+  await dataProvider.bulkPut('initiatives', DEMO_INITIATIVES.map(stamp));
+  await dataProvider.bulkPut('gallery', DEMO_GALLERY.map(stamp));
 }
 
 // v7 → v8: إضافة البيانات التفصيلية لطلبات التقديم التجريبية التي لا تملكها

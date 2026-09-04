@@ -22,10 +22,10 @@ export const DEMO_NEEDS = [
     id: 'MDN-NEED-2026-0003', title: 'تأهيل أرصفة شارع السلام بالحرة الشرقية',
     description: 'إعادة رصف وتسوية أرصفة بطول 2.4 كم مع منحدرات ذوي إعاقة وتشجير جانبي.',
     category: 'sidewalks', district: 'الحرة الشرقية', location: 'شارع السلام — من التقاطع الأول حتى الدوار',
-    lat: 24.4720, lng: 39.6350, status: 'matched', priority: 'high',
+    lat: 24.4720, lng: 39.6350, status: 'published', priority: 'high',
     estimatedCost: 1800000, beneficiaries: 18000,
     expectedImpact: 'مسار مشاة آمن ومتصل يخدم ثلاث مدارس ومركزًا صحيًا.',
-    preferredModels: ['execution', 'coFunding'], publishedAt: '2026-05-02', matchedInitiativeId: 'MDN-INIT-2026-0003'
+    preferredModels: ['execution', 'coFunding'], publishedAt: '2026-05-02', matchedInitiativeId: null
   },
   {
     id: 'MDN-NEED-2026-0004', title: 'ساحة مجتمعية في حي العيون',
