@@ -50,3 +50,13 @@
 .mi-geo-host--empty { display: grid; place-items: center; color: var(--mi-muted); font-size: var(--mi-fs-sm); background: var(--mi-surface-2); direction: rtl; }
 .mi-geo-caption { margin: var(--mi-sp-2) 0 0; font-size: var(--mi-fs-sm); color: var(--mi-green-800); }
 .mi-geo-preview .leaflet-control-attribution { font-size: 9px; }
+
+/* شريط فلاتر الخريطة */
+.mi-map-filters { display: flex; flex-direction: column; gap: var(--mi-sp-2); margin-bottom: var(--mi-sp-3); }
+.mi-map-filters__row { display: flex; gap: var(--mi-sp-2); flex-wrap: wrap; align-items: center; }
+.mi-map-filters .mi-input { flex: 1 1 10rem; min-width: 9rem; padding: 0.4rem 0.6rem; font-size: var(--mi-fs-sm); }
+.mi-map-filters__search { flex: 2 1 14rem !important; }
+.mi-map-filters__toggle { flex: none; gap: 0.35rem; font-size: var(--mi-fs-sm); white-space: nowrap; }
+.mi-map-filters__count { margin-inline-start: auto; font-size: var(--mi-fs-xs); color: var(--mi-muted); white-space: nowrap; }
+.mi-map-filters__count[data-empty="yes"] { color: var(--mi-bad); font-weight: 700; }
+@media (max-width: 640px) { .mi-map-filters__count { margin-inline-start: 0; flex-basis: 100%; } }
