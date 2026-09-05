@@ -27,7 +27,7 @@ import { toastSuccess, toastError } from '../../ui/toast.js';
 import { notify } from '../../services/notification-service.js';
 import { downloadCsv } from '../../services/export-service.js';
 import { openReportViewer } from '../../ui/report-viewer.js';
-import { toHtmlTable } from '../../services/export-service.js';
+import { buildInitiativeReport } from '../../services/initiative-report.js';
 import { slaChip } from '../../ui/components.js';
 import { slaStatus } from '../../domain/sla.js';
 import { getSlaConfig } from '../../services/sla-service.js';
@@ -488,42 +488,10 @@ export async function renderInitiativeDetails(container, id) {
     });
   });
 
-  // تقرير الطباعة
-  container.querySelector('[data-act="print"]')?.addEventListener('click', () => {
-    openReportViewer({
-      title: `تقرير مبادرة — ${initiative.title}`,
-      subtitle: `${initiative.id} • ${categoryLabel(initiative.category)} • حي ${initiative.district}`,
-      kpis: [
-        { label: 'الحالة', value: statusLabel(initiative.status) },
-        { label: 'الميزانية', value: fmtMoney(initiative.budget) },
-        { label: 'المنصرف', value: fmtMoney(initiative.spent) },
-        { label: 'المستفيدون', value: initiative.beneficiaries ? fmtNumber(initiative.beneficiaries) : '—' },
-        { label: 'المواقع', value: fmtNumber(getSites(initiative).length) }
-      ],
-      generatedAt: new Date().toISOString(),
-      sections: [
-        { heading: 'الوصف', html: `<p>${escapeHtml(initiative.summary)}</p>` },
-        {
-          heading: 'المؤشرات المالية', html: toHtmlTable([initiative], [
-            { key: 'budget', label: 'الميزانية', map: (r) => fmtMoney(r.budget) },
-            { key: 'spent', label: 'المنصرف', map: (r) => fmtMoney(r.spent) },
-            { key: 'beneficiaries', label: 'المستفيدون', map: (r) => fmtNumber(r.beneficiaries || 0) }
-          ])
-        },
-        {
-          heading: 'المنافع', html: benefits.length ? toHtmlTable(benefits, [
-            { key: 'title', label: 'المنفعة' }, { key: 'target', label: 'المستهدف', map: (b) => `${fmtNumber(b.target)} ${b.unit}` },
-            { key: 'actual', label: 'المتحقق', map: (b) => b.actual === null || b.actual === undefined ? 'لم يُقس' : `${fmtNumber(b.actual)} ${b.unit}` }
-          ]) : '<p>لا منافع مسجلة</p>'
-        },
-        {
-          heading: 'المخاطر', html: risks.length ? toHtmlTable(risks, [
-            { key: 'title', label: 'الخطر' }, { key: 'level', label: 'المستوى', map: (r) => exposureLevel(r).label },
-            { key: 'response', label: 'الاستجابة' }
-          ]) : '<p>لا مخاطر مسجلة</p>'
-        }
-      ]
-    });
+  // تقرير المبادرة الفاخر (كل الأقسام) — المولّد المشترك مع صفحة التقارير
+  container.querySelector('[data-act="print"]')?.addEventListener('click', async () => {
+    try { openReportViewer(await buildInitiativeReport(initiative.id)); }
+    catch (err) { toastError(err.message); }
   });
 
   async function openDecisionModal(host, ini, meta, to) {

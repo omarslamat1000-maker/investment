@@ -14,10 +14,18 @@ import { openReportViewer } from '../../ui/report-viewer.js';
 import { toHtmlTable, downloadCsv } from '../../services/export-service.js';
 import { getRole } from '../../core/state.js';
 import { can } from '../../core/permissions.js';
-import { toastSuccess } from '../../ui/toast.js';
+import { toastSuccess, toastError } from '../../ui/toast.js';
+import { buildInitiativeReport, INITIATIVE_REPORT_SECTIONS, REPORT_ICONS } from '../../services/initiative-report.js';
+import { STORAGE_PREFIX } from '../../core/constants.js';
+
+const SECTIONS_KEY = STORAGE_PREFIX + 'initiativeReportSections';
 
 export async function renderReports(container) {
   const role = getRole();
+  const initiatives = sortBy(await repos.initiatives.getAll(), (i) => i.id);
+  let savedSections = null;
+  try { savedSections = JSON.parse(localStorage.getItem(SECTIONS_KEY) || 'null'); } catch { savedSections = null; }
+  const checkedSet = new Set(Array.isArray(savedSections) ? savedSections : INITIATIVE_REPORT_SECTIONS.filter((s) => s.default).map((s) => s.id));
   const REPORTS = [
     { id: 'portfolio', title: 'تقرير المحفظة الشامل', desc: 'كل المبادرات بحالاتها ودرجاتها وميزانياتها' },
     { id: 'gates', title: 'تقرير الحوكمة والقرارات', desc: 'القرارات الصادرة عند كل بوابة بمسوغاتها' },
@@ -29,6 +37,39 @@ export async function renderReports(container) {
   container.innerHTML = html`
     ${raw(sectionHeader('التقارير', 'تُبنى لحظيًا من بيانات المنصة — عرض فاخر داخل المنصة ثم طباعة A4 أو حفظ PDF أو تنزيل ملف مستقل أو CSV'))}
     <div class="mi-report-grid">
+      <section class="mi-card mi-report-card mi-report-card--featured" data-initiative-report>
+        <span class="mi-report-card__arch" aria-hidden="true"></span>
+        <h3>تقرير مبادرة محددة</h3>
+        <p class="mi-muted">ملف متكامل لمبادرة واحدة بأقسام تختارها: بطاقة التعريف، الموقع والصورة، مسار البوابات، الشركاء، المعالم، المنافع، المخاطر… بتصميم فاخر للطباعة A4 أو حفظ PDF.</p>
+        <div class="mi-report-pick">
+          <div class="mi-form-field">
+            <label for="mi-rpt-initiative">اختر المبادرة</label>
+            <select class="mi-input" id="mi-rpt-initiative">
+              <option value="">— اختر مبادرة —</option>
+              ${raw(initiatives.map((i) => `<option value="${escapeHtml(i.id)}">${escapeHtml(i.id)} — ${escapeHtml(i.title)} (${escapeHtml(statusLabel(i.status))})</option>`).join(''))}
+            </select>
+          </div>
+          <div class="mi-form-field" style="flex:1 1 12rem">
+            <label for="mi-rpt-search">بحث سريع</label>
+            <input class="mi-input" id="mi-rpt-search" type="search" placeholder="جزء من الاسم أو المعرّف…">
+          </div>
+        </div>
+        <div class="mi-report-sections__tools">
+          <b>الأقسام المطبوعة:</b>
+          <button type="button" class="mi-btn mi-btn--ghost mi-btn--sm" data-sections="all">تحديد الكل</button>
+          <button type="button" class="mi-btn mi-btn--ghost mi-btn--sm" data-sections="default">الافتراضي</button>
+          <button type="button" class="mi-btn mi-btn--ghost mi-btn--sm" data-sections="none">إلغاء الكل</button>
+          <span class="mi-muted">يُحفظ اختيارك للمرة القادمة</span>
+        </div>
+        <div class="mi-report-sections">
+          ${raw(INITIATIVE_REPORT_SECTIONS.map((s) => `
+            <label class="mi-check-item"><input type="checkbox" data-section="${escapeHtml(s.id)}" ${checkedSet.has(s.id) ? 'checked' : ''}>
+              <span>${REPORT_ICONS[s.icon] || ''}${escapeHtml(s.label)}<small>${escapeHtml(s.hint)}</small></span></label>`).join(''))}
+        </div>
+        <div class="mi-report-card__actions">
+          <button class="mi-btn mi-btn--gold" data-act="initiative-report" disabled>عرض وطباعة تقرير المبادرة</button>
+        </div>
+      </section>
       ${raw(REPORTS.map((r) => html`
         <section class="mi-card mi-report-card">
           <span class="mi-report-card__arch" aria-hidden="true"></span>
@@ -40,6 +81,42 @@ export async function renderReports(container) {
           </div>
         </section>`).join(''))}
     </div>`;
+
+  // تقرير المبادرة المحددة: اختيار المبادرة + تخصيص الأقسام
+  const card = container.querySelector('[data-initiative-report]');
+  const select = card.querySelector('#mi-rpt-initiative');
+  const search = card.querySelector('#mi-rpt-search');
+  const runBtn = card.querySelector('[data-act="initiative-report"]');
+  const boxes = [...card.querySelectorAll('[data-section]')];
+  const persist = () => { try { localStorage.setItem(SECTIONS_KEY, JSON.stringify(boxes.filter((b) => b.checked).map((b) => b.dataset.section))); } catch { /* محظور */ } };
+  const refresh = () => { runBtn.disabled = !select.value || !boxes.some((b) => b.checked); };
+  select.addEventListener('change', refresh);
+  boxes.forEach((b) => b.addEventListener('change', () => { persist(); refresh(); }));
+  card.querySelectorAll('[data-sections]').forEach((btn) => btn.addEventListener('click', () => {
+    const mode = btn.dataset.sections;
+    boxes.forEach((b) => { b.checked = mode === 'all' ? true : mode === 'none' ? false : INITIATIVE_REPORT_SECTIONS.find((s) => s.id === b.dataset.section)?.default; });
+    persist(); refresh();
+  }));
+  // البحث السريع يرشح خيارات القائمة ويختار أول مطابقة
+  search.addEventListener('input', () => {
+    const q = search.value.trim().toLowerCase();
+    let first = '';
+    [...select.options].forEach((o) => {
+      if (!o.value) return;
+      const hit = !q || o.textContent.toLowerCase().includes(q);
+      o.hidden = !hit;
+      if (hit && !first) first = o.value;
+    });
+    if (q && first) select.value = first;
+    refresh();
+  });
+  runBtn.addEventListener('click', async () => {
+    const sections = boxes.filter((b) => b.checked).map((b) => b.dataset.section);
+    try {
+      openReportViewer(await buildInitiativeReport(select.value, { sections }));
+    } catch (err) { toastError(err.message); }
+  });
+  refresh();
 
   container.querySelectorAll('[data-print]').forEach((btn) =>
     btn.addEventListener('click', () => buildReport(btn.dataset.print, 'print')));

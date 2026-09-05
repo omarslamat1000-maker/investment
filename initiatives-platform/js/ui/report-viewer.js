@@ -16,7 +16,7 @@ export function openReportViewer(payload) {
   const arches = '<div class="mi-print-arches" aria-hidden="true">' + '<i></i>'.repeat(7) + '</div>';
   const kpis = (payload.kpis || []).length
     ? `<div class="mi-print-kpis">${payload.kpis.map((k) =>
-      `<div class="mi-print-kpi"><b>${escapeHtml(k.value)}</b><span>${escapeHtml(k.label)}</span></div>`).join('')}</div>`
+      `<div class="mi-print-kpi">${k.iconHtml || ''}<b>${escapeHtml(k.value)}</b><span>${escapeHtml(k.label)}</span></div>`).join('')}</div>`
     : '';
 
   const reportHtml = `
@@ -27,10 +27,11 @@ export function openReportViewer(payload) {
       <h1>${escapeHtml(payload.title)}</h1>
       ${payload.subtitle ? `<p class="mi-print-sub">${escapeHtml(payload.subtitle)}</p>` : ''}
     </header>
+    ${payload.heroHtml || ''}
     ${kpis}
     ${(payload.sections || []).map((s) => `
       <section class="mi-print-section">
-        <h2>${escapeHtml(s.heading)}</h2>
+        <h2>${s.iconHtml || ''}${escapeHtml(s.heading)}</h2>
         ${s.html}
       </section>`).join('')}
     <footer class="mi-print-foot">
@@ -94,7 +95,7 @@ export function openReportViewer(payload) {
       const blob = new Blob(['﻿' + standalone], { type: 'text/html;charset=utf-8' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `تقرير-${payload.title.replace(/[\\/:*?"<>|]/g, ' ').trim()}-${todayYmd()}.html`;
+      a.download = `${payload.fileName || ('تقرير-' + payload.title.replace(/[\\/:*?"<>|]/g, ' ').trim())}-${todayYmd()}.html`;
       a.click();
       URL.revokeObjectURL(a.href);
     } catch (err) {
