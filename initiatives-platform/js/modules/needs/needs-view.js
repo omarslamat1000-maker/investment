@@ -6,7 +6,7 @@ import { renderTable } from '../../ui/table.js';
 import { needStatusLabel, PRIORITY_LABELS, newNeed, validateNeed, sanitizeNeed } from '../../domain/infrastructure-need-model.js';
 import { categoryLabel } from '../../domain/initiative-model.js';
 import { modelLabel } from '../../domain/partner-model.js';
-import { CATEGORIES, DISTRICTS } from '../../core/constants.js';
+import { CATEGORIES } from '../../core/constants.js';
 import { fmtMoney, fmtNumber } from '../../core/utils.js';
 import { fmtDate } from '../../core/date-time.js';
 import { getRole, getSession } from '../../core/state.js';
@@ -41,7 +41,7 @@ export async function renderNeeds(container) {
     { key: 'id', label: 'المعرّف', width: '10rem' },
     { key: 'title', label: 'الاحتياج' },
     { key: 'category', label: 'التصنيف', map: (r) => categoryLabel(r.category) },
-    { key: 'district', label: 'الحي' },
+    { key: 'location', label: 'الموقع', map: (r) => r.location || '—' },
     { key: 'priority', label: 'الأولوية', map: (r) => PRIORITY_LABELS[r.priority] || r.priority },
     { key: 'estimatedCost', label: 'التكلفة التقديرية', map: (r) => fmtMoney(r.estimatedCost), sortValue: (r) => Number(r.estimatedCost) || 0 },
     { key: 'applicants', label: 'المتقدمون', map: (r) => fmtNumber(allApplications.filter((a) => a.needId === r.id).length), sortValue: (r) => allApplications.filter((a) => a.needId === r.id).length },
@@ -106,8 +106,7 @@ export async function renderNeeds(container) {
           <div class="mi-form-row">
             <div class="mi-form-field"><label>التصنيف</label>
               <select class="mi-input" name="category" ${editable ? '' : raw('disabled')}>${raw(CATEGORIES.map((c) => `<option value="${c.id}" ${c.id === need.category ? 'selected' : ''}>${c.label}</option>`).join(''))}</select></div>
-            <div class="mi-form-field"><label>الحي</label>
-              <select class="mi-input" name="district" ${editable ? '' : raw('disabled')}>${raw(DISTRICTS.map((d) => `<option ${d === need.district ? 'selected' : ''}>${d}</option>`).join(''))}</select></div>
+            <div class="mi-form-field"><label>الموقع (الطريق / المعلم / المنطقة)</label><input class="mi-input" name="location" value="${need.location || ''}" ${editable ? '' : raw('readonly')}></div>
             <div class="mi-form-field"><label>الأولوية</label>
               <select class="mi-input" name="priority" ${editable ? '' : raw('disabled')}>
                 ${raw(Object.entries(PRIORITY_LABELS).map(([k, v]) => `<option value="${k}" ${k === need.priority ? 'selected' : ''}>${v}</option>`).join(''))}
@@ -188,7 +187,7 @@ export async function renderNeeds(container) {
         lat: pendingGeometry?.coords?.[0]?.[0] ?? need.lat,
         lng: pendingGeometry?.coords?.[0]?.[1] ?? need.lng,
         title: form.title.value, description: form.description.value,
-        category: form.category.value, district: form.district.value,
+        category: form.category.value, location: form.location.value,
         priority: form.priority.value,
         estimatedCost: form.estimatedCost.value ? Number(form.estimatedCost.value) : null,
         beneficiaries: form.beneficiaries.value ? Number(form.beneficiaries.value) : null,

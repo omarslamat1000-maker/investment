@@ -1,7 +1,7 @@
 // اختبارات تحليل التغطية والفجوات الجغرافية
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { coverageAnalysis, districtCenter } from '../../js/domain/coverage.js';
+import { coverageAnalysis, districtCenter, inferDistrict } from '../../js/domain/coverage.js';
 
 const districts = ['أ', 'ب', 'ج', 'د'];
 const categories = [{ id: 'c1', label: 'ت1' }, { id: 'c2', label: 'ت2' }];
@@ -54,4 +54,12 @@ test('مركز الحي من مواقع مبادراته وإلا من المر�
   const f = districtCenter('ب', { initiatives: inis, needs: [], fallback: { 'ب': [1, 2] } });
   assert.equal(f.source, 'reference');
   assert.equal(districtCenter('ج', { fallback: {} }), null);
+});
+
+test('المنطقة تُستنتج من أقرب مركز حي عند غياب الحي أو كونه عامًا', () => {
+  const centroids = { 'أ': [24.40, 39.60], 'ب': [24.50, 39.70] };
+  assert.equal(inferDistrict({ district: '', sites: [{ geometry: { coords: [[24.41, 39.61]] } }] }, centroids), 'أ');
+  assert.equal(inferDistrict({ district: 'غير محدد', lat: 24.49, lng: 39.69 }, centroids), 'ب');
+  assert.equal(inferDistrict({ district: 'ج', lat: 24.49, lng: 39.69 }, centroids), 'ج');
+  assert.equal(inferDistrict({ district: '' }, centroids), 'غير محدد');
 });

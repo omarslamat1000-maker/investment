@@ -75,7 +75,7 @@
       main.innerHTML = html`
         <span class="mi-tag mi-tag--priority" data-priority="${need.priority}">${PRIORITY_LABELS[need.priority] || need.priority}</span>
         <h1>${need.title}</h1>
-        <p class="mi-muted">${need.id} • ${categoryLabel(need.category)} • حي ${need.district} • ${needStatusLabel(need.status)}</p>
+        <p class="mi-muted">${need.id} • ${categoryLabel(need.category)}${need.location ? raw(' • ' + escapeHtml(need.location)) : ''} • ${needStatusLabel(need.status)}</p>
         <div class="mi-card">
           <p>${need.description}</p>
           ${raw(definitionList([

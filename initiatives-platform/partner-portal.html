@@ -170,7 +170,7 @@
               <div class="mi-opportunity-card__arch" aria-hidden="true"></div>
               <span class="mi-tag mi-tag--priority" data-priority="${n.priority}">${PRIORITY_LABELS[n.priority] || n.priority}</span>
               <h3>${n.title}</h3>
-              <p class="mi-opportunity-card__meta">${categoryLabel(n.category)} • حي ${n.district}</p>
+              <p class="mi-opportunity-card__meta">${categoryLabel(n.category)}${n.location ? raw(' • ' + escapeHtml(n.location)) : ''}</p>
               <p class="mi-opportunity-card__desc">${n.description.length > 140 ? n.description.slice(0, 137) + '…' : n.description}</p>
               <div class="mi-opportunity-card__facts">
                 <span>التكلفة التقديرية: <b>${fmtMoney(n.estimatedCost)}</b></span>
@@ -253,7 +253,7 @@
           wide: true,
           bodyHtml: html`
             <form class="mi-form" id="mi-apply-form">
-              <p class="mi-muted">${categoryLabel(need.category)} • حي ${need.district} • التكلفة التقديرية ${fmtMoney(need.estimatedCost)}</p>
+              <p class="mi-muted">${categoryLabel(need.category)}${need.location ? raw(' • ' + escapeHtml(need.location)) : ''} • التكلفة التقديرية ${fmtMoney(need.estimatedCost)}</p>
               <h4 class="mi-subhead">1) بيانات الجهة الأساسية <small class="mi-muted">— تُسجَّل تلقائيًا من حسابكم</small></h4>
               <div class="mi-apply-basic">
                 <div><span>الجهة</span>${partner.name || '—'}</div>
@@ -336,7 +336,7 @@
             <div class="mi-detail-head">
               <div>
                 <h3>${ini.title}</h3>
-                <p class="mi-muted">${ini.id} • ${categoryLabel(ini.category)} • حي ${ini.district}
+                <p class="mi-muted">${ini.id} • ${categoryLabel(ini.category)}${ini.location ? raw(' • ' + escapeHtml(ini.location)) : ''}
                   • دور جهتكم: <b>${roleTextOf(link)}</b>${link.contribution ? raw(' — ' + escapeHtml(link.contribution)) : ''}</p>
               </div>
               ${raw(statusBadge(ini.status))}

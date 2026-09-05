@@ -83,6 +83,7 @@ export function buildAgreement({ initiative, links = [], partners = [], issuedBy
     initiativeId: initiative.id,
     initiativeTitle: initiative.title,
     district: initiative.district,
+    location: initiative.location || '',
     budget: initiative.budget ?? null,
     joint: parties.length > 1,
     parties,

@@ -57,7 +57,7 @@ export async function renderPublishedNeeds(container, { limit = 6 } = {}) {
       <div class="mi-opportunity-card__arch" aria-hidden="true"></div>
       <span class="mi-tag mi-tag--priority" data-priority="${n.priority}">${PRIORITY_LABELS[n.priority] || n.priority}</span>
       <h3>${n.title}</h3>
-      <p class="mi-opportunity-card__meta">${categoryLabel(n.category)} • حي ${n.district}</p>
+      <p class="mi-opportunity-card__meta">${categoryLabel(n.category)}${n.location ? raw(' • ' + escapeHtml(n.location)) : ''}</p>
       <p class="mi-opportunity-card__desc">${n.description.length > 140 ? n.description.slice(0, 137) + '…' : n.description}</p>
       <div class="mi-opportunity-card__facts">
         <span>التكلفة التقديرية: <b>${fmtMoney(n.estimatedCost)}</b></span>
@@ -90,7 +90,7 @@ export async function renderRunningInitiatives(container, { limit = 6 } = {}) {
         ${i.imageDataUrl ? raw(`<img class="mi-progress-card__img" src="${i.imageDataUrl}" alt="">`) : raw('<div class="mi-progress-card__img mi-progress-card__img--empty" aria-hidden="true"><span class="mi-gate__arch"></span></div>')}
         <div class="mi-progress-card__body">
           <h3>${i.title}</h3>
-          <p class="mi-opportunity-card__meta">${categoryLabel(i.category)} • حي ${i.district}</p>
+          <p class="mi-opportunity-card__meta">${categoryLabel(i.category)}${i.location ? raw(' • ' + escapeHtml(i.location)) : ''}</p>
           ${p !== null ? raw(`
             <div class="mi-progress" role="progressbar" aria-valuenow="${p}" aria-valuemin="0" aria-valuemax="100" aria-label="نسبة الإنجاز">
               <div class="mi-progress__fill" style="width:${p}%"></div>
@@ -121,7 +121,7 @@ export async function renderCompletedInitiatives(container, { limit = 6 } = {}) 
         <div class="mi-progress-card__body">
           <span class="mi-tag" data-benefit="achieved">منجزة${closedAt ? raw(` — ${escapeHtml(fmtDate(closedAt))}`) : ''}</span>
           <h3>${i.title}</h3>
-          <p class="mi-opportunity-card__meta">${categoryLabel(i.category)} • حي ${i.district}</p>
+          <p class="mi-opportunity-card__meta">${categoryLabel(i.category)}${i.location ? raw(' • ' + escapeHtml(i.location)) : ''}</p>
           ${myBenefits.length ? raw(myBenefits.slice(0, 2).map((b) => `
             <p class="mi-done-benefit">✦ ${escapeHtml(b.title)}: <b>${escapeHtml(fmtNumber(Math.min(realizationPercent(b), 100)))}٪</b> من المستهدف</p>`).join('')) : ''}
         </div>

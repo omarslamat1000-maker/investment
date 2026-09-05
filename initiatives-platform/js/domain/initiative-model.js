@@ -83,10 +83,7 @@ export function validateInitiative(record) {
       (v) => required(v, 'التصنيف'),
       (v) => oneOf(v, CATEGORIES.map((c) => c.id), 'التصنيف')
     ],
-    district: [
-      (v) => required(v, 'الحي'),
-      (v) => oneOf(v, DISTRICTS, 'الحي')
-    ],
+    district: [(v) => oneOf(v, DISTRICTS, 'المنطقة')],
     submitterName: [(v) => required(v, 'اسم مقدّم المبادرة')],
     submitterEmail: [(v) => isEmail(v)],
     submitterPhone: [(v) => isSaudiPhone(v)],

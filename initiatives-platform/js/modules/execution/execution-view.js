@@ -47,7 +47,7 @@ export async function renderExecution(container) {
         <header class="mi-exec-card__head">
           <div>
             <h3><a href="#/initiatives/${ini.id}">${ini.title}</a></h3>
-            <small class="mi-muted">${ini.id} • ${ini.district} • الميزانية ${fmtMoney(ini.budget)} — المنصرف ${fmtMoney(ini.spent)}</small>
+            <small class="mi-muted">${ini.id}${ini.location ? raw(' • ' + escapeHtml(ini.location)) : ''} • الميزانية ${fmtMoney(ini.budget)} — المنصرف ${fmtMoney(ini.spent)}</small>
           </div>
           ${raw(statusBadge(ini.status))}
         </header>

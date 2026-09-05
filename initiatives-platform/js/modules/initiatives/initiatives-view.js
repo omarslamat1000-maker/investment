@@ -5,7 +5,7 @@ import { sectionHeader, statusBadge, gateTrackHtml, definitionList, progressBar,
 import { renderTable } from '../../ui/table.js';
 import { statusLabel, allowedTransitions, transitionMeta } from '../../domain/workflow.js';
 import { categoryLabel, historyEntry, costBandLabel, durationBandLabel, readinessLabel, getSites, firstLatLng, validateInitiative, sanitizeInitiative } from '../../domain/initiative-model.js';
-import { CATEGORIES, DISTRICTS, COST_BANDS, DURATION_BANDS, READINESS_LEVELS, PARTNERSHIP_MODELS } from '../../core/constants.js';
+import { CATEGORIES, COST_BANDS, DURATION_BANDS, READINESS_LEVELS, PARTNERSHIP_MODELS } from '../../core/constants.js';
 import { openLocationPicker, renderSitesPreview } from '../../ui/location-picker.js';
 import { pickInitiativeImage } from '../../services/image-service.js';
 import { measureLabel, sitesSummaryLabel } from '../../core/geo.js';
@@ -61,7 +61,7 @@ export async function renderInitiativesList(container) {
     { key: 'id', label: 'المعرّف', width: '10rem' },
     { key: 'title', label: 'المبادرة' },
     { key: 'category', label: 'التصنيف', map: (r) => categoryLabel(r.category) },
-    { key: 'district', label: 'الحي' },
+    { key: 'location', label: 'الموقع', map: (r) => r.location || '—' },
     { key: 'status', label: 'الحالة', htmlMap: (r) => statusBadge(r.status), sortValue: (r) => r.status, map: (r) => statusLabel(r.status) },
     { key: 'sla', label: 'مدة المرحلة', htmlMap: (r) => slaChip(slaOf(r), { compact: true }) || '<span class="mi-muted">—</span>', map: (r) => { const s = slaOf(r); return s ? `${s.days}/${s.limit}` : ''; }, sortValue: (r) => { const s = slaOf(r); return s ? (s.level === 'overdue' ? 1000 + s.overdueDays : s.percent) : -1; } },
     ...(cloud ? [
@@ -93,7 +93,7 @@ export async function renderInitiativesList(container) {
     downloadCsv(initiatives, [
       { key: 'id', label: 'المعرف' }, { key: 'title', label: 'المبادرة' },
       { key: 'category', label: 'التصنيف', map: (r) => categoryLabel(r.category) },
-      { key: 'district', label: 'الحي' },
+      { key: 'location', label: 'الموقع' },
       { key: 'status', label: 'الحالة', map: (r) => statusLabel(r.status) },
       { key: 'budget', label: 'الميزانية' }, { key: 'beneficiaries', label: 'المستفيدون' }
     ], 'madinah-initiatives.csv');
@@ -147,7 +147,7 @@ export async function renderInitiativeDetails(container, id) {
     <header class="mi-detail-head">
       <div>
         <h2>${initiative.title}</h2>
-        <p class="mi-detail-head__meta">${initiative.id} • ${categoryLabel(initiative.category)} • حي ${initiative.district}</p>
+        <p class="mi-detail-head__meta">${initiative.id} • ${categoryLabel(initiative.category)}${initiative.location ? raw(' • ' + escapeHtml(initiative.location)) : ''}</p>
       </div>
       <div class="mi-detail-head__badges">
         ${raw(statusBadge(initiative.status))}
@@ -555,8 +555,7 @@ function openEditModal(initiative, onSaved) {
         ${field('نطاق العمل', area('scope', initiative.scope, 2), true)}
         <h4 class="mi-subhead">الموقع والمستفيدون</h4>
         <div class="mi-form-row">
-          ${field('6. الحي / المنطقة', sel('district', DISTRICTS, initiative.district, { getLabel: (d) => d, getValue: (d) => d }))}
-          ${field('الطريق / المعلم', input('location', initiative.location))}
+          ${field('6. الموقع (الطريق / المعلم / المنطقة)', input('location', initiative.location), true)}
         </div>
         ${field('7. الفئات المستفيدة', area('beneficiaryGroups', initiative.beneficiaryGroups, 2), true)}
         ${field('8. الأثر المتوقع', area('expectedImpact', initiative.expectedImpact, 3), true)}
@@ -596,7 +595,7 @@ function openEditModal(initiative, onSaved) {
       ...initiative,
       title: val('title'), submitterEntity: val('submitterEntity'), submitterName: val('submitterName'),
       category: val('category'), problem: val('problem'), summary: val('summary'), scope: val('scope'),
-      district: val('district'), location: val('location'),
+      location: val('location'),
       beneficiaryGroups: val('beneficiaryGroups'), expectedImpact: val('expectedImpact'),
       costBand: val('costBand'), durationBand: val('durationBand'), readinessLevel: val('readinessLevel'),
       budget: num('budget'), beneficiaries: num('beneficiaries'), fundingModel: val('fundingModel'),

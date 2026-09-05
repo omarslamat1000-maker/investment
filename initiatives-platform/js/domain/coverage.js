@@ -1,13 +1,35 @@
 // تحليل التغطية والفجوات الجغرافية — توزيع المبادرات والاحتياجات على الأحياء والتصنيفات،
 // واكتشاف الأحياء بلا مبادرات والتصنيفات المهملة والاحتياجات المطروحة بلا استجابة
-import { DISTRICTS, CATEGORIES } from '../core/constants.js';
+import { DISTRICTS, CATEGORIES, DISTRICT_CENTROIDS } from '../core/constants.js';
 import { isActive } from './workflow.js';
 
 const COUNTED = (i) => i.status !== 'rejected' && i.status !== 'draft';
+const GENERIC = new Set(['', 'عموم المدينة', 'غير محدد']);
+
+// أول إحداثية لسجل (مبادرة أو احتياج)
+function firstCoord(r) {
+  const sites = Array.isArray(r.sites) && r.sites.length ? r.sites : (r.geometry ? [{ geometry: r.geometry }] : []);
+  for (const s of sites) { const c = s.geometry?.coords?.[0]; if (c) return c; }
+  return r.lat && r.lng ? [r.lat, r.lng] : null;
+}
+
+// المنطقة تُستنتج من أقرب مركز حي إلى الإحداثيات (حقل الحي لم يعد يُدخل يدويًا)
+export function inferDistrict(record, centroids = DISTRICT_CENTROIDS) {
+  if (record.district && !GENERIC.has(record.district)) return record.district;
+  const c = firstCoord(record);
+  if (!c) return record.district || 'غير محدد';
+  let best = null; let bd = Infinity;
+  for (const [name, [lat, lng]] of Object.entries(centroids)) {
+    const d = (lat - c[0]) ** 2 + ((lng - c[1]) * Math.cos((c[0] * Math.PI) / 180)) ** 2;
+    if (d < bd) { bd = d; best = name; }
+  }
+  return best || 'غير محدد';
+}
 
 export function coverageAnalysis({ initiatives = [], needs = [], districts = DISTRICTS, categories = CATEGORIES } = {}) {
-  const counted = initiatives.filter(COUNTED);
-  const rows = districts.map((d) => {
+  const counted = initiatives.filter(COUNTED).map((i) => ({ ...i, district: inferDistrict(i) }));
+  needs = needs.map((n) => ({ ...n, district: inferDistrict(n) }));
+  const rows = districts.filter((d) => !GENERIC.has(d) || counted.some((i) => i.district === d) || needs.some((n) => n.district === d)).map((d) => {
     const mine = counted.filter((i) => i.district === d);
     const active = mine.filter((i) => isActive(i.status));
     const running = mine.filter((i) => ['execution', 'benefits'].includes(i.status));

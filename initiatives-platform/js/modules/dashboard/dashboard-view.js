@@ -105,7 +105,7 @@ export async function renderDashboard(container) {
           <div class="mi-health-row" data-id="${initiative.id}" tabindex="0" role="button" aria-label="فتح ${initiative.title}">
             <div class="mi-health-row__main">
               <b>${initiative.title}</b>
-              <span class="mi-health-row__meta">${initiative.id} • ${escapeHtml(initiative.district)}</span>
+              <span class="mi-health-row__meta">${initiative.id} • ${escapeHtml(initiative.location || categoryLabel(initiative.category))}</span>
             </div>
             ${raw(gateTrackHtml(initiative.status, { compact: true }))}
             ${raw(statusBadge(initiative.status))}

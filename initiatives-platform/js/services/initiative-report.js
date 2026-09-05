@@ -112,7 +112,7 @@ export async function buildInitiativeReport(initiativeId, { sections = null } = 
         <div class="mi-rpt-site">
           ${initiative.imageDataUrl ? `<figure class="mi-rpt-figure"><img src="${e(initiative.imageDataUrl)}" alt="صورة موقع المبادرة"><figcaption>صورة الموقع</figcaption></figure>` : ''}
           <div>
-            ${dl([['الحي', initiative.district], ['الطريق / المعلم', initiative.location || '—'], ['المواقع المسجلة', sites.length ? sitesSummaryLabel(sites) : 'لم تُحدد مواقع على الخريطة']])}
+            ${dl([['الموقع', initiative.location || '—'], ['المواقع المسجلة', sites.length ? sitesSummaryLabel(sites) : 'لم تُحدد مواقع على الخريطة']])}
             ${sites.length ? table(['الموقع', 'النوع/القياس', 'الإحداثيات'], sites.map((s) => [e(s.name || 'موقع'), e(measureLabel(s.geometry)), `<span dir="ltr">${e(s.geometry.coords.map((c) => `${Number(c[0]).toFixed(5)}, ${Number(c[1]).toFixed(5)}`).join(' | '))}</span>`])) : ''}
           </div>
         </div>`
@@ -210,7 +210,7 @@ export async function buildInitiativeReport(initiativeId, { sections = null } = 
       <div class="mi-rpt-hero__text">
         <span class="mi-rpt-hero__id">${e(initiative.id)}</span>
         <h2>${e(initiative.title)}</h2>
-        <p>${e(categoryLabel(initiative.category))} • حي ${e(initiative.district)}${initiative.location ? ` • ${e(initiative.location)}` : ''}</p>
+        <p>${e(categoryLabel(initiative.category))}${initiative.location ? ` • ${e(initiative.location)}` : ''}</p>
         <p>${chip(statusLabel(initiative.status), 'primary')} ${sla ? chip(sla.level === 'overdue' ? `متجاوز ${fmtNumber(sla.overdueDays)} يومًا` : `${fmtNumber(sla.days)} / ${fmtNumber(sla.limit)} يومًا في المرحلة`, sla.level === 'overdue' ? 'bad' : sla.level === 'warn' ? 'warn' : 'ok') : ''}</p>
       </div>
       ${initiative.imageDataUrl && !wanted.has('site') ? `<img class="mi-rpt-hero__img" src="${e(initiative.imageDataUrl)}" alt="">` : ''}

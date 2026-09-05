@@ -62,7 +62,7 @@ test('حالات المبادرات والتصنيفات والأحياء ضمن
   for (const ini of DEMO_INITIATIVES) {
     assert.ok(STATUSES[ini.status], ini.id);
     assert.ok(catIds.has(ini.category), `${ini.id}: تصنيف ${ini.category}`);
-    assert.ok(DISTRICTS.includes(ini.district), `${ini.id}: حي ${ini.district}`);
+    if (ini.district) assert.ok(DISTRICTS.includes(ini.district), `${ini.id}: منطقة ${ini.district}`);
   }
   const gateIds = new Set(GATES.map((g) => g.id));
   for (const d of DEMO_DECISIONS) assert.ok(gateIds.has(d.gateId), d.id);
