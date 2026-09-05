@@ -31,6 +31,7 @@
     </a>
     <nav class="mi-public-nav" aria-label="روابط البوابة">
       <a href="#mi-opportunities">الفرص المطروحة</a>
+      <a href="#mi-pipeline">مبادرات للدراسة</a>
       <a href="#mi-running">جارٍ تنفيذها</a>
       <a href="#mi-completed">أُنجزت</a>
       <a href="#mi-gallery">معرض الصور</a>
@@ -62,6 +63,12 @@
       <h2>فرص متاحة للتقديم</h2>
       <p class="mi-section-lead">احتياجات بنية تحتية اعتمدتها الأمانة وطرحتها للشراكة — تصفّح التفاصيل بحرية، والتقديم عليها يتم بعد تسجيل الدخول في بوابة الشركاء.</p>
       <div class="mi-opportunities-grid" id="mi-needs-grid"></div>
+    </section>
+
+    <section class="mi-portal-section" id="mi-pipeline">
+      <h2>مبادرات مطروحة للدراسة</h2>
+      <p class="mi-section-lead">المبادرات المستقبلية التي تدرسها الأمانة عبر بوابات الحوكمة — اطّلع على تفاصيلها وأيّد ما يهمك وشاركنا رأيك.</p>
+      <div class="mi-progress-grid" id="mi-pipeline-grid"></div>
     </section>
 
     <section class="mi-portal-section mi-portal-section--tinted" id="mi-running">
@@ -130,7 +137,7 @@
     import { APP_CONFIG } from './js/config.js';
     import { initDataProvider } from './js/data/data-provider.js';
     import { seedDemoDataIfEmpty } from './js/services/import-service.js';
-    import { renderPortalStats, renderPublishedNeeds, renderCampaigns, renderRunningInitiatives, renderCompletedInitiatives } from './js/modules/public-portal/portal-view.js';
+    import { renderPortalStats, renderPublishedNeeds, renderCampaigns, renderRunningInitiatives, renderCompletedInitiatives, renderPipelineInitiatives } from './js/modules/public-portal/portal-view.js';
     import { renderGallery } from './js/modules/public-portal/gallery-view.js';
 
     (async () => {
@@ -139,6 +146,7 @@
       await Promise.all([
         renderPortalStats(document.getElementById('mi-portal-stats')),
         renderPublishedNeeds(document.getElementById('mi-needs-grid'), { limit: 12 }),
+        renderPipelineInitiatives(document.getElementById('mi-pipeline-grid')),
         renderRunningInitiatives(document.getElementById('mi-running-grid')),
         renderCompletedInitiatives(document.getElementById('mi-completed-grid')),
         renderGallery(document.getElementById('mi-gallery-host')),

@@ -27,11 +27,48 @@ export function loadLeaflet() {
   return leafletPromise;
 }
 
+// أنواع الخريطة: شوارع / صور جوية / هجين (صور + مسميات) / فاتحة — مع حفظ الاختيار
+const BASE_KEY = 'madinahInitiativesPlatform:mapBase';
+export const MAP_BASES = [
+  { id: 'streets', label: 'خريطة الشوارع' },
+  { id: 'satellite', label: 'صور جوية' },
+  { id: 'hybrid', label: 'صور جوية مع المسميات' },
+  { id: 'light', label: 'خريطة فاتحة' }
+];
+function buildBases(L) {
+  const osm = () => L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' });
+  const esri = () => L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'صور جوية © Esri, Maxar, Earthstar Geographics' });
+  const labels = () => L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: '© Esri', pane: 'overlayPane' });
+  const light = () => L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 20, attribution: '© OpenStreetMap © CARTO', subdomains: 'abcd' });
+  return {
+    streets: osm(),
+    satellite: esri(),
+    hybrid: L.layerGroup([esri(), labels()]),
+    light: light()
+  };
+}
+export function getSavedBase() {
+  try { return localStorage.getItem(BASE_KEY) || 'streets'; } catch { return 'streets'; }
+}
+// يضيف الطبقات الأساسية ومبدّل النوع إلى خريطة قائمة ويعيد الطبقة المختارة
+export function addBaseLayers(L, map, { control = true, position = 'topleft' } = {}) {
+  const bases = buildBases(L);
+  const initial = bases[getSavedBase()] ? getSavedBase() : 'streets';
+  bases[initial].addTo(map);
+  if (control) {
+    const named = {};
+    for (const b of MAP_BASES) named[b.label] = bases[b.id];
+    L.control.layers(named, null, { position, collapsed: true }).addTo(map);
+    map.on('baselayerchange', (e) => {
+      const id = MAP_BASES.find((b) => b.label === e.name)?.id;
+      if (id) { try { localStorage.setItem(BASE_KEY, id); } catch { /* محظور */ } }
+    });
+  }
+  return bases[initial];
+}
+
 function baseLayer(L) {
-  return L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '© OpenStreetMap'
-  });
+  return buildBases(L)[getSavedBase()] || buildBases(L).streets;
 }
 
 const STYLES = {
@@ -79,7 +116,7 @@ export async function openLocationPicker({ initial = null, onConfirm }) {
     initial?.coords?.length ? initial.coords[0] : MADINAH_CENTER,
     initial?.coords?.length ? 15 : 12
   );
-  baseLayer(L).addTo(map);
+  addBaseLayers(L, map, { control: true });
   setTimeout(() => map.invalidateSize(), 120);
 
   let mode = initial?.type || 'point';
@@ -166,7 +203,7 @@ export async function renderSitesPreview(container, sites = []) {
     zoomControl: false, dragging: false, scrollWheelZoom: false,
     doubleClickZoom: false, boxZoom: false, keyboard: false, touchZoom: false
   });
-  baseLayer(L).addTo(map);
+  addBaseLayers(L, map, { control: true });
   const layers = valid.map((s) => {
     const layer = geometryLayer(L, s.geometry).addTo(map);
     if (s.name) layer.bindPopup(String(s.name));

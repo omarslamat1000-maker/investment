@@ -7,13 +7,13 @@ import { sectionHeader, statusBadge } from '../../ui/components.js';
 import { statusLabel } from '../../domain/workflow.js';
 import { categoryLabel, getSites, firstLatLng } from '../../domain/initiative-model.js';
 import { measureLabel, sitesSummaryLabel } from '../../core/geo.js';
-import { loadLeaflet, openLocationPicker } from '../../ui/location-picker.js';
+import { loadLeaflet, openLocationPicker, addBaseLayers } from '../../ui/location-picker.js';
 import { fmtNumber, debounce } from '../../core/utils.js';
 import { navigate } from '../../router.js';
 import { getRole } from '../../core/state.js';
 import { can } from '../../core/permissions.js';
 import { toastSuccess } from '../../ui/toast.js';
-import { STATUSES, CATEGORIES, DISTRICTS, COST_BANDS, DURATION_BANDS, READINESS_LEVELS, STORAGE_PREFIX } from '../../core/constants.js';
+import { STATUSES, CATEGORIES, COST_BANDS, DURATION_BANDS, READINESS_LEVELS, STORAGE_PREFIX } from '../../core/constants.js';
 
 const MADINAH_CENTER = [24.468, 39.612];
 
@@ -25,7 +25,7 @@ const STATUS_COLOR = {
 };
 const NEED_COLOR = '#C9A227';
 const FILTERS_KEY = STORAGE_PREFIX + 'mapFilters';
-const EMPTY_FILTERS = { q: '', status: '', category: '', entity: '', district: '', cost: '', readiness: '', duration: '', showInitiatives: true, showNeeds: true };
+const EMPTY_FILTERS = { q: '', status: '', category: '', entity: '', cost: '', readiness: '', duration: '', showInitiatives: true, showNeeds: true };
 
 let currentMap = null; // خريطة الشاشة الحالية — تُزال قبل إعادة الإنشاء
 
@@ -57,11 +57,10 @@ export async function renderMap(container) {
     <div class="mi-card mi-map-card">
       <form class="mi-map-filters" data-map-filters aria-label="تصفية الخريطة">
         <div class="mi-map-filters__row">
-          <input class="mi-input mi-map-filters__search" type="search" name="q" placeholder="بحث بالاسم أو المعرّف أو الطريق…" value="${filters.q}" aria-label="بحث">
+          <input class="mi-input mi-map-filters__search" type="search" name="q" placeholder="بحث بالاسم أو المعرّف أو الموقع…" value="${filters.q}" aria-label="بحث">
           <select class="mi-input" name="status" aria-label="الحالة"><option value="">كل الحالات</option>${raw(opt(Object.values(STATUSES).filter((s) => s.id !== 'rejected'), filters.status))}</select>
           <select class="mi-input" name="category" aria-label="المجال"><option value="">كل المجالات</option>${raw(opt(CATEGORIES, filters.category))}</select>
           <select class="mi-input" name="entity" aria-label="الجهة المقدمة"><option value="">كل الجهات المقدمة</option>${raw(opt(entities, filters.entity, (x) => x, (x) => x))}</select>
-          <select class="mi-input" name="district" aria-label="الحي"><option value="">كل الأحياء</option>${raw(opt(DISTRICTS, filters.district, (x) => x, (x) => x))}</select>
         </div>
         <div class="mi-map-filters__row">
           <select class="mi-input" name="cost" aria-label="التكلفة التقديرية"><option value="">كل التكاليف</option>${raw(opt(COST_BANDS, filters.cost))}</select>
@@ -102,10 +101,7 @@ export async function renderMap(container) {
   if (currentMap) { try { currentMap.remove(); } catch { /* أزيلت مسبقًا */ } }
   const map = L.map(mapEl).setView(MADINAH_CENTER, 12);
   currentMap = map;
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '© OpenStreetMap'
-  }).addTo(map);
+  addBaseLayers(L, map); // شوارع / صور جوية / هجين / فاتحة
 
   // كل عنصر على الخريطة مع بياناته الوصفية للتصفية
   const entries = []; // { kind: 'initiative'|'need', record, layer, text }
@@ -114,14 +110,14 @@ export async function renderMap(container) {
     const sites = getSites(ini);
     info.innerHTML = html`
       <b>${ini.title}</b> ${raw(statusBadge(ini.status))}${site?.name && sites.length > 1 ? raw(` <span class="mi-tag">${escapeHtml(site.name)}</span>`) : ''}<br>
-      <small class="mi-muted">${ini.id} • ${categoryLabel(ini.category)} • حي ${ini.district} • ${sitesSummaryLabel(sites)}</small>
+      <small class="mi-muted">${ini.id} • ${categoryLabel(ini.category)}${ini.location ? raw(' • ' + escapeHtml(ini.location)) : ''} • ${sitesSummaryLabel(sites)}</small>
       <a class="mi-btn mi-btn--ghost mi-btn--sm" href="#/initiatives/${ini.id}">فتح التفاصيل</a>`;
   }
 
   function showNeed(need) {
     info.innerHTML = html`
       <b>${need.title}</b> <span class="mi-tag mi-tag--gold">احتياج مطروح للشراكة</span><br>
-      <small class="mi-muted">${need.id} • ${categoryLabel(need.category)} • حي ${need.district}${need.geometry ? raw(' • ' + escapeHtml(measureLabel(need.geometry))) : ''}</small>
+      <small class="mi-muted">${need.id} • ${categoryLabel(need.category)}${need.location ? raw(' • ' + escapeHtml(need.location)) : ''}${need.geometry ? raw(' • ' + escapeHtml(measureLabel(need.geometry))) : ''}</small>
       <a class="mi-btn mi-btn--ghost mi-btn--sm" href="./opportunity.html?id=${encodeURIComponent(need.id)}" target="_blank" rel="noopener">صفحة الفرصة</a>`;
   }
 
@@ -213,7 +209,7 @@ export async function renderMap(container) {
   // ————— التصفية —————
   function readForm() {
     const f = { ...EMPTY_FILTERS };
-    for (const k of ['q', 'status', 'category', 'entity', 'district', 'cost', 'readiness', 'duration']) f[k] = form.elements[k].value.trim();
+    for (const k of ['q', 'status', 'category', 'entity', 'cost', 'readiness', 'duration']) f[k] = form.elements[k].value.trim();
     f.showInitiatives = form.elements.showInitiatives.checked;
     f.showNeeds = form.elements.showNeeds.checked;
     return f;
@@ -225,14 +221,12 @@ export async function renderMap(container) {
       if (!f.showNeeds) return false;
       // الاحتياجات تخضع لفلاتر المجال والحي والبحث فقط (بقية الحقول خاصة بالمبادرات)
       if (f.category && r.category !== f.category) return false;
-      if (f.district && r.district !== f.district) return false;
       if (f.status || f.entity || f.cost || f.readiness || f.duration) return false;
     } else {
       if (!f.showInitiatives) return false;
       if (f.status && r.status !== f.status) return false;
       if (f.category && r.category !== f.category) return false;
       if (f.entity && r.submitterEntity !== f.entity) return false;
-      if (f.district && r.district !== f.district) return false;
       if (f.cost && (r.costBand || '') !== f.cost) return false;
       if (f.readiness && (r.readinessLevel || '') !== f.readiness) return false;
       if (f.duration && (r.durationBand || '') !== f.duration) return false;
@@ -269,7 +263,7 @@ export async function renderMap(container) {
   form.querySelector('[data-act="clear"]').addEventListener('click', () => {
     form.reset();
     form.elements.q.value = '';
-    for (const k of ['status', 'category', 'entity', 'district', 'cost', 'readiness', 'duration']) form.elements[k].value = '';
+    for (const k of ['status', 'category', 'entity', 'cost', 'readiness', 'duration']) form.elements[k].value = '';
     form.elements.showInitiatives.checked = true;
     form.elements.showNeeds.checked = true;
     applyFilters();

@@ -39,6 +39,7 @@ export async function renderGallery(container) {
           <figcaption>
             <b>${g.title}</b>
             ${g.caption ? raw(`<small>${escapeHtml(g.caption)}</small>`) : ''}
+            ${g.initiativeId ? raw(`<a class="mi-gallery-card__link" href="./initiative.html?id=${encodeURIComponent(g.initiativeId)}">صفحة المبادرة ↗</a>`) : ''}
           </figcaption>
           ${manage ? raw(`
             <div class="mi-gallery-card__tools">

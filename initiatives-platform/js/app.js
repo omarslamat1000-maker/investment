@@ -30,11 +30,17 @@ import { renderPortfolios } from './modules/portfolios/portfolios-view.js';
 import { renderGalleryAdmin } from './modules/gallery/gallery-admin-view.js';
 import { renderCoverage } from './modules/coverage/coverage-view.js';
 import { renderScreening } from './modules/screening/screening-view.js';
+import { renderExecutive } from './modules/executive/executive-view.js';
+import { renderInbox } from './modules/inbox/inbox-view.js';
+import { renderPriorities } from './modules/priorities/priorities-view.js';
 import { runSlaEscalations } from './services/sla-service.js';
 
 // perm: الصلاحية اللازمة لظهور الرابط — بدونها يظهر للجميع
 const NAV = [
   { path: 'dashboard', label: 'لوحة المتابعة', icon: '◫' },
+  { path: 'inbox', label: 'مهامي', icon: '☑' },
+  { path: 'executive', label: 'لوحة القرار', icon: '★', perm: 'decisions.view' },
+  { path: 'priorities', label: 'الأولويات', icon: '⇅', perm: 'decisions.view' },
   { path: 'initiatives', label: 'المبادرات', icon: '▤', perm: 'initiatives.view' },
   { path: 'portfolios', label: 'المحافظ', icon: '▦', perm: 'portfolios.view' },
   { path: 'needs', label: 'الاحتياجات', icon: '◇', perm: 'needs.view' },
@@ -87,7 +93,12 @@ function drawShell(session) {
         <main id="mi-main" class="mi-main" role="main" tabindex="-1"></main>
       </div>
     </div>
-    <div class="mi-notif-panel" hidden aria-label="الإشعارات"></div>`;
+    <div class="mi-notif-panel" hidden aria-label="الإشعارات"></div>
+    <nav class="mi-mobile-nav" aria-label="تنقل الجوال">
+      ${raw([['inbox', '☑', 'مهامي'], ['executive', '★', 'القرار'], ['initiatives', '▤', 'المبادرات'], ['map', '◎', 'الخريطة'], ['dashboard', '◫', 'اللوحة']]
+        .filter(([p]) => visibleNav.some((n) => n.path === p))
+        .map(([p, ic, lb]) => `<a href="#/${p}" data-path="${p}"><span>${ic}</span><span>${escapeHtml(lb)}</span></a>`).join(''))}
+    </nav>`;
 
   root.querySelector('.mi-menu-btn').addEventListener('click', () => {
     const open = document.body.classList.toggle('mi-sidebar-open');
@@ -105,7 +116,7 @@ function drawShell(session) {
 
 function markActiveNav(path) {
   const seg = path.replace(/^\//, '').split('/')[0] || 'dashboard';
-  document.querySelectorAll('.mi-nav__link').forEach((a) => {
+  document.querySelectorAll('.mi-nav__link, .mi-mobile-nav a').forEach((a) => {
     a.setAttribute('aria-current', a.dataset.path === seg ? 'page' : 'false');
   });
   document.body.classList.remove('mi-sidebar-open');
@@ -172,6 +183,9 @@ async function boot() {
 
   const m = () => main();
   route('dashboard', () => renderDashboard(m()), 'لوحة المتابعة');
+  route('inbox', () => renderInbox(m()), 'مهامي');
+  route('executive', () => renderExecutive(m()), 'لوحة القرار التنفيذي');
+  route('priorities', () => renderPriorities(m()), 'أولويات المحفظة');
   route('initiatives', () => renderInitiativesList(m()), 'سجل المبادرات');
   route('initiatives/:id', (p) => renderInitiativeDetails(m(), p.id), 'تفاصيل المبادرة');
   route('portfolios', () => renderPortfolios(m()), 'محافظ المبادرات');

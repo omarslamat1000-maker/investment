@@ -5,7 +5,7 @@ import { sectionHeader, statusBadge, gateTrackHtml, definitionList, progressBar,
 import { renderTable } from '../../ui/table.js';
 import { statusLabel, allowedTransitions, transitionMeta } from '../../domain/workflow.js';
 import { categoryLabel, historyEntry, costBandLabel, durationBandLabel, readinessLabel, getSites, firstLatLng, validateInitiative, sanitizeInitiative } from '../../domain/initiative-model.js';
-import { CATEGORIES, DISTRICTS, COST_BANDS, DURATION_BANDS, READINESS_LEVELS, PARTNERSHIP_MODELS } from '../../core/constants.js';
+import { CATEGORIES, COST_BANDS, DURATION_BANDS, READINESS_LEVELS, PARTNERSHIP_MODELS } from '../../core/constants.js';
 import { openLocationPicker, renderSitesPreview } from '../../ui/location-picker.js';
 import { pickInitiativeImage } from '../../services/image-service.js';
 import { measureLabel, sitesSummaryLabel } from '../../core/geo.js';
@@ -35,6 +35,10 @@ import { renderAgreementPanel } from './agreement-panel.js';
 import { agreementForInitiative } from '../../services/agreement-service.js';
 import { isSigned } from '../../domain/agreement.js';
 import { progressReportsHtml, bindProgressReportActions } from '../execution/progress-reports-panel.js';
+import { createGateDecision, signGateDecision, cancelGateDecision, pendingDecisionFor, getChains } from '../../services/decision-service.js';
+import { chainKeyFor, canSign, chainProgress, roleLabel } from '../../domain/approval-chain.js';
+import { getSession } from '../../core/state.js';
+import { engagementFor, moderateComment } from '../../services/public-engagement.js';
 
 export async function renderInitiativesList(container) {
   const [initiatives, slaConfig] = await Promise.all([repos.initiatives.getAll(), getSlaConfig()]);
@@ -44,6 +48,7 @@ export async function renderInitiativesList(container) {
   container.innerHTML = html`
     ${raw(sectionHeader('سجل المبادرات', 'جميع المبادرات المقدمة عبر القنوات الداخلية والعامة وقنوات الشركاء',
     html`${can(role, 'reports.export') ? raw('<button class="mi-btn mi-btn--ghost" data-act="export">تصدير CSV</button>') : ''}
+      ${can(role, 'initiatives.create') ? raw('<button class="mi-btn mi-btn--ghost" data-act="import">استيراد من نموذج (PPTX / CSV)</button>') : ''}
       ${can(role, 'initiatives.create') ? raw('<a class="mi-btn mi-btn--primary" href="./submit.html">مبادرة جديدة</a>') : ''}`))}
     <div class="mi-filters" role="group" aria-label="تصفية المبادرات"></div>
     <div class="mi-table-host"></div>`;
@@ -61,7 +66,7 @@ export async function renderInitiativesList(container) {
     { key: 'id', label: 'المعرّف', width: '10rem' },
     { key: 'title', label: 'المبادرة' },
     { key: 'category', label: 'التصنيف', map: (r) => categoryLabel(r.category) },
-    { key: 'district', label: 'الحي' },
+    { key: 'location', label: 'الموقع', map: (r) => r.location || '—' },
     { key: 'status', label: 'الحالة', htmlMap: (r) => statusBadge(r.status), sortValue: (r) => r.status, map: (r) => statusLabel(r.status) },
     { key: 'sla', label: 'مدة المرحلة', htmlMap: (r) => slaChip(slaOf(r), { compact: true }) || '<span class="mi-muted">—</span>', map: (r) => { const s = slaOf(r); return s ? `${s.days}/${s.limit}` : ''; }, sortValue: (r) => { const s = slaOf(r); return s ? (s.level === 'overdue' ? 1000 + s.overdueDays : s.percent) : -1; } },
     ...(cloud ? [
@@ -89,11 +94,16 @@ export async function renderInitiativesList(container) {
     });
   });
 
+  container.querySelector('[data-act="import"]')?.addEventListener('click', async () => {
+    const { openImportModal } = await import('./import-modal.js');
+    openImportModal({ onDone: () => renderInitiativesList(container) });
+  });
+
   container.querySelector('[data-act="export"]')?.addEventListener('click', () => {
     downloadCsv(initiatives, [
       { key: 'id', label: 'المعرف' }, { key: 'title', label: 'المبادرة' },
       { key: 'category', label: 'التصنيف', map: (r) => categoryLabel(r.category) },
-      { key: 'district', label: 'الحي' },
+      { key: 'location', label: 'الموقع' },
       { key: 'status', label: 'الحالة', map: (r) => statusLabel(r.status) },
       { key: 'budget', label: 'الميزانية' }, { key: 'beneficiaries', label: 'المستفيدون' }
     ], 'madinah-initiatives.csv');
@@ -120,6 +130,8 @@ export async function renderInitiativeDetails(container, id) {
     repos.campaigns.getAll(), getSlaConfig(), repos.progressReports.byInitiative(id).catch(() => [])
   ]);
   const sla = slaStatus(initiative, slaConfig);
+  const pendingDecision = await pendingDecisionFor(id);
+  const engagement = await engagementFor(id);
   const portfolio = initiative.portfolioId ? portfolios.find((p) => p.id === initiative.portfolioId) : null;
   const campaign = initiative.campaignId ? campaigns.find((c) => c.id === initiative.campaignId) : null;
 
@@ -147,7 +159,7 @@ export async function renderInitiativeDetails(container, id) {
     <header class="mi-detail-head">
       <div>
         <h2>${initiative.title}</h2>
-        <p class="mi-detail-head__meta">${initiative.id} • ${categoryLabel(initiative.category)} • حي ${initiative.district}</p>
+        <p class="mi-detail-head__meta">${initiative.id} • ${categoryLabel(initiative.category)}${initiative.location ? raw(' • ' + escapeHtml(initiative.location)) : ''}</p>
       </div>
       <div class="mi-detail-head__badges">
         ${raw(statusBadge(initiative.status))}
@@ -247,6 +259,18 @@ export async function renderInitiativeDetails(container, id) {
 
       <section class="mi-card" data-agreement-panel hidden></section>
 
+      <section class="mi-card" data-engagement>
+        <h3>تفاعل الجمهور <a class="mi-btn mi-btn--ghost mi-btn--sm" href="./initiative.html?id=${initiative.id}" target="_blank" rel="noopener">الصفحة العامة ↗</a></h3>
+        <p><b>${fmtNumber(engagement.supports)}</b> <span class="mi-muted">مؤيد من الجمهور</span>${engagement.pending.length ? raw(` • <span class="mi-tag" data-benefit="onTrack">${escapeHtml(fmtNumber(engagement.pending.length))} تعليق بانتظار المراجعة</span>`) : ''}</p>
+        ${engagement.pending.length ? raw(engagement.pending.map((c) => html`
+          <div class="mi-field-report" data-status="pending">
+            <div class="mi-field-report__head"><b>${c.name}</b><small class="mi-muted">${fmtDate(c.at)}</small></div>
+            <p class="mi-field-report__note">${c.text}</p>
+            ${can(role, 'comments.internal') || can(role, 'initiatives.edit') ? raw(`<div class="mi-field-report__actions"><button class="mi-btn mi-btn--primary mi-btn--sm" data-comment="approve" data-id="${escapeHtml(c.id)}">نشر</button><button class="mi-btn mi-btn--danger mi-btn--sm" data-comment="reject" data-id="${escapeHtml(c.id)}">حذف</button></div>`) : ''}
+          </div>`).join('')) : ''}
+        ${engagement.approved.length ? raw('<h4 class="mi-subhead">تعليقات منشورة</h4>' + engagement.approved.map((c) => `<div class="mi-ms"><span class="mi-ms__dot" style="background:var(--mi-gold-500)"></span><span><b>${escapeHtml(c.name)}</b>: ${escapeHtml(c.text)}</span><small>${escapeHtml(fmtDate(c.at))}</small></div>`).join('')) : ''}
+      </section>
+
       ${['execution', 'benefits', 'closed'].includes(initiative.status) ? raw(html`
       <section class="mi-card mi-card--span" data-field-reports>
         <h3>تقارير التقدم الميدانية من الشركاء
@@ -340,11 +364,31 @@ export async function renderInitiativeDetails(container, id) {
 
     <div class="mi-cloud-panels mi-detail-grid" data-cloud-panels hidden></div>
 
+    ${pendingDecision ? raw(html`
+    <section class="mi-card mi-chain-card" data-chain>
+      <h3>قرار قيد الاعتماد المتسلسل — ${pendingDecision.id}</h3>
+      <p class="mi-muted">${pendingDecision.gateId ? 'بوابة ' + pendingDecision.gateId + ' — ' : ''}الانتقال إلى «${statusLabel(pendingDecision.to)}» • أنشأه ${pendingDecision.by} • ${fmtDate(pendingDecision.at)}</p>
+      <p class="mi-chain-rationale">${pendingDecision.rationale}</p>
+      <ol class="mi-chain">
+        ${raw(pendingDecision.approvals.map((a, i) => html`
+          <li class="mi-chain__step" data-done="${a.signedBy ? 'yes' : 'no'}" data-next="${!a.signedBy && pendingDecision.approvals.slice(0, i).every((x) => x.signedBy) ? 'yes' : 'no'}">
+            <span class="mi-chain__num">${String(i + 1)}</span>
+            <b>${roleLabel(a.role)}</b>
+            <small>${a.signedBy ? raw('✔ ' + escapeHtml(a.signedBy) + (a.onBehalf ? ' (بالنيابة)' : '') + ' — ' + escapeHtml(fmtDate(a.at))) : 'بانتظار التوقيع'}</small>
+          </li>`).join(''))}
+      </ol>
+      ${raw(progressBar(chainProgress(pendingDecision).percent, 'اكتمال سلسلة الاعتماد'))}
+      <div class="mi-detail-media__tools">
+        ${canSign(pendingDecision, role) ? raw('<button class="mi-btn mi-btn--gold" data-act="sign">توقيع خطوتي الآن</button>') : raw('<span class="mi-muted">التوقيع الحالي لدور آخر — يظهر له في «مهامي» و«لوحة القرار»</span>')}
+        ${can(role, 'decisions.create') ? raw('<button class="mi-btn mi-btn--ghost mi-btn--sm" data-act="cancel-decision">إلغاء القرار</button>') : ''}
+      </div>
+    </section>`) : ''}
+
     <div class="mi-detail-actions">
       <button class="mi-btn mi-btn--ghost" data-act="print">تقرير طباعة</button>
       ${canEditRec ? raw('<button class="mi-btn mi-btn--gold" data-act="edit">تعديل البيانات</button>') : ''}
       ${initiative.status === 'closed' ? raw('<button class="mi-btn mi-btn--gold" data-act="certificate">شهادة الإنجاز 🏅</button>') : ''}
-      ${raw(transitions.map((t) => html`
+      ${pendingDecision ? raw('<span class="mi-muted">الانتقالات معلقة حتى اكتمال سلسلة الاعتماد</span>') : raw(transitions.map((t) => html`
         <button class="mi-btn ${t.to === 'rejected' ? 'mi-btn--danger' : 'mi-btn--primary'}" data-transition="${t.to}">${t.label}</button>`).join(''))}
     </div>`;
 
@@ -429,6 +473,37 @@ export async function renderInitiativeDetails(container, id) {
     toastSuccess('حُذف الموقع');
   }));
 
+  // مراجعة تعليقات الجمهور
+  container.querySelectorAll('[data-comment]').forEach((btn) => btn.addEventListener('click', async () => {
+    try {
+      await moderateComment(btn.dataset.id, btn.dataset.comment === 'approve');
+      toastSuccess(btn.dataset.comment === 'approve' ? 'نُشر التعليق' : 'حُذف التعليق');
+      renderInitiativeDetails(container, id);
+    } catch (err) { toastError(err.message); }
+  }));
+
+  // سلسلة الاعتماد: توقيع خطوتي / إلغاء القرار
+  container.querySelector('[data-act="sign"]')?.addEventListener('click', async () => {
+    const step = pendingDecision.approvals.find((a) => !a.signedBy);
+    const onBehalf = step && step.role !== role;
+    const sure = await confirmModal('توقيع خطوة الاعتماد',
+      `سيُسجَّل توقيعك باسم «${getUserName()}» على القرار ${pendingDecision.id}${onBehalf ? ` بالنيابة عن ${roleLabel(step.role)}` : ''}. متابعة؟`,
+      { confirmLabel: 'توقيع' });
+    if (!sure) return;
+    try {
+      const r = await signGateDecision(pendingDecision.id, getSession());
+      toastSuccess(r.transitioned ? `اكتملت السلسلة وانتقلت المبادرة إلى: ${statusLabel(pendingDecision.to)}` : 'سُجّل توقيعك — بانتظار الخطوة التالية');
+      renderInitiativeDetails(container, id);
+    } catch (err) { toastError(err.message); }
+  });
+  container.querySelector('[data-act="cancel-decision"]')?.addEventListener('click', async () => {
+    const sure = await confirmModal('إلغاء القرار المعلق', 'سيُلغى القرار وتعود أزرار الانتقال للظهور. متابعة؟', { confirmLabel: 'إلغاء القرار', danger: true });
+    if (!sure) return;
+    await cancelGateDecision(pendingDecision.id, getUserName());
+    toastSuccess('أُلغي القرار');
+    renderInitiativeDetails(container, id);
+  });
+
   // تعديل بيانات المبادرة (قالب التعريف كاملًا)
   container.querySelector('[data-act="edit"]')?.addEventListener('click', () =>
     openEditModal(initiative, () => renderInitiativeDetails(container, id)));
@@ -496,13 +571,19 @@ export async function renderInitiativeDetails(container, id) {
 
   async function openDecisionModal(host, ini, meta, to) {
     const isReturn = to === 'returned';
+    const outcomeKey = to === 'rejected' ? 'reject' : to === 'onHold' ? 'hold' : isReturn ? 'return' : 'pass';
+    const chains = await getChains();
+    const chain = chains[chainKeyFor({ gateId: meta.gate || null, outcome: outcomeKey })] || ['pmo'];
+    const myRole = getSession()?.role || role;
     const { dialog, close } = openModal({
       title: meta.gate ? `قرار بوابة ${meta.gate} — ${meta.label}` : meta.label,
       bodyHtml: html`
         <div class="mi-form-field">
           <label for="mi-dec-rationale">${isReturn ? 'سبب الإعادة (يصل للجهة — إلزامي)' : 'مسوّغات القرار'}</label>
           <textarea id="mi-dec-rationale" class="mi-input" rows="4" placeholder="اكتب الأساس الذي بُني عليه القرار…"></textarea>
-        </div>`,
+        </div>
+        <p class="mi-muted">سلسلة الاعتماد: ${raw(chain.map((r) => `<span class="mi-tag" data-benefit="${r === myRole || myRole === 'admin' ? 'achieved' : ''}">${escapeHtml(roleLabel(r))}</span>`).join(' ← '))}
+          — ${chain.length > 1 || chain[0] !== myRole ? 'يُنفَّذ الانتقال بعد اكتمال توقيعات السلسلة' : 'توقيعك يكمل السلسلة وينفّذ الانتقال فورًا'}</p>`,
       footerHtml: html`
         <button class="mi-btn mi-btn--ghost" data-act="cancel">إلغاء</button>
         <button class="mi-btn ${isReturn || to === 'rejected' ? 'mi-btn--danger' : 'mi-btn--primary'}" data-act="save">تسجيل القرار</button>`
@@ -511,19 +592,14 @@ export async function renderInitiativeDetails(container, id) {
     dialog.querySelector('[data-act="save"]').addEventListener('click', async () => {
       const rationale = dialog.querySelector('#mi-dec-rationale').value.trim();
       if (rationale.length < 10) { toastError('المسوّغات مطلوبة (10 أحرف على الأقل)'); return; }
-      const outcome = to === 'rejected' ? 'reject' : to === 'onHold' ? 'hold' : isReturn ? 'return' : 'pass';
+      let result;
       try {
-        const decision = await repos.decisions.create({
-          initiativeId: ini.id, gateId: meta.gate || null, outcome, rationale,
-          by: getUserName(), at: new Date().toISOString()
-        });
-        await repos.initiatives.transition(ini.id, to, {
-          reason: rationale, by: getUserName(), decisionId: decision.id
-        });
+        result = await createGateDecision({ initiative: ini, gateId: meta.gate || null, outcome: outcomeKey, rationale, to, session: getSession() });
       } catch (err) { toastError(err.message); return; }
       close();
-      toastSuccess(`سُجّل القرار وانتقلت المبادرة إلى: ${statusLabel(to)}`);
-      notify(meta.gate ? `قرار بوابة ${meta.gate}` : meta.label, `${ini.title} — ${statusLabel(to)}`);
+      toastSuccess(result.transitioned
+        ? `سُجّل القرار وانتقلت المبادرة إلى: ${statusLabel(to)}`
+        : `سُجّل القرار ${result.decision.id} — بانتظار بقية توقيعات السلسلة`);
       renderInitiativeDetails(container, ini.id);
     });
   }
@@ -555,8 +631,7 @@ function openEditModal(initiative, onSaved) {
         ${field('نطاق العمل', area('scope', initiative.scope, 2), true)}
         <h4 class="mi-subhead">الموقع والمستفيدون</h4>
         <div class="mi-form-row">
-          ${field('6. الحي / المنطقة', sel('district', DISTRICTS, initiative.district, { getLabel: (d) => d, getValue: (d) => d }))}
-          ${field('الطريق / المعلم', input('location', initiative.location))}
+          ${field('6. الموقع (الطريق / المعلم / المنطقة)', input('location', initiative.location), true)}
         </div>
         ${field('7. الفئات المستفيدة', area('beneficiaryGroups', initiative.beneficiaryGroups, 2), true)}
         ${field('8. الأثر المتوقع', area('expectedImpact', initiative.expectedImpact, 3), true)}
@@ -596,7 +671,7 @@ function openEditModal(initiative, onSaved) {
       ...initiative,
       title: val('title'), submitterEntity: val('submitterEntity'), submitterName: val('submitterName'),
       category: val('category'), problem: val('problem'), summary: val('summary'), scope: val('scope'),
-      district: val('district'), location: val('location'),
+      location: val('location'),
       beneficiaryGroups: val('beneficiaryGroups'), expectedImpact: val('expectedImpact'),
       costBand: val('costBand'), durationBand: val('durationBand'), readinessLevel: val('readinessLevel'),
       budget: num('budget'), beneficiaries: num('beneficiaries'), fundingModel: val('fundingModel'),

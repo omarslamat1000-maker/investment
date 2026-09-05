@@ -116,7 +116,7 @@ export async function renderScreening(container, presetNeedId = null) {
         <div class="mi-detail-head">
           <div>
             <h3>${need.title} <span class="mi-tag mi-tag--priority" data-priority="${need.priority}">${PRIORITY_LABELS[need.priority] || need.priority}</span></h3>
-            <p class="mi-muted">${need.id} • ${categoryLabel(need.category)} • حي ${need.district} • التكلفة التقديرية ${fmtMoney(need.estimatedCost)} • النماذج المفضلة: ${(need.preferredModels || []).map(modelLabel).join('، ') || '—'}</p>
+            <p class="mi-muted">${need.id} • ${categoryLabel(need.category)}${need.location ? raw(' • ' + escapeHtml(need.location)) : ''} • التكلفة التقديرية ${fmtMoney(need.estimatedCost)} • النماذج المفضلة: ${(need.preferredModels || []).map(modelLabel).join('، ') || '—'}</p>
           </div>
           <div class="mi-screening__btns">
             ${need.status === 'matched' && need.matchedInitiativeId ? raw(`<a class="mi-btn mi-btn--ghost mi-btn--sm" href="#/initiatives/${escapeHtml(need.matchedInitiativeId)}">المبادرة الناتجة ${escapeHtml(need.matchedInitiativeId)}</a>`) : ''}

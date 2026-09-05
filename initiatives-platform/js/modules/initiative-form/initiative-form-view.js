@@ -57,8 +57,7 @@ export function renderInitiativeForm(container, { onDone }) {
 
         box.innerHTML =
           `<div class="mi-form-row">` +
-          field('6. الحي / المنطقة', `<select class="mi-input" name="district"><option value="">اختر…</option>${DISTRICTS.map((d) => `<option ${data.district === d ? 'selected' : ''}>${d}</option>`).join('')}</select>`) +
-          field('الطريق / المعلم القريب', `<input class="mi-input" name="location" value="${escapeHtml(data.location || '')}" placeholder="وصف الموقع أو أقرب معلم">`) +
+          field('6. الموقع (الطريق / المعلم / المنطقة)', `<input class="mi-input" name="location" value="${escapeHtml(data.location || '')}" placeholder="وصف الموقع: الطريق أو المعلم أو المنطقة">`) +
           `</div>` +
           `<div class="mi-form-field">
             <label>مواقع المبادرة على الخريطة — يمكن إضافة أكثر من موقع (نقطة أو خط أو مساحة)</label>
@@ -81,7 +80,6 @@ export function renderInitiativeForm(container, { onDone }) {
           </div>`;
 
         const collectInputs = () => {
-          data.district = box.querySelector('[name="district"]').value;
           data.location = box.querySelector('[name="location"]').value;
           box.querySelectorAll('[data-site-name]').forEach((inp) => {
             const site = data.sites.find((s) => s.id === inp.dataset.siteName);
@@ -122,7 +120,6 @@ export function renderInitiativeForm(container, { onDone }) {
         box.querySelector('[data-act="clear-image"]')?.addEventListener('click', () => { data.imageDataUrl = null; rerender(); });
       },
       collect(box, data) {
-        data.district = box.querySelector('[name="district"]').value;
         data.location = box.querySelector('[name="location"]').value;
         box.querySelectorAll('[data-site-name]').forEach((inp) => {
           const site = (data.sites || []).find((s) => s.id === inp.dataset.siteName);
@@ -130,7 +127,7 @@ export function renderInitiativeForm(container, { onDone }) {
         });
       },
       validate(data) {
-        return validate(data, { district: [(v) => required(v, 'الحي')] });
+        return validate(data, { location: [(v) => required(v, 'الموقع')] });
       }
     },
     {
@@ -192,7 +189,7 @@ export function renderInitiativeForm(container, { onDone }) {
             <dl class="mi-dl">
               <div class="mi-dl__row"><dt>المبادرة</dt><dd>${escapeHtml(data.title || '')}</dd></div>
               <div class="mi-dl__row"><dt>المجال</dt><dd>${escapeHtml(catLabel)}</dd></div>
-              <div class="mi-dl__row"><dt>الموقع</dt><dd>${escapeHtml(data.district || '')}${data.sites?.length ? ' — ' + escapeHtml(sitesSummaryLabel(data.sites)) : ''}</dd></div>
+              <div class="mi-dl__row"><dt>الموقع</dt><dd>${escapeHtml(data.location || '')}${data.sites?.length ? ' — ' + escapeHtml(sitesSummaryLabel(data.sites)) : ''}</dd></div>
               <div class="mi-dl__row"><dt>التكلفة</dt><dd>${escapeHtml(COST_BANDS.find((b) => b.id === data.costBand)?.label || '—')}</dd></div>
               <div class="mi-dl__row"><dt>المدة</dt><dd>${escapeHtml(DURATION_BANDS.find((b) => b.id === data.durationBand)?.label || '—')}</dd></div>
               <div class="mi-dl__row"><dt>الجاهزية</dt><dd>${escapeHtml(READINESS_LEVELS.find((b) => b.id === data.readinessLevel)?.label || '—')}</dd></div>
@@ -229,7 +226,7 @@ export function renderInitiativeForm(container, { onDone }) {
       const { sites, lat, lng } = buildRecord(data, 'draft');
       const draft = sanitizeInitiative(newInitiative({
         title: data.title, summary: data.summary || '', problem: data.problem || '',
-        category: data.category || 'rehab', district: data.district || 'المنطقة المركزية',
+        category: data.category || 'rehab', district: '',
         location: data.location || '', sites, lat, lng,
         imageDataUrl: data.imageDataUrl || null,
         beneficiaryGroups: data.beneficiaryGroups || '',
@@ -253,7 +250,7 @@ export function renderInitiativeForm(container, { onDone }) {
         summary: data.summary,
         problem: data.problem || '',
         category: data.category,
-        district: data.district,
+        district: '',
         location: data.location || '',
         sites,
         imageDataUrl: data.imageDataUrl || null,

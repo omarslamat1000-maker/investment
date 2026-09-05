@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>صفحة المبادرة — منصة المبادرات</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./assets/logo-placeholder.svg" type="image/svg+xml">
+  <meta name="theme-color" content="#073B2E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&family=Noto+Kufi+Arabic:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./css/tokens.css">
+  <link rel="stylesheet" href="./css/base.css">
+  <link rel="stylesheet" href="./css/components.css">
+  <link rel="stylesheet" href="./css/layout.css">
+  <link rel="stylesheet" href="./css/navigation.css">
+  <link rel="stylesheet" href="./css/forms.css">
+  <link rel="stylesheet" href="./css/dashboard.css">
+  <link rel="stylesheet" href="./css/map.css">
+  <link rel="stylesheet" href="./css/responsive.css">
+  <link rel="stylesheet" href="./css/themes.css">
+</head>
+<body>
+  <header class="mi-page-head-bar">
+    <a class="mi-sidebar__brand" href="./index.html">
+      <span class="mi-brand-arch" aria-hidden="true"></span>
+      <span class="mi-brand-text"><b>منصة المبادرات</b><small>أمانة منطقة المدينة المنورة</small></span>
+    </a>
+    <a class="mi-back" href="./index.html#mi-pipeline">← جميع المبادرات</a>
+  </header>
+
+  <main class="mi-page-plain mi-page-plain--wide" id="mi-initiative-main">
+    <p class="mi-muted">جارٍ التحميل…</p>
+  </main>
+
+  <footer class="mi-public-footer">
+    <p>منصة مبادرات البنية التحتية والشراكات المجتمعية — أمانة منطقة المدينة المنورة</p>
+  </footer>
+
+  <script type="module">
+    import { APP_CONFIG } from './js/config.js';
+    import { initDataProvider } from './js/data/data-provider.js';
+    import { seedDemoDataIfEmpty } from './js/services/import-service.js';
+    import { repos } from './js/data/repositories.js';
+    import { html, raw, escapeHtml } from './js/core/sanitizer.js';
+    import { statusBadge, gateTrackHtml, definitionList, progressBar } from './js/ui/components.js';
+    import { statusLabel } from './js/domain/workflow.js';
+    import { categoryLabel, costBandLabel, durationBandLabel, readinessLabel, getSites } from './js/domain/initiative-model.js';
+    import { sitesSummaryLabel } from './js/core/geo.js';
+    import { renderSitesPreview } from './js/ui/location-picker.js';
+    import { fmtMoney, fmtNumber, percent, sortBy } from './js/core/utils.js';
+    import { fmtDate } from './js/core/date-time.js';
+    import { engagementFor, supportInitiative, submitPublicComment, hasSupported } from './js/services/public-engagement.js';
+    import { toastSuccess, toastError } from './js/ui/toast.js';
+
+    (async () => {
+      await initDataProvider(APP_CONFIG);
+      await seedDemoDataIfEmpty();
+      const main = document.getElementById('mi-initiative-main');
+      const id = new URLSearchParams(location.search).get('id');
+      const ini = id ? await repos.initiatives.get(id) : null;
+      if (!ini || ini.status === 'draft') {
+        main.innerHTML = html`<div class="mi-card mi-empty"><div class="mi-empty__mark" aria-hidden="true">◈</div><h1>المبادرة غير متاحة</h1><p class="mi-muted">تأكد من الرابط أو عد إلى الصفحة الرئيسية.</p><a class="mi-btn mi-btn--primary" href="./index.html">الصفحة الرئيسية</a></div>`;
+        return;
+      }
+      const [milestones, benefits, eng] = await Promise.all([repos.milestones.byInitiative(id), repos.benefits.byInitiative(id), engagementFor(id)]);
+      const ms = sortBy(milestones, (m) => m.due);
+      const done = ms.filter((m) => m.done).length;
+      const progress = Math.max(Number(ini.progressPercentage) || 0, ms.length ? percent(done, ms.length) : 0);
+      const sites = getSites(ini);
+      document.title = `${ini.title} — منصة المبادرات`;
+
+      main.innerHTML = html`
+        <article class="mi-public-ini">
+          <header class="mi-public-ini__head">
+            <div>
+              <span class="mi-tag">${ini.id}</span> ${raw(statusBadge(ini.status))}
+              <h1>${ini.title}</h1>
+              <p class="mi-muted">${categoryLabel(ini.category)}${ini.location ? raw(' • ' + escapeHtml(ini.location)) : ''} • ${ini.submitterEntity || ''}</p>
+            </div>
+            ${ini.imageDataUrl ? raw(`<img class="mi-public-ini__img" alt="صورة موقع المبادرة" src='${escapeHtml(ini.imageDataUrl)}'>`) : ''}
+          </header>
+          ${raw(gateTrackHtml(ini.status))}
+          <div class="mi-detail-grid">
+            <section class="mi-card mi-card--span">
+              ${ini.problem ? raw(`<h3>المشكلة أو الاحتياج</h3><p>${escapeHtml(ini.problem)}</p>`) : ''}
+              <h3>الحل المقترح</h3><p>${ini.summary}</p>
+              ${ini.expectedImpact ? raw(`<h3>الأثر المتوقع</h3><p>${escapeHtml(ini.expectedImpact)}</p>`) : ''}
+              ${raw(definitionList([
+                ['الفئات المستفيدة', ini.beneficiaryGroups || '—'],
+                ['التكلفة التقديرية', ini.budget ? fmtMoney(ini.budget) : (ini.costBand ? costBandLabel(ini.costBand) : '—')],
+                ['المدة التقديرية', ini.durationBand ? durationBandLabel(ini.durationBand) : '—'],
+                ['مستوى الجاهزية', ini.readinessLevel ? readinessLabel(ini.readinessLevel) : '—'],
+                ['المرحلة الحالية', statusLabel(ini.status)],
+                ['آخر تحديث', fmtDate(ini.updatedAt)]
+              ]))}
+              ${['execution', 'benefits', 'closed'].includes(ini.status) ? raw(`<h3>نسبة الإنجاز</h3>${progressBar(progress, 'نسبة الإنجاز')}${ini.lastFieldUpdateAt ? `<small class="mi-muted">آخر تحديث ميداني معتمد: ${escapeHtml(fmtDate(ini.lastFieldUpdateAt))}</small>` : ''}`) : ''}
+            </section>
+            <section class="mi-card">
+              <h3>الموقع</h3>
+              ${sites.length ? raw(`<div class="mi-geo-host" data-geo></div><p class="mi-geo-caption"><b>${escapeHtml(sitesSummaryLabel(sites))}</b></p>`) : raw('<p class="mi-muted">لم يُحدد موقع على الخريطة بعد</p>')}
+            </section>
+            <section class="mi-card" id="mi-engage">
+              <h3>رأيك يهمنا</h3>
+              <p class="mi-muted">يقيس تأييد المجتمع اهتمامه بالمبادرة قبل طرحها، وتُراجع التعليقات قبل نشرها.</p>
+              <div class="mi-engage-support">
+                <button class="mi-btn mi-btn--gold" data-act="support" ${hasSupported(id) ? raw('disabled') : ''}>${hasSupported(id) ? '✔ أيّدت هذه المبادرة' : '👍 أؤيد هذه المبادرة'}</button>
+                <b data-support-count>${fmtNumber(eng.supports)}</b> <span class="mi-muted">مؤيد</span>
+              </div>
+              <form class="mi-form" id="mi-comment-form">
+                <div class="mi-form-field"><label for="mi-c-name">الاسم (اختياري)</label><input class="mi-input" id="mi-c-name" maxlength="60"></div>
+                <div class="mi-form-field"><label for="mi-c-text">تعليق موجز</label><textarea class="mi-input" id="mi-c-text" rows="3" maxlength="400" placeholder="ملاحظة أو اقتراح على المبادرة…"></textarea></div>
+                <button class="mi-btn mi-btn--primary mi-btn--sm" type="submit">إرسال للمراجعة</button>
+              </form>
+              ${eng.approved.length ? raw('<h4 class="mi-subhead">تعليقات منشورة</h4>' + eng.approved.map((c) => `<div class="mi-ms"><span class="mi-ms__dot" style="background:var(--mi-gold-500)"></span><span><b>${escapeHtml(c.name)}</b>: ${escapeHtml(c.text)}</span><small>${escapeHtml(fmtDate(c.at))}</small></div>`).join('')) : ''}
+            </section>
+          </div>
+        </article>`;
+
+      const geo = main.querySelector('[data-geo]');
+      if (geo) renderSitesPreview(geo, sites);
+
+      main.querySelector('[data-act="support"]').addEventListener('click', async (e) => {
+        try {
+          await supportInitiative(id);
+          e.target.disabled = true; e.target.textContent = '✔ أيّدت هذه المبادرة';
+          const c = main.querySelector('[data-support-count]'); c.textContent = fmtNumber(Number(c.textContent) + 1);
+          toastSuccess('شكرًا لتأييدك');
+        } catch (err) { toastError(err.message); }
+      });
+      main.querySelector('#mi-comment-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+          await submitPublicComment(id, { name: main.querySelector('#mi-c-name').value, text: main.querySelector('#mi-c-text').value });
+          main.querySelector('#mi-c-text').value = '';
+          toastSuccess('أُرسل تعليقك وسيُنشر بعد المراجعة');
+        } catch (err) { toastError(err.message); }
+      });
+    })().catch((err) => console.error('تعذر تحميل المبادرة', err));
+  </script>
+</body>
+</html>

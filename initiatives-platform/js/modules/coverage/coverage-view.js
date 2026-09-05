@@ -7,7 +7,7 @@ import { hbarChart } from '../../ui/charts.js';
 import { coverageAnalysis, districtCenter, GAP_LABELS } from '../../domain/coverage.js';
 import { CATEGORIES, DISTRICT_CENTROIDS } from '../../core/constants.js';
 import { fmtNumber, fmtMoney, sortBy } from '../../core/utils.js';
-import { loadLeaflet } from '../../ui/location-picker.js';
+import { loadLeaflet, addBaseLayers } from '../../ui/location-picker.js';
 import { navigate } from '../../router.js';
 import { getRole } from '../../core/state.js';
 import { can } from '../../core/permissions.js';
@@ -28,7 +28,7 @@ export async function renderCoverage(container) {
     can(role, 'reports.view') ? '<button class="mi-btn mi-btn--ghost" data-act="report">تقرير الفجوات</button>' : ''))}
 
     <div class="mi-kpi-grid">
-      ${raw(kpiCard('أحياء مغطاة', `${fmtNumber(a.totals.coveredDistricts)} / ${fmtNumber(a.totals.districts)}`, 'حي فيه مبادرة واحدة على الأقل', 'primary'))}
+      ${raw(kpiCard('أحياء مغطاة', `${fmtNumber(a.totals.coveredDistricts)} / ${fmtNumber(a.totals.districts)}`, 'منطقة فيها مبادرة واحدة على الأقل (تُستنتج من الإحداثيات)', 'primary'))}
       ${raw(kpiCard('أحياء بلا مبادرات', String(a.gaps.noInitiatives.length), a.gaps.noInitiatives.length ? 'تحتاج طرح فرص' : 'تغطية كاملة', a.gaps.noInitiatives.length ? 'warn' : 'ok'))}
       ${raw(kpiCard('احتياجات بلا استجابة', String(a.gaps.needsWithoutResponse.reduce((s, r) => s + r.openNeeds, 0)), 'مطروحة في أحياء بلا مبادرة نشطة', ''))}
       ${raw(kpiCard('تصنيفات مهملة', String(a.gaps.neglectedCategories.length), 'بلا أي مبادرة نشطة', ''))}
@@ -125,7 +125,7 @@ export async function renderCoverage(container) {
   if (currentMap) { try { currentMap.remove(); } catch { /* أزيلت */ } }
   const map = L.map(mapEl).setView([24.468, 39.612], 12);
   currentMap = map;
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
+  addBaseLayers(L, map);
   const layers = [];
   for (const r of a.rows) {
     const c = districtCenter(r.district, { initiatives, needs, fallback: DISTRICT_CENTROIDS });
@@ -139,7 +139,7 @@ export async function renderCoverage(container) {
       const el = document.createElement('div');
       el.className = 'mi-map-popup'; el.dir = 'rtl';
       el.innerHTML = html`
-        <b class="mi-map-popup__title">حي ${r.district}</b>
+        <b class="mi-map-popup__title">منطقة ${r.district}</b>
         <span class="mi-gap-tag" data-gap="${r.gap}">${GAP_LABELS[r.gap]}</span>
         <small class="mi-map-popup__meta">${fmtNumber(r.total)} مبادرة (${fmtNumber(r.active)} نشطة، ${fmtNumber(r.closed)} مغلقة) • ${fmtNumber(r.openNeeds)} احتياج مطروح • ${fmtMoney(r.budget)}${c.source === 'reference' ? ' • موقع مرجعي تقريبي' : ''}</small>
         <div class="mi-map-popup__actions">

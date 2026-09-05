@@ -6,7 +6,7 @@ import { renderTable } from '../../ui/table.js';
 import { needStatusLabel, PRIORITY_LABELS, newNeed, validateNeed, sanitizeNeed } from '../../domain/infrastructure-need-model.js';
 import { categoryLabel } from '../../domain/initiative-model.js';
 import { modelLabel } from '../../domain/partner-model.js';
-import { CATEGORIES, DISTRICTS } from '../../core/constants.js';
+import { CATEGORIES } from '../../core/constants.js';
 import { fmtMoney, fmtNumber } from '../../core/utils.js';
 import { fmtDate } from '../../core/date-time.js';
 import { getRole, getSession } from '../../core/state.js';
@@ -41,7 +41,7 @@ export async function renderNeeds(container) {
     { key: 'id', label: 'المعرّف', width: '10rem' },
     { key: 'title', label: 'الاحتياج' },
     { key: 'category', label: 'التصنيف', map: (r) => categoryLabel(r.category) },
-    { key: 'district', label: 'الحي' },
+    { key: 'location', label: 'الموقع', map: (r) => r.location || '—' },
     { key: 'priority', label: 'الأولوية', map: (r) => PRIORITY_LABELS[r.priority] || r.priority },
     { key: 'estimatedCost', label: 'التكلفة التقديرية', map: (r) => fmtMoney(r.estimatedCost), sortValue: (r) => Number(r.estimatedCost) || 0 },
     { key: 'applicants', label: 'المتقدمون', map: (r) => fmtNumber(allApplications.filter((a) => a.needId === r.id).length), sortValue: (r) => allApplications.filter((a) => a.needId === r.id).length },
@@ -106,8 +106,7 @@ export async function renderNeeds(container) {
           <div class="mi-form-row">
             <div class="mi-form-field"><label>التصنيف</label>
               <select class="mi-input" name="category" ${editable ? '' : raw('disabled')}>${raw(CATEGORIES.map((c) => `<option value="${c.id}" ${c.id === need.category ? 'selected' : ''}>${c.label}</option>`).join(''))}</select></div>
-            <div class="mi-form-field"><label>الحي</label>
-              <select class="mi-input" name="district" ${editable ? '' : raw('disabled')}>${raw(DISTRICTS.map((d) => `<option ${d === need.district ? 'selected' : ''}>${d}</option>`).join(''))}</select></div>
+            <div class="mi-form-field"><label>الموقع (الطريق / المعلم / المنطقة)</label><input class="mi-input" name="location" value="${need.location || ''}" ${editable ? '' : raw('readonly')}></div>
             <div class="mi-form-field"><label>الأولوية</label>
               <select class="mi-input" name="priority" ${editable ? '' : raw('disabled')}>
                 ${raw(Object.entries(PRIORITY_LABELS).map(([k, v]) => `<option value="${k}" ${k === need.priority ? 'selected' : ''}>${v}</option>`).join(''))}
@@ -130,7 +129,8 @@ export async function renderNeeds(container) {
       footerHtml: html`
         <button class="mi-btn mi-btn--ghost" data-act="cancel">إغلاق</button>
         ${editable ? raw('<button class="mi-btn mi-btn--primary" data-act="save">حفظ</button>') : ''}
-        ${existing && existing.status === 'draft' && can(role, 'needs.publish') ? raw('<button class="mi-btn mi-btn--gold" data-act="publish">نشر للشراكة</button>') : ''}`
+        ${existing && existing.status === 'draft' && can(role, 'needs.publish') ? raw('<button class="mi-btn mi-btn--gold" data-act="publish">نشر للشراكة</button>') : ''}
+        ${existing && existing.status !== 'matched' && can(role, 'initiatives.create') ? raw('<button class="mi-btn mi-btn--primary" data-act="to-initiative">تحويل إلى مبادرة</button>') : ''}`
     });
 
     // هندسة الموقع تُحفظ في متغير محلي حتى الضغط على حفظ
@@ -188,7 +188,7 @@ export async function renderNeeds(container) {
         lat: pendingGeometry?.coords?.[0]?.[0] ?? need.lat,
         lng: pendingGeometry?.coords?.[0]?.[1] ?? need.lng,
         title: form.title.value, description: form.description.value,
-        category: form.category.value, district: form.district.value,
+        category: form.category.value, location: form.location.value,
         priority: form.priority.value,
         estimatedCost: form.estimatedCost.value ? Number(form.estimatedCost.value) : null,
         beneficiaries: form.beneficiaries.value ? Number(form.beneficiaries.value) : null,
@@ -202,6 +202,22 @@ export async function renderNeeds(container) {
       toastSuccess(existing ? 'حُدّث الاحتياج' : 'أُنشئ الاحتياج كمسودة');
       renderNeeds(container);
     });
+    // تحويل الاحتياج إلى مبادرة بضغطة واحدة
+    dialog.querySelector('[data-act="to-initiative"]')?.addEventListener('click', async () => {
+      const { confirmModal } = await import('../../ui/modal.js');
+      const { initiativeFromNeed } = await import('../../services/application-service.js');
+      const sure = await confirmModal('تحويل الاحتياج إلى مبادرة',
+        `ستُنشأ مبادرة «${existing.title}» بحالة «مقدَّمة» من بيانات هذا الاحتياج، ويُغلق الاحتياج كمُتبنّى. متابعة؟`, { confirmLabel: 'تحويل' });
+      if (!sure) return;
+      try {
+        const ini = await initiativeFromNeed(existing, { byName: getSession()?.name || 'مكتب إدارة المبادرات' });
+        close();
+        toastSuccess(`أُنشئت المبادرة ${ini.id}`);
+        const { navigate } = await import('../../router.js');
+        navigate(`initiatives/${ini.id}`);
+      } catch (err) { toastError(err.message); }
+    });
+
     dialog.querySelector('[data-act="publish"]')?.addEventListener('click', async () => {
       await repos.needs.update(existing.id, { status: 'published', publishedAt: new Date().toISOString() });
       close();

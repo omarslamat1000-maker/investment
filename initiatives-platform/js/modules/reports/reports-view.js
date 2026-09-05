@@ -135,7 +135,7 @@ export async function renderReports(container) {
       const cols = [
         { key: 'id', label: 'المعرف' }, { key: 'title', label: 'المبادرة' },
         { key: 'category', label: 'التصنيف', map: (r) => categoryLabel(r.category) },
-        { key: 'district', label: 'الحي' },
+        { key: 'location', label: 'الموقع' },
         { key: 'status', label: 'الحالة', map: (r) => statusLabel(r.status) },
         { key: 'score', label: 'المفاضلة', map: (r) => { const s = weightedScore(r.scores); return s === null ? '—' : `${s} (${scoreBand(s).label})`; } },
         { key: 'budget', label: 'الميزانية', map: (r) => fmtMoney(r.budget) },

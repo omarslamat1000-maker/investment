@@ -107,7 +107,7 @@ export function agreementDocumentHtml(agreement, initiative = null) {
     <p><b>الطرف الثاني:</b> ${agreement.joint ? 'الجهات الشريكة المبينة أدناه (شراكة مشتركة)' : 'الجهة الشريكة المبينة أدناه'}.</p>
     <table class="mi-table"><thead><tr><th>#</th><th>الجهة</th><th>نموذج الشراكة</th><th>المساهمة</th><th>الاعتماد الإلكتروني</th></tr></thead><tbody>${partyRows}</tbody></table>
     <h3>موضوع الاتفاقية</h3>
-    <p>تنفيذ مبادرة <b>«${escapeHtml(agreement.initiativeTitle)}»</b> (${escapeHtml(agreement.initiativeId)}) بحي ${escapeHtml(agreement.district || '—')}،
+    <p>تنفيذ مبادرة <b>«${escapeHtml(agreement.initiativeTitle)}»</b> (${escapeHtml(agreement.initiativeId)})${agreement.location ? ' — ' + escapeHtml(agreement.location) : ''}،
     بميزانية تقديرية ${escapeHtml(fmtMoney(agreement.budget))}${initiative?.summary ? `، وملخصها: ${escapeHtml(initiative.summary)}` : ''}.</p>
     <p><b>مدة الاتفاقية:</b> ${escapeHtml(String(agreement.durationMonths || 12))} شهرًا${agreement.startDate ? ` اعتبارًا من ${escapeHtml(fmtDate(agreement.startDate))}` : ' من تاريخ توقيعها'}.</p>
     <h3>البنود</h3>
