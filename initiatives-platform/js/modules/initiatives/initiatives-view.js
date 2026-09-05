@@ -35,6 +35,9 @@ import { renderAgreementPanel } from './agreement-panel.js';
 import { agreementForInitiative } from '../../services/agreement-service.js';
 import { isSigned } from '../../domain/agreement.js';
 import { progressReportsHtml, bindProgressReportActions } from '../execution/progress-reports-panel.js';
+import { createGateDecision, signGateDecision, cancelGateDecision, pendingDecisionFor, getChains } from '../../services/decision-service.js';
+import { chainKeyFor, canSign, chainProgress, roleLabel } from '../../domain/approval-chain.js';
+import { getSession } from '../../core/state.js';
 
 export async function renderInitiativesList(container) {
   const [initiatives, slaConfig] = await Promise.all([repos.initiatives.getAll(), getSlaConfig()]);
@@ -120,6 +123,7 @@ export async function renderInitiativeDetails(container, id) {
     repos.campaigns.getAll(), getSlaConfig(), repos.progressReports.byInitiative(id).catch(() => [])
   ]);
   const sla = slaStatus(initiative, slaConfig);
+  const pendingDecision = await pendingDecisionFor(id);
   const portfolio = initiative.portfolioId ? portfolios.find((p) => p.id === initiative.portfolioId) : null;
   const campaign = initiative.campaignId ? campaigns.find((c) => c.id === initiative.campaignId) : null;
 
@@ -340,11 +344,31 @@ export async function renderInitiativeDetails(container, id) {
 
     <div class="mi-cloud-panels mi-detail-grid" data-cloud-panels hidden></div>
 
+    ${pendingDecision ? raw(html`
+    <section class="mi-card mi-chain-card" data-chain>
+      <h3>قرار قيد الاعتماد المتسلسل — ${pendingDecision.id}</h3>
+      <p class="mi-muted">${pendingDecision.gateId ? 'بوابة ' + pendingDecision.gateId + ' — ' : ''}الانتقال إلى «${statusLabel(pendingDecision.to)}» • أنشأه ${pendingDecision.by} • ${fmtDate(pendingDecision.at)}</p>
+      <p class="mi-chain-rationale">${pendingDecision.rationale}</p>
+      <ol class="mi-chain">
+        ${raw(pendingDecision.approvals.map((a, i) => html`
+          <li class="mi-chain__step" data-done="${a.signedBy ? 'yes' : 'no'}" data-next="${!a.signedBy && pendingDecision.approvals.slice(0, i).every((x) => x.signedBy) ? 'yes' : 'no'}">
+            <span class="mi-chain__num">${String(i + 1)}</span>
+            <b>${roleLabel(a.role)}</b>
+            <small>${a.signedBy ? raw('✔ ' + escapeHtml(a.signedBy) + (a.onBehalf ? ' (بالنيابة)' : '') + ' — ' + escapeHtml(fmtDate(a.at))) : 'بانتظار التوقيع'}</small>
+          </li>`).join(''))}
+      </ol>
+      ${raw(progressBar(chainProgress(pendingDecision).percent, 'اكتمال سلسلة الاعتماد'))}
+      <div class="mi-detail-media__tools">
+        ${canSign(pendingDecision, role) ? raw('<button class="mi-btn mi-btn--gold" data-act="sign">توقيع خطوتي الآن</button>') : raw('<span class="mi-muted">التوقيع الحالي لدور آخر — يظهر له في «مهامي» و«لوحة القرار»</span>')}
+        ${can(role, 'decisions.create') ? raw('<button class="mi-btn mi-btn--ghost mi-btn--sm" data-act="cancel-decision">إلغاء القرار</button>') : ''}
+      </div>
+    </section>`) : ''}
+
     <div class="mi-detail-actions">
       <button class="mi-btn mi-btn--ghost" data-act="print">تقرير طباعة</button>
       ${canEditRec ? raw('<button class="mi-btn mi-btn--gold" data-act="edit">تعديل البيانات</button>') : ''}
       ${initiative.status === 'closed' ? raw('<button class="mi-btn mi-btn--gold" data-act="certificate">شهادة الإنجاز 🏅</button>') : ''}
-      ${raw(transitions.map((t) => html`
+      ${pendingDecision ? raw('<span class="mi-muted">الانتقالات معلقة حتى اكتمال سلسلة الاعتماد</span>') : raw(transitions.map((t) => html`
         <button class="mi-btn ${t.to === 'rejected' ? 'mi-btn--danger' : 'mi-btn--primary'}" data-transition="${t.to}">${t.label}</button>`).join(''))}
     </div>`;
 
@@ -429,6 +453,28 @@ export async function renderInitiativeDetails(container, id) {
     toastSuccess('حُذف الموقع');
   }));
 
+  // سلسلة الاعتماد: توقيع خطوتي / إلغاء القرار
+  container.querySelector('[data-act="sign"]')?.addEventListener('click', async () => {
+    const step = pendingDecision.approvals.find((a) => !a.signedBy);
+    const onBehalf = step && step.role !== role;
+    const sure = await confirmModal('توقيع خطوة الاعتماد',
+      `سيُسجَّل توقيعك باسم «${getUserName()}» على القرار ${pendingDecision.id}${onBehalf ? ` بالنيابة عن ${roleLabel(step.role)}` : ''}. متابعة؟`,
+      { confirmLabel: 'توقيع' });
+    if (!sure) return;
+    try {
+      const r = await signGateDecision(pendingDecision.id, getSession());
+      toastSuccess(r.transitioned ? `اكتملت السلسلة وانتقلت المبادرة إلى: ${statusLabel(pendingDecision.to)}` : 'سُجّل توقيعك — بانتظار الخطوة التالية');
+      renderInitiativeDetails(container, id);
+    } catch (err) { toastError(err.message); }
+  });
+  container.querySelector('[data-act="cancel-decision"]')?.addEventListener('click', async () => {
+    const sure = await confirmModal('إلغاء القرار المعلق', 'سيُلغى القرار وتعود أزرار الانتقال للظهور. متابعة؟', { confirmLabel: 'إلغاء القرار', danger: true });
+    if (!sure) return;
+    await cancelGateDecision(pendingDecision.id, getUserName());
+    toastSuccess('أُلغي القرار');
+    renderInitiativeDetails(container, id);
+  });
+
   // تعديل بيانات المبادرة (قالب التعريف كاملًا)
   container.querySelector('[data-act="edit"]')?.addEventListener('click', () =>
     openEditModal(initiative, () => renderInitiativeDetails(container, id)));
@@ -496,13 +542,19 @@ export async function renderInitiativeDetails(container, id) {
 
   async function openDecisionModal(host, ini, meta, to) {
     const isReturn = to === 'returned';
+    const outcomeKey = to === 'rejected' ? 'reject' : to === 'onHold' ? 'hold' : isReturn ? 'return' : 'pass';
+    const chains = await getChains();
+    const chain = chains[chainKeyFor({ gateId: meta.gate || null, outcome: outcomeKey })] || ['pmo'];
+    const myRole = getSession()?.role || role;
     const { dialog, close } = openModal({
       title: meta.gate ? `قرار بوابة ${meta.gate} — ${meta.label}` : meta.label,
       bodyHtml: html`
         <div class="mi-form-field">
           <label for="mi-dec-rationale">${isReturn ? 'سبب الإعادة (يصل للجهة — إلزامي)' : 'مسوّغات القرار'}</label>
           <textarea id="mi-dec-rationale" class="mi-input" rows="4" placeholder="اكتب الأساس الذي بُني عليه القرار…"></textarea>
-        </div>`,
+        </div>
+        <p class="mi-muted">سلسلة الاعتماد: ${raw(chain.map((r) => `<span class="mi-tag" data-benefit="${r === myRole || myRole === 'admin' ? 'achieved' : ''}">${escapeHtml(roleLabel(r))}</span>`).join(' ← '))}
+          — ${chain.length > 1 || chain[0] !== myRole ? 'يُنفَّذ الانتقال بعد اكتمال توقيعات السلسلة' : 'توقيعك يكمل السلسلة وينفّذ الانتقال فورًا'}</p>`,
       footerHtml: html`
         <button class="mi-btn mi-btn--ghost" data-act="cancel">إلغاء</button>
         <button class="mi-btn ${isReturn || to === 'rejected' ? 'mi-btn--danger' : 'mi-btn--primary'}" data-act="save">تسجيل القرار</button>`
@@ -511,19 +563,14 @@ export async function renderInitiativeDetails(container, id) {
     dialog.querySelector('[data-act="save"]').addEventListener('click', async () => {
       const rationale = dialog.querySelector('#mi-dec-rationale').value.trim();
       if (rationale.length < 10) { toastError('المسوّغات مطلوبة (10 أحرف على الأقل)'); return; }
-      const outcome = to === 'rejected' ? 'reject' : to === 'onHold' ? 'hold' : isReturn ? 'return' : 'pass';
+      let result;
       try {
-        const decision = await repos.decisions.create({
-          initiativeId: ini.id, gateId: meta.gate || null, outcome, rationale,
-          by: getUserName(), at: new Date().toISOString()
-        });
-        await repos.initiatives.transition(ini.id, to, {
-          reason: rationale, by: getUserName(), decisionId: decision.id
-        });
+        result = await createGateDecision({ initiative: ini, gateId: meta.gate || null, outcome: outcomeKey, rationale, to, session: getSession() });
       } catch (err) { toastError(err.message); return; }
       close();
-      toastSuccess(`سُجّل القرار وانتقلت المبادرة إلى: ${statusLabel(to)}`);
-      notify(meta.gate ? `قرار بوابة ${meta.gate}` : meta.label, `${ini.title} — ${statusLabel(to)}`);
+      toastSuccess(result.transitioned
+        ? `سُجّل القرار وانتقلت المبادرة إلى: ${statusLabel(to)}`
+        : `سُجّل القرار ${result.decision.id} — بانتظار بقية توقيعات السلسلة`);
       renderInitiativeDetails(container, ini.id);
     });
   }

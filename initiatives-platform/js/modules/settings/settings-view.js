@@ -14,10 +14,12 @@ import { confirmModal } from '../../ui/modal.js';
 import { providerName } from '../../data/data-provider.js';
 import { getSlaConfig, saveSlaConfig, defaultSlaConfig } from '../../services/sla-service.js';
 import { statusLabel } from '../../domain/workflow.js';
+import { getChains, saveChains, defaultChains } from '../../services/decision-service.js';
+import { SIGNABLE_ROLES } from '../../domain/approval-chain.js';
 
 export async function renderSettings(container) {
   const role = getRole();
-  const [logs, slaConfig] = await Promise.all([getAuditLogs({ limit: 25 }), getSlaConfig()]);
+  const [logs, slaConfig, chains] = await Promise.all([getAuditLogs({ limit: 25 }), getSlaConfig(), getChains()]);
   const canSla = can(role, 'settings.view') || role === 'admin';
 
   container.innerHTML = html`
@@ -89,6 +91,22 @@ export async function renderSettings(container) {
       </section>
 
       <section class="mi-card mi-card--span">
+        <h3>سلاسل الاعتماد المتسلسل لقرارات البوابات</h3>
+        <p class="mi-muted">لكل بوابة أدوار مرتبة يجب أن توقّع بالتسلسل قبل تنفيذ الانتقال (مثال: مكتب المبادرات ← المشرف ← مدير النظام). مدير النظام يستطيع التوقيع بالنيابة عند الحاجة.</p>
+        <form class="mi-form" id="mi-chains-form">
+          <div class="mi-sla-form__grid">
+            ${raw(Object.entries(chains).map(([key, roles]) => `
+              <div class="mi-form-field">
+                <label>${escapeHtml(({ return: 'الإعادة للاستكمال', hold: 'التعليق' })[key] || 'بوابة ' + key)}</label>
+                <div class="mi-check-grid">${SIGNABLE_ROLES.map((r) => `<label class="mi-check-item"><input type="checkbox" name="${escapeHtml(key)}" value="${escapeHtml(r)}" ${roles.includes(r) ? 'checked' : ''} ${canSla ? '' : 'disabled'}><span>${escapeHtml(ROLES[r]?.label || r)}</span></label>`).join('')}</div>
+                <small class="mi-muted">الترتيب الحالي: ${escapeHtml(roles.map((r) => ROLES[r]?.label || r).join(' ← '))}</small>
+              </div>`).join(''))}
+          </div>
+          ${canSla ? raw('<div class="mi-settings-actions"><button class="mi-btn mi-btn--primary" type="submit">حفظ السلاسل</button><button class="mi-btn mi-btn--ghost" type="button" data-act="chains-reset">استعادة الافتراضي</button></div>') : ''}
+        </form>
+      </section>
+
+      <section class="mi-card mi-card--span">
         <h3>سجل التدقيق (آخر 25 حركة)</h3>
         ${logs.length ? raw(`<div class="mi-table-wrap"><table class="mi-table"><thead><tr><th>الوقت</th><th>المستخدم</th><th>الفعل</th><th>الكيان</th><th>السجل</th></tr></thead><tbody>` +
       logs.map((l) => `<tr><td>${escapeHtml(fmtDateTime(l.at))}</td><td>${escapeHtml(l.actor)}</td><td>${escapeHtml(l.action)}</td><td>${escapeHtml(l.store)}</td><td dir="ltr">${escapeHtml(l.recordId || '')}</td></tr>`).join('') +
@@ -116,6 +134,25 @@ export async function renderSettings(container) {
     toastSuccess('حُفظت مدد البوابات — تُطبق فورًا على العدادات والتصعيد');
     renderSettings(container);
   });
+  // سلاسل الاعتماد (ترتيب الأدوار ثابت: pmo ← supervisor ← admin ← reviewer حسب الاختيار)
+  container.querySelector('#mi-chains-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!canSla) return;
+    const form = e.target;
+    const next = {};
+    for (const key of Object.keys(chains)) {
+      const picked = [...form.querySelectorAll(`input[name="${key}"]:checked`)].map((c) => c.value);
+      next[key] = SIGNABLE_ROLES.filter((r) => picked.includes(r));
+    }
+    try { await saveChains(next); toastSuccess('حُفظت سلاسل الاعتماد'); renderSettings(container); }
+    catch (err) { toastError(err.message); }
+  });
+  container.querySelector('[data-act="chains-reset"]')?.addEventListener('click', async () => {
+    await saveChains(defaultChains());
+    toastSuccess('استُعيدت السلاسل الافتراضية');
+    renderSettings(container);
+  });
+
   container.querySelector('[data-act="sla-reset"]')?.addEventListener('click', async () => {
     await saveSlaConfig(defaultSlaConfig());
     toastSuccess('استُعيدت المدد الافتراضية');

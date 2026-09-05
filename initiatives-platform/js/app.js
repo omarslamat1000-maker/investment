@@ -30,11 +30,17 @@ import { renderPortfolios } from './modules/portfolios/portfolios-view.js';
 import { renderGalleryAdmin } from './modules/gallery/gallery-admin-view.js';
 import { renderCoverage } from './modules/coverage/coverage-view.js';
 import { renderScreening } from './modules/screening/screening-view.js';
+import { renderExecutive } from './modules/executive/executive-view.js';
+import { renderInbox } from './modules/inbox/inbox-view.js';
+import { renderPriorities } from './modules/priorities/priorities-view.js';
 import { runSlaEscalations } from './services/sla-service.js';
 
 // perm: الصلاحية اللازمة لظهور الرابط — بدونها يظهر للجميع
 const NAV = [
   { path: 'dashboard', label: 'لوحة المتابعة', icon: '◫' },
+  { path: 'inbox', label: 'مهامي', icon: '☑' },
+  { path: 'executive', label: 'لوحة القرار', icon: '★', perm: 'decisions.view' },
+  { path: 'priorities', label: 'الأولويات', icon: '⇅', perm: 'decisions.view' },
   { path: 'initiatives', label: 'المبادرات', icon: '▤', perm: 'initiatives.view' },
   { path: 'portfolios', label: 'المحافظ', icon: '▦', perm: 'portfolios.view' },
   { path: 'needs', label: 'الاحتياجات', icon: '◇', perm: 'needs.view' },
@@ -172,6 +178,9 @@ async function boot() {
 
   const m = () => main();
   route('dashboard', () => renderDashboard(m()), 'لوحة المتابعة');
+  route('inbox', () => renderInbox(m()), 'مهامي');
+  route('executive', () => renderExecutive(m()), 'لوحة القرار التنفيذي');
+  route('priorities', () => renderPriorities(m()), 'أولويات المحفظة');
   route('initiatives', () => renderInitiativesList(m()), 'سجل المبادرات');
   route('initiatives/:id', (p) => renderInitiativeDetails(m(), p.id), 'تفاصيل المبادرة');
   route('portfolios', () => renderPortfolios(m()), 'محافظ المبادرات');
