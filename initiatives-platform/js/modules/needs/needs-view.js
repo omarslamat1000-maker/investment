@@ -129,7 +129,8 @@ export async function renderNeeds(container) {
       footerHtml: html`
         <button class="mi-btn mi-btn--ghost" data-act="cancel">إغلاق</button>
         ${editable ? raw('<button class="mi-btn mi-btn--primary" data-act="save">حفظ</button>') : ''}
-        ${existing && existing.status === 'draft' && can(role, 'needs.publish') ? raw('<button class="mi-btn mi-btn--gold" data-act="publish">نشر للشراكة</button>') : ''}`
+        ${existing && existing.status === 'draft' && can(role, 'needs.publish') ? raw('<button class="mi-btn mi-btn--gold" data-act="publish">نشر للشراكة</button>') : ''}
+        ${existing && existing.status !== 'matched' && can(role, 'initiatives.create') ? raw('<button class="mi-btn mi-btn--primary" data-act="to-initiative">تحويل إلى مبادرة</button>') : ''}`
     });
 
     // هندسة الموقع تُحفظ في متغير محلي حتى الضغط على حفظ
@@ -201,6 +202,22 @@ export async function renderNeeds(container) {
       toastSuccess(existing ? 'حُدّث الاحتياج' : 'أُنشئ الاحتياج كمسودة');
       renderNeeds(container);
     });
+    // تحويل الاحتياج إلى مبادرة بضغطة واحدة
+    dialog.querySelector('[data-act="to-initiative"]')?.addEventListener('click', async () => {
+      const { confirmModal } = await import('../../ui/modal.js');
+      const { initiativeFromNeed } = await import('../../services/application-service.js');
+      const sure = await confirmModal('تحويل الاحتياج إلى مبادرة',
+        `ستُنشأ مبادرة «${existing.title}» بحالة «مقدَّمة» من بيانات هذا الاحتياج، ويُغلق الاحتياج كمُتبنّى. متابعة؟`, { confirmLabel: 'تحويل' });
+      if (!sure) return;
+      try {
+        const ini = await initiativeFromNeed(existing, { byName: getSession()?.name || 'مكتب إدارة المبادرات' });
+        close();
+        toastSuccess(`أُنشئت المبادرة ${ini.id}`);
+        const { navigate } = await import('../../router.js');
+        navigate(`initiatives/${ini.id}`);
+      } catch (err) { toastError(err.message); }
+    });
+
     dialog.querySelector('[data-act="publish"]')?.addEventListener('click', async () => {
       await repos.needs.update(existing.id, { status: 'published', publishedAt: new Date().toISOString() });
       close();

@@ -38,6 +38,7 @@ import { progressReportsHtml, bindProgressReportActions } from '../execution/pro
 import { createGateDecision, signGateDecision, cancelGateDecision, pendingDecisionFor, getChains } from '../../services/decision-service.js';
 import { chainKeyFor, canSign, chainProgress, roleLabel } from '../../domain/approval-chain.js';
 import { getSession } from '../../core/state.js';
+import { engagementFor, moderateComment } from '../../services/public-engagement.js';
 
 export async function renderInitiativesList(container) {
   const [initiatives, slaConfig] = await Promise.all([repos.initiatives.getAll(), getSlaConfig()]);
@@ -47,6 +48,7 @@ export async function renderInitiativesList(container) {
   container.innerHTML = html`
     ${raw(sectionHeader('سجل المبادرات', 'جميع المبادرات المقدمة عبر القنوات الداخلية والعامة وقنوات الشركاء',
     html`${can(role, 'reports.export') ? raw('<button class="mi-btn mi-btn--ghost" data-act="export">تصدير CSV</button>') : ''}
+      ${can(role, 'initiatives.create') ? raw('<button class="mi-btn mi-btn--ghost" data-act="import">استيراد من نموذج (PPTX / CSV)</button>') : ''}
       ${can(role, 'initiatives.create') ? raw('<a class="mi-btn mi-btn--primary" href="./submit.html">مبادرة جديدة</a>') : ''}`))}
     <div class="mi-filters" role="group" aria-label="تصفية المبادرات"></div>
     <div class="mi-table-host"></div>`;
@@ -92,6 +94,11 @@ export async function renderInitiativesList(container) {
     });
   });
 
+  container.querySelector('[data-act="import"]')?.addEventListener('click', async () => {
+    const { openImportModal } = await import('./import-modal.js');
+    openImportModal({ onDone: () => renderInitiativesList(container) });
+  });
+
   container.querySelector('[data-act="export"]')?.addEventListener('click', () => {
     downloadCsv(initiatives, [
       { key: 'id', label: 'المعرف' }, { key: 'title', label: 'المبادرة' },
@@ -124,6 +131,7 @@ export async function renderInitiativeDetails(container, id) {
   ]);
   const sla = slaStatus(initiative, slaConfig);
   const pendingDecision = await pendingDecisionFor(id);
+  const engagement = await engagementFor(id);
   const portfolio = initiative.portfolioId ? portfolios.find((p) => p.id === initiative.portfolioId) : null;
   const campaign = initiative.campaignId ? campaigns.find((c) => c.id === initiative.campaignId) : null;
 
@@ -250,6 +258,18 @@ export async function renderInitiativeDetails(container, id) {
       </section>
 
       <section class="mi-card" data-agreement-panel hidden></section>
+
+      <section class="mi-card" data-engagement>
+        <h3>تفاعل الجمهور <a class="mi-btn mi-btn--ghost mi-btn--sm" href="./initiative.html?id=${initiative.id}" target="_blank" rel="noopener">الصفحة العامة ↗</a></h3>
+        <p><b>${fmtNumber(engagement.supports)}</b> <span class="mi-muted">مؤيد من الجمهور</span>${engagement.pending.length ? raw(` • <span class="mi-tag" data-benefit="onTrack">${escapeHtml(fmtNumber(engagement.pending.length))} تعليق بانتظار المراجعة</span>`) : ''}</p>
+        ${engagement.pending.length ? raw(engagement.pending.map((c) => html`
+          <div class="mi-field-report" data-status="pending">
+            <div class="mi-field-report__head"><b>${c.name}</b><small class="mi-muted">${fmtDate(c.at)}</small></div>
+            <p class="mi-field-report__note">${c.text}</p>
+            ${can(role, 'comments.internal') || can(role, 'initiatives.edit') ? raw(`<div class="mi-field-report__actions"><button class="mi-btn mi-btn--primary mi-btn--sm" data-comment="approve" data-id="${escapeHtml(c.id)}">نشر</button><button class="mi-btn mi-btn--danger mi-btn--sm" data-comment="reject" data-id="${escapeHtml(c.id)}">حذف</button></div>`) : ''}
+          </div>`).join('')) : ''}
+        ${engagement.approved.length ? raw('<h4 class="mi-subhead">تعليقات منشورة</h4>' + engagement.approved.map((c) => `<div class="mi-ms"><span class="mi-ms__dot" style="background:var(--mi-gold-500)"></span><span><b>${escapeHtml(c.name)}</b>: ${escapeHtml(c.text)}</span><small>${escapeHtml(fmtDate(c.at))}</small></div>`).join('')) : ''}
+      </section>
 
       ${['execution', 'benefits', 'closed'].includes(initiative.status) ? raw(html`
       <section class="mi-card mi-card--span" data-field-reports>
@@ -451,6 +471,15 @@ export async function renderInitiativeDetails(container, id) {
     const sites = getSites(initiative).filter((s) => s.id !== btn.dataset.delSite).map((s) => ({ ...s }));
     await saveSites(sites);
     toastSuccess('حُذف الموقع');
+  }));
+
+  // مراجعة تعليقات الجمهور
+  container.querySelectorAll('[data-comment]').forEach((btn) => btn.addEventListener('click', async () => {
+    try {
+      await moderateComment(btn.dataset.id, btn.dataset.comment === 'approve');
+      toastSuccess(btn.dataset.comment === 'approve' ? 'نُشر التعليق' : 'حُذف التعليق');
+      renderInitiativeDetails(container, id);
+    } catch (err) { toastError(err.message); }
   }));
 
   // سلسلة الاعتماد: توقيع خطوتي / إلغاء القرار

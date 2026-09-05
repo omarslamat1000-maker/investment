@@ -86,6 +86,11 @@
             ['نماذج الشراكة المفضلة', (need.preferredModels || []).map(modelLabel).join('، ') || '—']
           ]))}
         </div>
+        <div class="mi-card" style="margin-top:1rem" id="mi-opportunity-criteria">
+          <h2>معايير المفاضلة المعلنة</h2>
+          <p class="mi-muted">تُقيَّم الطلبات بهذه المعايير وأوزانها — قدّموا بيانات تفصيلية دقيقة (المساهمة، المدة، الجاهزية، الخبرات) لأنها مصدر الدرجات المقترحة.</p>
+          <div data-criteria><span class="mi-muted">جارٍ التحميل…</span></div>
+        </div>
         <div class="mi-card" style="margin-top:1rem" id="mi-opportunity-cta">
           <h2>ترغب جهتك في تبنّي هذه الفرصة؟</h2>
           ${session?.partnerId
@@ -97,6 +102,17 @@
               <a class="mi-btn mi-btn--gold" href="./partner-portal.html?apply=${encodeURIComponent(need.id)}">تسجيل الدخول والتقديم</a>
               <a class="mi-btn mi-btn--ghost" href="./partner-portal.html">إنشاء حساب شريك</a>`)}
         </div>`;
+
+      // معايير المفاضلة الفعلية لهذه الفرصة (العامة + الخاصة) معلنة قبل التقديم
+      try {
+        const { criteriaForNeed } = await import('./js/services/screening-criteria-service.js');
+        const criteria = await criteriaForNeed(need);
+        const total = criteria.reduce((a, c) => a + c.weight, 0) || 1;
+        document.querySelector('[data-criteria]').innerHTML = criteria.map((c) => `
+          <div class="mi-hbar"><span class="mi-hbar__label">${escapeHtml(c.label)}${c.scope === 'need' ? ' <span class="mi-tag mi-tag--gold">خاص بالفرصة</span>' : ''}${c.hint ? `<br><small class="mi-muted">${escapeHtml(c.hint)}</small>` : ''}</span>
+            <span class="mi-hbar__track"><span class="mi-hbar__fill" style="width:${Math.round((c.weight / total) * 100)}%;background:var(--mi-green-700)"></span></span>
+            <span class="mi-hbar__val">${escapeHtml(String(Math.round((c.weight / total) * 100)))}٪</span></div>`).join('');
+      } catch { document.querySelector('[data-criteria]').innerHTML = '<span class="mi-muted">تعذر تحميل المعايير</span>'; }
 
       // حساب شريك سبق تقديمه: عرض حالة الطلب بدل دعوة التقديم
       if (session?.partnerId) {

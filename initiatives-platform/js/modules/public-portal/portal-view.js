@@ -1,7 +1,8 @@
 // البوابة العامة — محتوى index.html: الفرص المطروحة والإحصاءات والحملات
 import { repos } from '../../data/repositories.js';
 import { html, raw, escapeHtml } from '../../core/sanitizer.js';
-import { categoryLabel } from '../../domain/initiative-model.js';
+import { categoryLabel, costBandLabel } from '../../domain/initiative-model.js';
+import { statusLabel } from '../../domain/workflow.js';
 import { PRIORITY_LABELS } from '../../domain/infrastructure-need-model.js';
 import { modelLabel } from '../../domain/partner-model.js';
 import { fmtMoney, fmtNumber, sum, sortBy, percent } from '../../core/utils.js';
@@ -66,6 +67,25 @@ export async function renderPublishedNeeds(container, { limit = 6 } = {}) {
       <div class="mi-opportunity-card__models">${raw((n.preferredModels || []).map((m) => `<span class="mi-tag">${escapeHtml(modelLabel(m))}</span>`).join(' '))}</div>
       <a class="mi-btn mi-btn--primary" href="./opportunity.html?id=${encodeURIComponent(n.id)}">تفاصيل الفرصة</a>
     </article>`).join('');
+}
+
+// المبادرات المطروحة للدراسة (قبل التنفيذ) — بطاقات عامة برابط صفحة المبادرة وعدّاد التأييد
+export async function renderPipelineInitiatives(container, { limit = 24 } = {}) {
+  const [initiatives, comments] = await Promise.all([repos.initiatives.getAll(), repos.comments.getAll().catch(() => [])]);
+  const supports = {};
+  for (const c of comments) if (c.kind === 'support') supports[c.initiativeId] = (supports[c.initiativeId] || 0) + 1;
+  const list = sortBy(initiatives.filter((i) => ['submitted', 'screening', 'study', 'approval', 'readiness'].includes(i.status)), (i) => i.id).slice(0, limit);
+  if (!list.length) { container.closest('section')?.setAttribute('hidden', ''); return; }
+  container.innerHTML = list.map((i) => html`
+    <a class="mi-progress-card mi-progress-card--link" href="./initiative.html?id=${encodeURIComponent(i.id)}">
+      ${i.imageDataUrl ? raw(`<img class="mi-progress-card__img" src="${escapeHtml(i.imageDataUrl)}" alt="">`) : raw('<div class="mi-progress-card__img mi-progress-card__img--empty" aria-hidden="true"><span class="mi-gate__arch"></span></div>')}
+      <div class="mi-progress-card__body">
+        <span class="mi-status-badge" data-tone="info">${statusLabel(i.status)}</span>
+        <h3>${i.title}</h3>
+        <p class="mi-opportunity-card__meta">${categoryLabel(i.category)}${i.location ? raw(' • ' + escapeHtml(i.location)) : ''}</p>
+        <small class="mi-muted">👍 ${fmtNumber(supports[i.id] || 0)} مؤيد • ${i.costBand ? raw(escapeHtml(costBandLabel(i.costBand))) : ''}</small>
+      </div>
+    </a>`).join('');
 }
 
 // المبادرات الجاري العمل عليها — تُعرض للجمهور بشفافية مع نسبة إنجاز المعالم

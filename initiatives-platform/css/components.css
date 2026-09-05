@@ -432,3 +432,49 @@
   body.mi-deck-printing .mi-deck__stage { display: block; padding: 0; }
   body.mi-deck-printing .mi-slide { display: flex !important; width: 100%; aspect-ratio: auto; min-height: 180mm; page-break-after: always; box-shadow: none; border-radius: 0; }
 }
+
+/* الاستيراد */
+.mi-import-tools { display: flex; gap: var(--mi-sp-3); align-items: center; flex-wrap: wrap; margin-bottom: var(--mi-sp-3); }
+.mi-import-table td { vertical-align: top; }
+.mi-import-table .mi-input--sm { min-width: 9rem; }
+.mi-import-thumb { width: 72px; height: 50px; object-fit: cover; border-radius: 6px; border: 1px solid var(--mi-line); }
+.mi-import-table tr[data-valid="no"] td { background: #FBF0F0; }
+
+/* الخط الزمني لطلب الشريك */
+.mi-app-timeline { list-style: none; display: flex; gap: var(--mi-sp-2); padding: 0; margin: var(--mi-sp-2) 0 0; flex-wrap: wrap; }
+.mi-app-timeline li { flex: 1 1 8rem; border-top: 3px solid var(--mi-line); padding-top: 4px; font-size: var(--mi-fs-xs); display: flex; flex-direction: column; gap: 2px; }
+.mi-app-timeline li[data-state="done"] { border-top-color: var(--mi-green-500); }
+.mi-app-timeline li[data-state="current"] { border-top-color: var(--mi-gold-500); }
+.mi-app-timeline li[data-state="fail"] { border-top-color: var(--mi-bad); }
+.mi-app-timeline li[data-state="todo"] { opacity: 0.6; }
+.mi-app-timeline li small { color: var(--mi-muted); }
+.mi-app-timeline li em { font-style: normal; color: var(--mi-gold-700); font-weight: 700; }
+
+/* الصفحة العامة للمبادرة والتفاعل */
+.mi-public-ini__head { display: flex; justify-content: space-between; gap: var(--mi-sp-4); align-items: flex-start; flex-wrap: wrap; margin-bottom: var(--mi-sp-3); }
+.mi-public-ini__head h1 { margin: var(--mi-sp-2) 0 4px; }
+.mi-public-ini__img { width: min(100%, 320px); border-radius: var(--mi-radius-lg); border: 3px solid var(--mi-gold-200); object-fit: cover; }
+.mi-engage-support { display: flex; gap: var(--mi-sp-3); align-items: center; margin: var(--mi-sp-3) 0; }
+.mi-engage-support b { font: 700 var(--mi-fs-xl) var(--mi-font-display); color: var(--mi-green-900); }
+.mi-progress-card--link { text-decoration: none; color: inherit; transition: transform var(--mi-transition), box-shadow var(--mi-transition); }
+.mi-progress-card--link:hover { transform: translateY(-3px); box-shadow: var(--mi-shadow-lg); }
+.mi-gallery-card__link { color: var(--mi-gold-200); font-size: var(--mi-fs-xs); text-decoration: none; }
+
+/* الجوال: شريط تنقل سفلي وتكيف الشبكات والجداول */
+.mi-mobile-nav { display: none; }
+@media (max-width: 900px) {
+  .mi-detail-grid, .mi-dash-grid, .mi-settings-grid { grid-template-columns: 1fr; }
+  .mi-detail-actions { flex-wrap: wrap; }
+  .mi-detail-actions .mi-btn { flex: 1 1 45%; justify-content: center; }
+  .mi-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .mi-main { padding-bottom: 4.5rem; }
+  .mi-mobile-nav { display: flex; position: fixed; bottom: 0; inset-inline: 0; z-index: 90; background: var(--mi-green-950); border-top: 1px solid rgba(201, 162, 39, 0.35); }
+  .mi-mobile-nav a { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 0.45rem 0.2rem 0.55rem; color: rgba(233, 240, 236, 0.8); text-decoration: none; font-size: 0.68rem; }
+  .mi-mobile-nav a span:first-child { font-size: 1.15rem; line-height: 1; }
+  .mi-mobile-nav a[aria-current="page"] { color: var(--mi-gold-200); }
+  .mi-btn { min-height: 44px; }
+  .mi-btn--sm { min-height: 36px; }
+  .mi-kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .mi-compare th, .mi-compare td { min-width: 8rem; }
+  .mi-exec-decision__actions { flex-direction: row; width: 100%; }
+}

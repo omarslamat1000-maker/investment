@@ -62,6 +62,32 @@ export async function scoreApplication(applicationId, { scores = {}, note = '', 
   });
 }
 
+// تحويل احتياج إلى مبادرة بضغطة واحدة (دون متقدمين) — تُنشأ مقدَّمة وتُغلق الفرصة كمُتبنّاة
+export async function initiativeFromNeed(need, { byName = 'مكتب إدارة المبادرات', entity = 'أمانة منطقة المدينة المنورة — مكتب إدارة المبادرات' } = {}) {
+  if (need.matchedInitiativeId) throw new Error(`سبق تحويل هذا الاحتياج إلى المبادرة ${need.matchedInitiativeId}`);
+  const record = sanitizeInitiative(newInitiative({
+    title: need.title,
+    summary: need.description,
+    problem: need.description,
+    category: need.category,
+    district: need.district || '',
+    location: need.location || '',
+    lat: need.lat ?? null, lng: need.lng ?? null,
+    sites: need.geometry?.coords?.length ? [{ id: uid('site'), name: 'موقع الاحتياج', geometry: need.geometry }] : [],
+    budget: need.estimatedCost ?? null,
+    beneficiaries: need.beneficiaries ?? null,
+    expectedImpact: need.expectedImpact || '',
+    channel: 'internal', status: 'draft',
+    submitterName: byName, submitterEntity: entity,
+    notes: `حُوّلت من الاحتياج ${need.id} دون مفاضلة (تنفيذ مباشر أو طرح لاحق للشراكة)`
+  }));
+  const created = await repos.initiatives.create(record);
+  const initiative = await repos.initiatives.transition(created.id, 'submitted', { by: byName });
+  await repos.needs.update(need.id, { status: 'matched', matchedInitiativeId: created.id });
+  await notify('تحويل احتياج إلى مبادرة', `«${need.title}» ← المبادرة ${created.id}`, 'info');
+  return initiative || created;
+}
+
 // تحديث البيانات التفصيلية لطلب قائم (من بوابة الشريك قبل البت فيه)
 export async function updateApplicationDetails(applicationId, details, session) {
   const app = await repos.needApplications.get(applicationId);

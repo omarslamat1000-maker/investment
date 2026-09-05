@@ -93,7 +93,12 @@ function drawShell(session) {
         <main id="mi-main" class="mi-main" role="main" tabindex="-1"></main>
       </div>
     </div>
-    <div class="mi-notif-panel" hidden aria-label="الإشعارات"></div>`;
+    <div class="mi-notif-panel" hidden aria-label="الإشعارات"></div>
+    <nav class="mi-mobile-nav" aria-label="تنقل الجوال">
+      ${raw([['inbox', '☑', 'مهامي'], ['executive', '★', 'القرار'], ['initiatives', '▤', 'المبادرات'], ['map', '◎', 'الخريطة'], ['dashboard', '◫', 'اللوحة']]
+        .filter(([p]) => visibleNav.some((n) => n.path === p))
+        .map(([p, ic, lb]) => `<a href="#/${p}" data-path="${p}"><span>${ic}</span><span>${escapeHtml(lb)}</span></a>`).join(''))}
+    </nav>`;
 
   root.querySelector('.mi-menu-btn').addEventListener('click', () => {
     const open = document.body.classList.toggle('mi-sidebar-open');
@@ -111,7 +116,7 @@ function drawShell(session) {
 
 function markActiveNav(path) {
   const seg = path.replace(/^\//, '').split('/')[0] || 'dashboard';
-  document.querySelectorAll('.mi-nav__link').forEach((a) => {
+  document.querySelectorAll('.mi-nav__link, .mi-mobile-nav a').forEach((a) => {
     a.setAttribute('aria-current', a.dataset.path === seg ? 'page' : 'false');
   });
   document.body.classList.remove('mi-sidebar-open');

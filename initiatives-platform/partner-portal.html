@@ -157,6 +157,31 @@
         return link.model ? modelLabel(link.model) : 'جهة مقدمة للمبادرة';
       }
 
+      // خط زمني لطلب التقديم: أين وصل وما المطلوب من الجهة في كل مرحلة
+      function applicationTimeline(a, need) {
+        const resultIni = a.resultInitiativeId ? initiatives.find((i) => i.id === a.resultInitiativeId) : null;
+        const agr = resultIni ? allAgreements.find((x) => x.initiativeId === resultIni.id && x.status !== 'cancelled') : null;
+        const steps = [
+          { label: 'تقديم الطلب', done: true, at: a.at, need: '' },
+          { label: 'الفرز والمفاضلة', done: a.status !== 'applied', current: a.status === 'applied', need: a.status === 'applied' ? 'استكمال البيانات التفصيلية لتقوية موقفكم' : '' },
+          { label: 'القرار', done: a.status !== 'applied', at: a.decidedAt, need: '', fail: a.status === 'rejected' },
+          { label: 'اتفاقية الشراكة', done: Boolean(agr && computeAgreementStatus(agr) === 'signed'), current: Boolean(resultIni) && !(agr && computeAgreementStatus(agr) === 'signed'), need: resultIni ? (agr ? (agr.parties.find((p) => p.partnerId === a.partnerId)?.approvedAt ? 'بانتظار اعتماد الأمانة' : 'اعتماد الاتفاقية إلكترونيًا من قسم الاتفاقيات') : 'بانتظار إصدار الاتفاقية من الأمانة') : '' },
+          { label: 'التنفيذ والتقارير', done: Boolean(resultIni && ['benefits', 'closed'].includes(resultIni.status)), current: Boolean(resultIni && resultIni.status === 'execution'), need: resultIni?.status === 'execution' ? 'رفع تقارير التقدم الميدانية' : '' }
+        ];
+        if (a.status === 'rejected') steps.splice(3);
+        return `<ol class="mi-app-timeline">${steps.map((s) => `<li data-state="${s.fail ? 'fail' : s.done ? 'done' : s.current ? 'current' : 'todo'}"><b>${escapeHtml(s.label)}</b>${s.at ? `<small>${escapeHtml(fmtDate(s.at))}</small>` : ''}${s.need && (s.current || (!s.done && !s.fail)) ? `<em>المطلوب منكم: ${escapeHtml(s.need)}</em>` : ''}</li>`).join('')}</ol>`;
+      }
+
+      // إشعارات الجهة: ما يذكر اسمها أو مبادراتها
+      async function partnerNotificationsHtml(partner, myInis) {
+        const { getNotifications } = await import('./js/services/notification-service.js');
+        const all = await getNotifications(60);
+        const keys = [partner.name, ...myInis.map((x) => x.ini.title), ...myInis.map((x) => x.ini.id)].filter(Boolean);
+        const mine = all.filter((n) => keys.some((k) => (n.title + ' ' + (n.body || '')).includes(k))).slice(0, 8);
+        if (!mine.length) return '';
+        return `<div class="mi-card" style="margin-top:1rem"><h3>آخر التحديثات لجهتكم</h3>${mine.map((n) => `<div class="mi-ms"><span class="mi-ms__dot" style="background:var(--mi-gold-500)"></span><span><b>${escapeHtml(n.title)}</b>${n.body ? ' — ' + escapeHtml(n.body) : ''}</span><small>${escapeHtml(fmtDateTime(n.at))}</small></div>`).join('')}</div>`;
+      }
+
       // قسم الفرص: المطروحة للتقديم + طلبات الجهة وحالتها — لحسابات الشركاء فقط
       function opportunitiesSection(partnerId) {
         const myApps = sortBy(allApplications.filter((a) => a.partnerId === partnerId), (a) => a.at, 'desc');
@@ -202,6 +227,7 @@
                   <span>اكتمال البيانات التفصيلية: <b>${fmtNumber(comp.percent)}٪</b>${comp.percent < 100 && a.status === 'applied' ? raw(' <small class="mi-compare__missing">— استكملوها لتقوية موقفكم في المفاضلة</small>') : ''}</span>
                 </div>
                 ${a.status === 'applied' ? raw(`<button class="mi-btn mi-btn--ghost mi-btn--sm" type="button" data-edit-app="${escapeHtml(a.id)}">تعديل البيانات التفصيلية</button>`) : ''}
+                ${raw(applicationTimeline(a, need))}
               </span>
               <span class="mi-tag" data-benefit="${badge}">${st.label}</span>
               <small>${fmtDate(a.at)}</small>
@@ -486,6 +512,9 @@
 
         content.querySelectorAll('[data-edit-app]').forEach((btn) => btn.addEventListener('click', () =>
           openDetailsEditModal(allApplications.find((a) => a.id === btn.dataset.editApp))));
+
+        // إشعارات الجهة (تُضاف بعد الرسم)
+        if (isPartnerAccount) partnerNotificationsHtml(partner, allMine).then((h) => { if (h) content.insertAdjacentHTML('afterbegin', h); }).catch(() => {});
 
         // الاتفاقيات: عرض واعتماد إلكتروني
         content.querySelectorAll('[data-agr-view]').forEach((btn) => btn.addEventListener('click', () => {
