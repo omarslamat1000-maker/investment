@@ -9,7 +9,7 @@ import { nowIso } from '../core/date-time.js';
 import { hashPassword, DEFAULT_PASSWORD } from './auth-service.js';
 
 const SEED_FLAG_ID = 'seed-status';
-export const SEED_VERSION = 9; // v9: استبدال المبادرات التجريبية بالمبادرات المستقبلية الحقيقية لوكالة البنية التحتية
+export const SEED_VERSION = 10; // v10: إضافة 17 مبادرة من عرض «المبادرات المستقبلية — الحدائق» (v9: استبدال التجريبية بالحقيقية)
 
 const stamp = (r) => ({ createdAt: nowIso(), updatedAt: nowIso(), ...r });
 
@@ -33,6 +33,7 @@ export async function seedDemoDataIfEmpty() {
     if (version < 7) await topUpToV7();
     if (version < 8) await topUpToV8();
     if (version < 9) await replaceWithRealInitiativesV9();
+    if (version < 10) await topUpToV10();
   }
   await dataProvider.put('settings', { id: SEED_FLAG_ID, seeded: true, version: SEED_VERSION, at: nowIso() });
   return true;
@@ -87,6 +88,17 @@ async function replaceWithRealInitiativesV9() {
 }
 
 // v7 → v8: إضافة البيانات التفصيلية لطلبات التقديم التجريبية التي لا تملكها
+// v10: تُضاف المبادرات وصور المعرض غير الموجودة فقط (الحدائق والأنسنة) — لا حذف ولا استبدال
+async function topUpToV10() {
+  const users = await dataProvider.getAll('users');
+  if (!users.length) return; // منصة مُفرغة عمدًا
+  const have = new Set((await dataProvider.getAll('initiatives')).map((i) => i.id));
+  const add = DEMO_INITIATIVES.filter((i) => !have.has(i.id));
+  if (add.length) await dataProvider.bulkPut('initiatives', add.map(stamp));
+  const haveG = new Set((await dataProvider.getAll('gallery')).map((g) => g.id));
+  const addG = DEMO_GALLERY.filter((g) => !haveG.has(g.id));
+  if (addG.length) await dataProvider.bulkPut('gallery', addG.map(stamp));
+}
 async function topUpToV8() {
   const apps = await dataProvider.getAll('needApplications');
   for (const demo of DEMO_NEED_APPLICATIONS) {
