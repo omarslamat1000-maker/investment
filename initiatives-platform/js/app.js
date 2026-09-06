@@ -29,6 +29,7 @@ import { renderUsers } from './modules/users/users-view.js';
 import { renderPortfolios } from './modules/portfolios/portfolios-view.js';
 import { renderGalleryAdmin } from './modules/gallery/gallery-admin-view.js';
 import { renderCoverage } from './modules/coverage/coverage-view.js';
+import { renderCosting } from './modules/costing/costing-view.js';
 import { renderScreening } from './modules/screening/screening-view.js';
 import { renderExecutive } from './modules/executive/executive-view.js';
 import { renderInbox } from './modules/inbox/inbox-view.js';
@@ -41,6 +42,7 @@ const NAV = [
   { path: 'inbox', label: 'مهامي', icon: '☑' },
   { path: 'executive', label: 'لوحة القرار', icon: '★', perm: 'decisions.view' },
   { path: 'priorities', label: 'الأولويات', icon: '⇅', perm: 'decisions.view' },
+  { path: 'costing', label: 'التكلفة التقديرية', icon: '⌂', perm: 'initiatives.view' },
   { path: 'initiatives', label: 'المبادرات', icon: '▤', perm: 'initiatives.view' },
   { path: 'portfolios', label: 'المحافظ', icon: '▦', perm: 'portfolios.view' },
   { path: 'needs', label: 'الاحتياجات', icon: '◇', perm: 'needs.view' },
@@ -201,6 +203,8 @@ async function boot() {
   route('quality', () => renderQuality(m()), 'فحوص الجودة');
   route('map', () => renderMap(m()), 'الخريطة');
   route('coverage', () => renderCoverage(m()), 'تحليل التغطية والفجوات');
+  route('costing', () => renderCosting(m()), 'التكلفة التقديرية للمبادرة');
+  route('costing/:id', (p) => renderCosting(m(), p), 'التكلفة التقديرية للمبادرة');
   route('reports', () => renderReports(m()), 'التقارير');
   route('gallery', () => renderGalleryAdmin(m()), 'إدارة معرض الصور');
   route('users', () => renderUsers(m()), 'المستخدمون والصلاحيات');

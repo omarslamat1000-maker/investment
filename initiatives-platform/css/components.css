@@ -478,3 +478,35 @@
   .mi-compare th, .mi-compare td { min-width: 8rem; }
   .mi-exec-decision__actions { flex-direction: row; width: 100%; }
 }
+
+/* التكلفة التقديرية للمبادرة */
+.mi-cost-grid { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(280px, 1fr); gap: var(--mi-sp-4); align-items: start; }
+.mi-cost-pick, .mi-form-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--mi-sp-2) var(--mi-sp-3); }
+.mi-cost-note { margin: var(--mi-sp-2) 0; font-size: var(--mi-fs-sm); }
+.mi-cost-table td { vertical-align: middle; }
+.mi-cost-table .mi-input { padding: 0.3rem 0.5rem; font-size: var(--mi-fs-sm); }
+.mi-cost-table select.mi-input { min-width: 14rem; max-width: 100%; }
+.mi-cost-qty { width: 6.5rem; }
+.mi-cost-rate { width: 8rem; }
+.mi-cost-src { display: block; margin-top: 2px; font-size: 0.7rem; }
+.mi-cost-custom { display: block; color: var(--mi-gold-700); font-size: 0.7rem; font-weight: 700; }
+.mi-cost-actions { display: flex; gap: var(--mi-sp-2); flex-wrap: wrap; margin-top: var(--mi-sp-3); }
+.mi-cost-result { position: sticky; top: var(--mi-sp-4); }
+.mi-cost-result h3 { margin-top: 0; }
+.mi-cost-target { margin: 0 0 var(--mi-sp-3); line-height: 1.8; }
+.mi-cost-kpis { display: grid; grid-template-columns: 1fr; gap: var(--mi-sp-2); margin-bottom: var(--mi-sp-3); }
+.mi-cost-breakdown { margin: 0; display: grid; gap: 4px; }
+.mi-cost-breakdown div { display: flex; justify-content: space-between; gap: var(--mi-sp-2); padding: 4px 0; border-bottom: 1px dashed var(--mi-line); font-size: var(--mi-fs-sm); }
+.mi-cost-breakdown dt { color: var(--mi-muted); }
+.mi-cost-breakdown dd { margin: 0; font-weight: 700; }
+.mi-cost-breakdown__total dd, .mi-cost-breakdown__total dt { color: var(--mi-green-900); font-size: var(--mi-fs-md); }
+.mi-cost-saved { margin: var(--mi-sp-2) 0 0; font-size: var(--mi-fs-xs); }
+.mi-cost-result__actions { display: flex; gap: var(--mi-sp-2); flex-wrap: wrap; margin-top: var(--mi-sp-3); }
+.mi-cost-disclaimer { font-size: var(--mi-fs-xs); margin-top: var(--mi-sp-3); }
+.mi-cost-cat-tools { display: flex; gap: var(--mi-sp-3); align-items: flex-end; flex-wrap: wrap; margin: var(--mi-sp-2) 0 var(--mi-sp-3); }
+.mi-cost-cat-tools .mi-form-field { margin: 0; }
+.mi-cost-cat-tools .mi-input--sm { width: 6rem; }
+.mi-cost-catalog td { vertical-align: middle; }
+.mi-cost-catalog .mi-input { width: 7rem; padding: 0.3rem 0.5rem; font-size: var(--mi-fs-sm); }
+@media (max-width: 1100px) { .mi-cost-grid { grid-template-columns: 1fr; } .mi-cost-result { position: static; } }
+@media (max-width: 700px) { .mi-cost-pick, .mi-form-grid { grid-template-columns: 1fr; } }

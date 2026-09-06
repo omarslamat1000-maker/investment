@@ -225,6 +225,7 @@ export async function renderInitiativeDetails(container, id) {
     ['المدة التقديرية', initiative.durationBand ? durationBandLabel(initiative.durationBand) : '—'],
     ['مستوى الجاهزية عند التقديم', initiative.readinessLevel ? readinessLabel(initiative.readinessLevel) : '—'],
     ['الميزانية', fmtMoney(initiative.budget)],
+    ['التقدير بالوحدات', initiative.costEstimate ? `${fmtMoney(initiative.costEstimate.total)} — ${fmtNumber(initiative.costEstimate.lines?.length || 0)} بنود، ${fmtNumber(initiative.costEstimate.days || 0)} يومًا (${fmtDate(initiative.costEstimate.at)})` : '—'],
     ['المنصرف', fmtMoney(initiative.spent)],
     ['المستفيدون المقدَّرون', initiative.beneficiaries ? fmtNumber(initiative.beneficiaries) : '—'],
     ['تاريخ البداية', fmtDate(initiative.startDate)],
@@ -386,6 +387,7 @@ export async function renderInitiativeDetails(container, id) {
 
     <div class="mi-detail-actions">
       <button class="mi-btn mi-btn--ghost" data-act="print">تقرير طباعة</button>
+      <a class="mi-btn mi-btn--ghost" href="#/costing/${encodeURIComponent(id)}">التكلفة التقديرية</a>
       ${canEditRec ? raw('<button class="mi-btn mi-btn--gold" data-act="edit">تعديل البيانات</button>') : ''}
       ${initiative.status === 'closed' ? raw('<button class="mi-btn mi-btn--gold" data-act="certificate">شهادة الإنجاز 🏅</button>') : ''}
       ${pendingDecision ? raw('<span class="mi-muted">الانتقالات معلقة حتى اكتمال سلسلة الاعتماد</span>') : raw(transitions.map((t) => html`
