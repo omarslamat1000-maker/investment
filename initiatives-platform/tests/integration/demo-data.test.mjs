@@ -17,8 +17,10 @@ const ROOT = join(fileURLToPath(new URL('.', import.meta.url)), '..', '..');
 const iniIds = new Set(DEMO_INITIATIVES.map((i) => i.id));
 const partnerIds = new Set(DEMO_PARTNERS.map((p) => p.id));
 
-test('المبادرات الحقيقية: 19 مبادرة كلها تجتاز تحقق النموذج', () => {
-  assert.equal(DEMO_INITIATIVES.length, 19);
+test('المبادرات الحقيقية: 36 مبادرة (19 طرق وإنارة + 17 حدائق وأنسنة) كلها تجتاز تحقق النموذج', () => {
+  assert.equal(DEMO_INITIATIVES.length, 36);
+  assert.equal(DEMO_INITIATIVES.filter((i) => i.category === 'parks').length, 12);
+  assert.equal(DEMO_INITIATIVES.filter((i) => /حدائق/.test(i.submitterEntity)).length, 22);
   for (const ini of DEMO_INITIATIVES) {
     const r = validateInitiative(ini);
     assert.equal(r.valid, true, `${ini.id}: ${JSON.stringify(r.errors)}`);
