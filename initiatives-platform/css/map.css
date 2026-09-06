@@ -60,3 +60,15 @@
 .mi-map-filters__count { margin-inline-start: auto; font-size: var(--mi-fs-xs); color: var(--mi-muted); white-space: nowrap; }
 .mi-map-filters__count[data-empty="yes"] { color: var(--mi-bad); font-weight: 700; }
 @media (max-width: 640px) { .mi-map-filters__count { margin-inline-start: 0; flex-basis: 100%; } }
+
+/* قائمة المبادرات ومواقعها الجغرافية أسفل الخريطة */
+.mi-map-list { margin-top: var(--mi-sp-4); }
+.mi-map-list__head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--mi-sp-3); flex-wrap: wrap; margin-bottom: var(--mi-sp-3); }
+.mi-map-list__head h3 { margin: 0 0 4px; }
+.mi-map-list__head p { margin: 0; font-size: var(--mi-fs-sm); }
+.mi-map-list__modes { display: flex; gap: var(--mi-sp-2); flex-wrap: wrap; }
+.mi-map-list__modes .mi-chip b { font-weight: 700; margin-inline-start: 2px; }
+.mi-map-list__table td { vertical-align: middle; }
+.mi-map-list__table tr[data-located="no"] td { background: #FBF6EA; }
+.mi-tag--located { background: var(--mi-green-100); color: var(--mi-green-800); border-color: transparent; }
+.mi-tag--unlocated { background: #F3DDDD; color: var(--mi-bad); border-color: transparent; font-weight: 700; }

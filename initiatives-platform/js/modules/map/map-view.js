@@ -1,6 +1,7 @@
 // خريطة المبادرات — خريطة فعلية (Leaflet/OpenStreetMap) لمواقع المبادرات والاحتياجات
 // النقاط والخطوط والمساحات المرسومة في المنصة تظهر بمواقعها الحقيقية بألوان الحالة،
-// مع شريط فلاتر (الحالة، المجال، الجهة المقدمة، الحي، الطبقات، التكلفة، الجاهزية، المدة) وبحث نصي
+// مع شريط فلاتر (الحالة، المجال، الجهة المقدمة، الطبقات، التكلفة، الجاهزية، المدة) وبحث نصي،
+// وقائمة بكل المبادرات تميّز ما له موقع جغرافي وما ليس له مع تحديد الموقع مباشرة لمن يملك صلاحية التعديل
 import { repos } from '../../data/repositories.js';
 import { html, raw, escapeHtml } from '../../core/sanitizer.js';
 import { sectionHeader, statusBadge } from '../../ui/components.js';
@@ -8,7 +9,7 @@ import { statusLabel } from '../../domain/workflow.js';
 import { categoryLabel, getSites, firstLatLng } from '../../domain/initiative-model.js';
 import { measureLabel, sitesSummaryLabel } from '../../core/geo.js';
 import { loadLeaflet, openLocationPicker, addBaseLayers } from '../../ui/location-picker.js';
-import { fmtNumber, debounce } from '../../core/utils.js';
+import { fmtNumber, debounce, uid } from '../../core/utils.js';
 import { navigate } from '../../router.js';
 import { getRole } from '../../core/state.js';
 import { can } from '../../core/permissions.js';
@@ -25,7 +26,8 @@ const STATUS_COLOR = {
 };
 const NEED_COLOR = '#C9A227';
 const FILTERS_KEY = STORAGE_PREFIX + 'mapFilters';
-const EMPTY_FILTERS = { q: '', status: '', category: '', entity: '', cost: '', readiness: '', duration: '', showInitiatives: true, showNeeds: true };
+const EMPTY_FILTERS = { q: '', status: '', category: '', entity: '', cost: '', readiness: '', duration: '', showInitiatives: true, showNeeds: true, listMode: 'all' };
+const LIST_MODES = [['all', 'الكل'], ['located', 'لها موقع محدد'], ['unlocated', 'بلا موقع جغرافي']];
 
 let currentMap = null; // خريطة الشاشة الحالية — تُزال قبل إعادة الإنشاء
 
@@ -41,7 +43,9 @@ export async function renderMap(container) {
   const role = getRole();
   const canEdit = can(role, 'initiatives.edit');
 
-  const located = initiatives.filter((i) => i.status !== 'rejected' && getSites(i).length);
+  const active = initiatives.filter((i) => i.status !== 'rejected');
+  const located = active.filter((i) => getSites(i).length);
+  const unlocated = active.filter((i) => !getSites(i).length);
   const totalSites = located.reduce((a, i) => a + getSites(i).length, 0);
   const locatedNeeds = needs.filter((n) =>
     n.status === 'published' && (n.geometry?.coords?.length || (n.lat && n.lng)));
@@ -53,7 +57,7 @@ export async function renderMap(container) {
 
   container.innerHTML = html`
     ${raw(sectionHeader('خريطة المبادرات',
-    `خريطة فعلية لـ ${fmtNumber(totalSites)} موقعًا تتبع ${fmtNumber(located.length)} مبادرة، و${fmtNumber(locatedNeeds.length)} احتياجًا مطروحًا — انقر أي موقع لفتح المبادرة${canEdit ? ' أو تعديل موقعها' : ''}`))}
+    `خريطة فعلية لـ ${fmtNumber(totalSites)} موقعًا تتبع ${fmtNumber(located.length)} مبادرة، و${fmtNumber(locatedNeeds.length)} احتياجًا مطروحًا — انقر أي موقع لفتح المبادرة${canEdit ? ' أو تعديل موقعها' : ''}${unlocated.length ? `. ${fmtNumber(unlocated.length)} مبادرة بلا موقع جغرافي${canEdit ? ' يمكنك تحديده من القائمة أدناه' : ''}` : ''}`))}
     <div class="mi-card mi-map-card">
       <form class="mi-map-filters" data-map-filters aria-label="تصفية الخريطة">
         <div class="mi-map-filters__row">
@@ -81,7 +85,24 @@ export async function renderMap(container) {
         <span><i class="mi-legend-dot mi-legend-dot--need"></i> احتياج مطروح</span>
       </div>
       <div class="mi-map-info" aria-live="polite"><span class="mi-muted">انقر موقعًا على الخريطة لعرض بطاقته</span></div>
-    </div>`;
+    </div>
+    <section class="mi-card mi-map-list" data-map-list aria-label="قائمة المبادرات ومواقعها">
+      <div class="mi-map-list__head">
+        <div>
+          <h3>قائمة المبادرات ومواقعها الجغرافية</h3>
+          <p class="mi-muted">تتبع القائمة فلاتر الخريطة أعلاه. المبادرات بلا موقع لا تظهر على الخريطة حتى يُحدد موقعها${canEdit ? ' — اضغط «تحديد الموقع» لرسمه على الخريطة' : ''}.</p>
+        </div>
+        <div class="mi-map-list__modes" role="group" aria-label="تصفية حسب الموقع">
+          ${raw(LIST_MODES.map(([id, label]) => `<button type="button" class="mi-chip" data-list-mode="${id}" aria-pressed="${filters.listMode === id ? 'true' : 'false'}">${escapeHtml(label)} <b data-mode-count="${id}"></b></button>`).join(''))}
+        </div>
+      </div>
+      <div class="mi-table-wrap">
+        <table class="mi-table mi-map-list__table">
+          <thead><tr><th>المعرّف</th><th>المبادرة</th><th>المجال</th><th>الموقع الوصفي</th><th>الحالة</th><th>الموقع الجغرافي</th><th>الإجراء</th></tr></thead>
+          <tbody data-list-body></tbody>
+        </table>
+      </div>
+    </section>`;
 
   const mapEl = container.querySelector('.mi-map-real');
   const info = container.querySelector('.mi-map-info');
@@ -206,12 +227,100 @@ export async function renderMap(container) {
     entries.push({ kind: 'need', record: need, layer, text: [need.id, need.title, need.location, need.district, need.description].join(' ').toLowerCase() });
   }
 
+  // ————— قائمة المبادرات ومواقعها —————
+  const listBody = container.querySelector('[data-list-body]');
+  const modeBtns = [...container.querySelectorAll('[data-list-mode]')];
+  let listMode = LIST_MODES.some(([id]) => id === filters.listMode) ? filters.listMode : 'all';
+
+  function matchesInitiative(ini, f) {
+    if (f.status && ini.status !== f.status) return false;
+    if (f.category && ini.category !== f.category) return false;
+    if (f.entity && ini.submitterEntity !== f.entity) return false;
+    if (f.cost && (ini.costBand || '') !== f.cost) return false;
+    if (f.readiness && (ini.readinessLevel || '') !== f.readiness) return false;
+    if (f.duration && (ini.durationBand || '') !== f.duration) return false;
+    if (f.q) {
+      const text = [ini.id, ini.title, ini.location, ini.district, ini.summary, ...getSites(ini).map((x) => x.name)].join(' ').toLowerCase();
+      if (!text.includes(f.q.toLowerCase())) return false;
+    }
+    return true;
+  }
+
+  // تكبير الخريطة على مواقع مبادرة من القائمة وفتح بطاقتها
+  function focusInitiative(id) {
+    const mine = entries.filter((e) => e.kind === 'initiative' && e.record.id === id);
+    if (!mine.length) return;
+    if (!form.elements.showInitiatives.checked) { form.elements.showInitiatives.checked = true; applyFilters({ fit: false }); }
+    for (const e of mine) if (!map.hasLayer(e.layer)) e.layer.addTo(map);
+    map.fitBounds(L.featureGroup(mine.map((e) => e.layer)).getBounds(), { padding: [40, 40], maxZoom: 16 });
+    setTimeout(() => mine[0].layer.openPopup(), 250);
+    showInitiative(mine[0].record, getSites(mine[0].record)[0]);
+    mapEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  // تحديد موقع مبادرة بلا موقع: رسم نقطة/خط/مساحة ثم حفظه كموقع أول
+  function locateInitiative(ini) {
+    openLocationPicker({
+      initial: null,
+      async onConfirm(geometry) {
+        const sites = [...getSites(ini).map((x) => ({ ...x })), { id: uid('site'), name: ini.location || `الموقع ${getSites(ini).length + 1}`, geometry }];
+        const { lat, lng } = firstLatLng(sites);
+        await repos.initiatives.update(ini.id, { sites, geometry: null, lat, lng });
+        toastSuccess(`حُدد موقع «${ini.title}» — ${measureLabel(geometry)}`);
+        renderMap(container);
+      }
+    });
+  }
+
+  function renderList(f) {
+    const rows = active.filter((ini) => matchesInitiative(ini, f));
+    const counts = { all: rows.length, located: rows.filter((i) => getSites(i).length).length, unlocated: rows.filter((i) => !getSites(i).length).length };
+    for (const b of modeBtns) {
+      b.setAttribute('aria-pressed', b.dataset.listMode === listMode ? 'true' : 'false');
+      b.querySelector('[data-mode-count]').textContent = fmtNumber(counts[b.dataset.listMode]);
+    }
+    const shown = rows.filter((i) => listMode === 'all' || (listMode === 'located') === Boolean(getSites(i).length));
+    // بلا موقع أولًا ليسهل استكمالها
+    shown.sort((a, b) => (getSites(a).length ? 1 : 0) - (getSites(b).length ? 1 : 0) || a.id.localeCompare(b.id));
+    if (!shown.length) {
+      listBody.innerHTML = '<tr><td colspan="7" class="mi-muted">لا مبادرات مطابقة</td></tr>';
+      return;
+    }
+    listBody.innerHTML = shown.map((ini) => {
+      const sites = getSites(ini);
+      const geo = sites.length
+        ? `<span class="mi-tag mi-tag--located">✔ ${escapeHtml(sitesSummaryLabel(sites))}</span>`
+        : '<span class="mi-tag mi-tag--unlocated">✖ بلا موقع جغرافي</span>';
+      const action = sites.length
+        ? `<button type="button" class="mi-btn mi-btn--ghost mi-btn--sm" data-focus="${escapeHtml(ini.id)}">عرض على الخريطة</button>`
+        : (canEdit ? `<button type="button" class="mi-btn mi-btn--primary mi-btn--sm" data-locate="${escapeHtml(ini.id)}">تحديد الموقع</button>` : '<span class="mi-muted">يحدده مكتب المبادرات</span>');
+      return `<tr data-located="${sites.length ? 'yes' : 'no'}">
+        <td><span class="mi-tag">${escapeHtml(ini.id)}</span></td>
+        <td><a href="#/initiatives/${encodeURIComponent(ini.id)}">${escapeHtml(ini.title)}</a></td>
+        <td>${escapeHtml(categoryLabel(ini.category))}</td>
+        <td>${escapeHtml(ini.location || '—')}</td>
+        <td>${statusBadge(ini.status)}</td>
+        <td>${geo}</td>
+        <td>${action}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  for (const b of modeBtns) b.addEventListener('click', () => { listMode = b.dataset.listMode; saveFilters(readForm()); renderList(readForm()); });
+  listBody.addEventListener('click', (e) => {
+    const focusBtn = e.target.closest('[data-focus]');
+    if (focusBtn) { focusInitiative(focusBtn.dataset.focus); return; }
+    const locBtn = e.target.closest('[data-locate]');
+    if (locBtn) { const ini = active.find((i) => i.id === locBtn.dataset.locate); if (ini) locateInitiative(ini); }
+  });
+
   // ————— التصفية —————
   function readForm() {
     const f = { ...EMPTY_FILTERS };
     for (const k of ['q', 'status', 'category', 'entity', 'cost', 'readiness', 'duration']) f[k] = form.elements[k].value.trim();
     f.showInitiatives = form.elements.showInitiatives.checked;
     f.showNeeds = form.elements.showNeeds.checked;
+    f.listMode = listMode;
     return f;
   }
 
@@ -254,6 +363,7 @@ export async function renderMap(container) {
       map.fitBounds(L.featureGroup(visible.map((e) => e.layer)).getBounds(), { padding: [30, 30], maxZoom: 14 });
     }
     if (!visible.length) info.innerHTML = '<span class="mi-muted">لا مواقع مطابقة للتصفية الحالية — عدّل الفلاتر أو امسحها</span>';
+    renderList(f);
   }
 
   const debouncedApply = debounce(() => applyFilters(), 250);
