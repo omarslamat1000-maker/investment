@@ -1,4 +1,5 @@
 // بيانات مرجعية ثابتة: الوحدات التنظيمية والمستخدمون التجريبيون والحملات
+import { DEMO_INITIATIVES, TRACKS } from './demo-initiatives.js';
 export const ORG_UNITS = [
   { id: 'ou-projects', name: 'وكالة التعمير والمشاريع' },
   { id: 'ou-services', name: 'وكالة الخدمات' },
@@ -27,43 +28,16 @@ export const DEMO_USERS = [
 ];
 
 
+// معرض الصور: صورة العرض الرئيسة لكل مبادرة مستهدفة + المخطط/الصورة الثانوية + خرائط المسارات
+const CAPTION_MAIN = 'من عرض مبادرات وكالة البنية التحتية المستهدفة (21-10-2026)';
 export const DEMO_GALLERY = [
-  { id: 'gal-0001', title: 'تنفيذ جسر مشاة لربط الجامعة الإسلامية وجامعة طيبة على طريق الأمير نايف', status: 'submitted', initiativeId: 'MDN-INIT-2026-0001', order: 1, caption: 'صورة الموقع من نموذج احتياج المبادرات المستقبلية', imageDataUrl: './assets/initiatives/i01.jpg' },
-  { id: 'gal-0002', title: 'تنفيذ جسر مشاة لربط مجمع النور مول ومجمع العروبة على طريق الملك عبدالله', status: 'submitted', initiativeId: 'MDN-INIT-2026-0002', order: 2, caption: 'صورة الموقع من نموذج احتياج المبادرات المستقبلية', imageDataUrl: './assets/initiatives/i02.jpg' },
-  { id: 'gal-0003', title: 'تنفيذ جسر تقاطع طريق الملك خالد مع طريق الملك عبدالعزيز', status: 'submitted', initiativeId: 'MDN-INIT-2026-0003', order: 3, caption: 'صورة الموقع من نموذج احتياج المبادرات المستقبلية', imageDataUrl: './assets/initiatives/i03.jpg' },
-  { id: 'gal-0004', title: 'إنشاء جسر تقاطع طريق الأمير سلطان مع طريق العباس بن عبادة', status: 'submitted', initiativeId: 'MDN-INIT-2026-0004', order: 4, caption: 'صورة الموقع من نموذج احتياج المبادرات المستقبلية', imageDataUrl: './assets/initiatives/i04.jpg' },
-  { id: 'gal-0005', title: 'إنشاء جسر تقاطع طريق الأمير سلطان مع طريق عمر بن الخطاب', status: 'submitted', initiativeId: 'MDN-INIT-2026-0005', order: 5, caption: 'صورة الموقع من نموذج احتياج المبادرات المستقبلية', imageDataUrl: './assets/initiatives/i05.jpg' },
-  { id: 'gal-0006', title: 'تنفيذ جسر أو نفق تقاطع طريق الأمير عبدالمجيد مع طريق الأمير عبدالمحسن', status: 'submitted', initiativeId: 'MDN-INIT-2026-0006', order: 6, caption: 'صورة الموقع من نموذج احتياج المبادرات المستقبلية', imageDataUrl: './assets/initiatives/i06.jpg' },
-  { id: 'gal-0007', title: 'تنفيذ جسر تقاطع طريق الأمير عبدالمجيد مع طريق الأمير محمد بن سلمان', status: 'submitted', initiativeId: 'MDN-INIT-2026-0007', order: 7, caption: 'صورة الموقع من نموذج احتياج المبادرات المستقبلية', imageDataUrl: './assets/initiatives/i07.jpg' },
-  { id: 'gal-0008', title: 'رفع كفاءة وصيانة الطرق داخل أحياء المغيسلة والسقيا والسيح والأصفرين وبني معاوية', status: 'submitted', initiativeId: 'MDN-INIT-2026-0008', order: 8, caption: 'صورة الموقع من نموذج احتياج المبادرات المستقبلية', imageDataUrl: './assets/initiatives/i08.jpg' },
-  { id: 'gal-0009', title: 'تشغيل وصيانة الطرق داخل أحياء المدينة المنورة', status: 'submitted', initiativeId: 'MDN-INIT-2026-0009', order: 9, caption: 'صورة الموقع من نموذج احتياج المبادرات المستقبلية', imageDataUrl: './assets/initiatives/i09.jpg' },
-  { id: 'gal-0010', title: 'تنفيذ جسر على تقاطع طريق الصناعية مع طريق عمر بن الخطاب', status: 'submitted', initiativeId: 'MDN-INIT-2026-0010', order: 10, caption: 'صورة الموقع من نموذج احتياج المبادرات المستقبلية', imageDataUrl: './assets/initiatives/i10.jpg' },
-  { id: 'gal-0011', title: 'تنفيذ جسر على طريق الأمير نايف مقابل المستشفى السعودي الألماني', status: 'submitted', initiativeId: 'MDN-INIT-2026-0011', order: 11, caption: 'صورة الموقع من نموذج احتياج المبادرات المستقبلية', imageDataUrl: './assets/initiatives/i11.jpg' },
-  { id: 'gal-0012', title: 'تنفيذ جسر تقاطع طريق قباء مع طريق صلاح الدين', status: 'submitted', initiativeId: 'MDN-INIT-2026-0012', order: 12, caption: 'صورة الموقع من نموذج احتياج المبادرات المستقبلية', imageDataUrl: './assets/initiatives/i12.jpg' },
-  { id: 'gal-0013', title: 'تنفيذ جسر تقاطع طريق الأمير عبدالمحسن مع طريق صلاح الدين', status: 'submitted', initiativeId: 'MDN-INIT-2026-0013', order: 13, caption: 'صورة الموقع من نموذج احتياج المبادرات المستقبلية', imageDataUrl: './assets/initiatives/i13.jpg' },
-  { id: 'gal-0014', title: 'تطوير وأنسنة طريق عبدالله بن جبير من سيد الشهداء إلى حديقة الأمير محمد بن عبدالعزيز', status: 'submitted', initiativeId: 'MDN-INIT-2026-0014', order: 14, caption: 'صورة الموقع من نموذج احتياج المبادرات المستقبلية', imageDataUrl: './assets/initiatives/i14.jpg' },
-  { id: 'gal-0015', title: 'تنفيذ حدائق داخل أحياء المدينة المنورة', status: 'submitted', initiativeId: 'MDN-INIT-2026-0015', order: 15, caption: 'صورة الموقع من نموذج احتياج المبادرات المستقبلية', imageDataUrl: './assets/initiatives/i15.jpg' },
-  { id: 'gal-0016', title: 'تطوير طريق أبي ذر الغفاري من طريق الملك عبدالله إلى المنطقة المركزية', status: 'submitted', initiativeId: 'MDN-INIT-2026-0016', order: 16, caption: 'صورة الموقع من نموذج احتياج المبادرات المستقبلية', imageDataUrl: './assets/initiatives/i16.jpg' },
-  { id: 'gal-0017', title: 'زيادة التشجير والمسطحات الخضراء في حي شوران وحي السد', status: 'submitted', initiativeId: 'MDN-INIT-2026-0017', order: 17, caption: 'صورة الموقع من نموذج احتياج المبادرات المستقبلية', imageDataUrl: './assets/initiatives/i17.jpg' },
-  { id: 'gal-0018', title: 'تنفيذ حديقة بملاعب داخل حي السد', status: 'submitted', initiativeId: 'MDN-INIT-2026-0018', order: 18, caption: 'صورة الموقع من نموذج احتياج المبادرات المستقبلية', imageDataUrl: './assets/initiatives/i18.jpg' },
-  { id: 'gal-0019', title: 'دهان أعمدة الإنارة بالشوارع الرئيسية', status: 'submitted', initiativeId: 'MDN-INIT-2026-0019', order: 19, caption: 'صورة الموقع من نموذج احتياج المبادرات المستقبلية', imageDataUrl: './assets/initiatives/b01.jpg' },
-  { id: 'gal-0020', title: 'تطوير وتنفيذ حديقة العاقول (C) — حي العاقول', status: 'submitted', initiativeId: 'MDN-INIT-2026-0020', order: 20, caption: 'المخطط العام للحديقة من نموذج احتياج المبادرات المستقبلية', imageDataUrl: './assets/initiatives/h01.jpg' },
-  { id: 'gal-0021', title: 'تطوير وتنفيذ حديقة العاقول (K) — حي العاقول', status: 'submitted', initiativeId: 'MDN-INIT-2026-0021', order: 21, caption: 'المخطط العام للحديقة من نموذج احتياج المبادرات المستقبلية', imageDataUrl: './assets/initiatives/h02.jpg' },
-  { id: 'gal-0022', title: 'تطوير وتنفيذ حديقة حي الملك فهد 5', status: 'submitted', initiativeId: 'MDN-INIT-2026-0022', order: 22, caption: 'المخطط العام للحديقة من نموذج احتياج المبادرات المستقبلية', imageDataUrl: './assets/initiatives/h03.jpg' },
-  { id: 'gal-0023', title: 'تطوير وتنفيذ حديقة الدويخلة 1', status: 'submitted', initiativeId: 'MDN-INIT-2026-0023', order: 23, caption: 'المخطط العام للحديقة من نموذج احتياج المبادرات المستقبلية', imageDataUrl: './assets/initiatives/h04.jpg' },
-  { id: 'gal-0024', title: 'تطوير وتنفيذ حديقة أبو كبير (A) — حي أبو كبير', status: 'submitted', initiativeId: 'MDN-INIT-2026-0024', order: 24, caption: 'المخطط العام للحديقة من نموذج احتياج المبادرات المستقبلية', imageDataUrl: './assets/initiatives/h05.jpg' },
-  { id: 'gal-0025', title: 'تطوير وتنفيذ حديقة حي طيبة (E)', status: 'submitted', initiativeId: 'MDN-INIT-2026-0025', order: 25, caption: 'المخطط العام للحديقة من نموذج احتياج المبادرات المستقبلية', imageDataUrl: './assets/initiatives/h06.jpg' },
-  { id: 'gal-0026', title: 'تطوير وتنفيذ حديقة الدفاع (R)', status: 'submitted', initiativeId: 'MDN-INIT-2026-0026', order: 26, caption: 'المخطط العام للحديقة من نموذج احتياج المبادرات المستقبلية', imageDataUrl: './assets/initiatives/h07.jpg' },
-  { id: 'gal-0027', title: 'تطوير وتنفيذ حديقة حي النخيل (A)', status: 'submitted', initiativeId: 'MDN-INIT-2026-0027', order: 27, caption: 'المخطط العام للحديقة من نموذج احتياج المبادرات المستقبلية', imageDataUrl: './assets/initiatives/h08.jpg' },
-  { id: 'gal-0028', title: 'تطوير وتنفيذ حديقة الجابرة 2', status: 'submitted', initiativeId: 'MDN-INIT-2026-0028', order: 28, caption: 'المخطط العام للحديقة من نموذج احتياج المبادرات المستقبلية', imageDataUrl: './assets/initiatives/h09.jpg' },
-  { id: 'gal-0029', title: 'تطوير وتنفيذ حديقة الرانوناء (F)', status: 'submitted', initiativeId: 'MDN-INIT-2026-0029', order: 29, caption: 'المخطط العام للحديقة من نموذج احتياج المبادرات المستقبلية', imageDataUrl: './assets/initiatives/h10.jpg' },
-  { id: 'gal-0030', title: 'استكمال تأهيل وتطوير طريق سعد بن خيثمة', status: 'submitted', initiativeId: 'MDN-INIT-2026-0030', order: 30, caption: 'صورة الموقع من نموذج احتياج المبادرات المستقبلية', imageDataUrl: './assets/initiatives/h11.jpg' },
-  { id: 'gal-0031', title: 'تطوير منطقة الخندق — جادة الخندق (ربط ساحة الخندق بطريق سلطانة)', status: 'submitted', initiativeId: 'MDN-INIT-2026-0031', order: 31, caption: 'صورة الموقع من نموذج احتياج المبادرات المستقبلية', imageDataUrl: './assets/initiatives/h12.jpg' },
-  { id: 'gal-0032', title: 'تطوير وأنسنة طريق جبار بن صخر', status: 'submitted', initiativeId: 'MDN-INIT-2026-0032', order: 32, caption: 'صورة الموقع من نموذج احتياج المبادرات المستقبلية', imageDataUrl: './assets/initiatives/h13.jpg' },
-  { id: 'gal-0033', title: 'تطوير وأنسنة طريق سفيان بن معمر', status: 'submitted', initiativeId: 'MDN-INIT-2026-0033', order: 33, caption: 'صورة الموقع من نموذج احتياج المبادرات المستقبلية', imageDataUrl: './assets/initiatives/h14.jpg' },
-  { id: 'gal-0034', title: 'تطوير تقاطع طريق الملك سلمان مع طريق الأمير محمد بن سلمان', status: 'submitted', initiativeId: 'MDN-INIT-2026-0034', order: 34, caption: 'صورة الموقع من نموذج احتياج المبادرات المستقبلية', imageDataUrl: './assets/initiatives/h15.jpg' },
-  { id: 'gal-0035', title: 'تطوير تقاطع طريق الأمير عبدالمحسن مع طريق الهجرة', status: 'submitted', initiativeId: 'MDN-INIT-2026-0035', order: 35, caption: 'صورة الموقع من نموذج احتياج المبادرات المستقبلية', imageDataUrl: './assets/initiatives/h16.jpg' },
-  { id: 'gal-0036', title: 'استكمال تأهيل وتطوير طريق عبدالله بن أنيس', status: 'submitted', initiativeId: 'MDN-INIT-2026-0036', order: 36, caption: 'صورة الموقع من نموذج احتياج المبادرات المستقبلية', imageDataUrl: './assets/initiatives/h17.jpg' }
+  ...DEMO_INITIATIVES.map((i, k) => ({ id: `gal-${String(k + 1).padStart(4, '0')}`, title: i.title, status: i.status, initiativeId: i.id, order: k + 1, caption: CAPTION_MAIN, imageDataUrl: i.imageDataUrl })),
+  ...DEMO_INITIATIVES.filter((i) => i.planImageUrl).map((i, k) => ({ id: `gal-p${String(k + 1).padStart(3, '0')}`, title: `${i.category === 'parks' ? 'المخطط' : 'صورة الموقع'} — ${i.title}`, status: i.status, initiativeId: i.id, order: 100 + k, caption: i.category === 'parks' ? 'المخطط المبدئي من العرض' : 'صورة الموقع/المخطط من العرض', imageDataUrl: i.planImageUrl })),
+  { id: 'gal-m000', title: 'خريطة مواقع المبادرات المستهدفة الـ34', status: 'submitted', initiativeId: null, order: 200, caption: 'صور الخريطة: Esri 2026/10 — من عرض الوكالة', imageDataUrl: './assets/initiatives/m00.jpg' },
+  { id: 'gal-m001', title: 'خريطة مسار الحدائق (10 مبادرات — 41.8 مليون ريال)', status: 'submitted', initiativeId: null, order: 201, caption: 'جدول المبادرات وترقيمها على الخريطة', imageDataUrl: './assets/initiatives/m01.jpg' },
+  { id: 'gal-m002', title: 'خريطة مسار تطوير الطرق وأنسنتها (9 مبادرات — 259.4 مليون ريال)', status: 'submitted', initiativeId: null, order: 202, caption: 'جدول المبادرات وترقيمها على الخريطة', imageDataUrl: './assets/initiatives/m02.jpg' },
+  { id: 'gal-m003', title: 'خريطة مسار جسور المشاة (6 مبادرات — 41 مليون ريال)', status: 'submitted', initiativeId: null, order: 203, caption: 'جدول المبادرات وترقيمها على الخريطة', imageDataUrl: './assets/initiatives/m03.jpg' },
+  { id: 'gal-m004', title: 'خريطة مسار الجسور (9 مبادرات — 547 مليون ريال)', status: 'submitted', initiativeId: null, order: 204, caption: 'جدول المبادرات وترقيمها على الخريطة', imageDataUrl: './assets/initiatives/m04.jpg' }
 ];
 
 // طلبات تقديم تجريبية على الفرص — أكثر من متقدم على الفرصة الواحدة لعرض المفاضلة
@@ -91,23 +65,12 @@ export const DEMO_NEED_APPLICATIONS = [
   }
 ];
 
+// مسارات عرض الوكالة الأربعة — حملات داخل محفظة المبادرات المستهدفة
 export const DEMO_CAMPAIGNS = [
-  {
-    id: 'cmp-green-madinah',
-    title: 'حملة «المدينة تُزهر» للتشجير المجتمعي',
-    summary: 'حملة موسمية لتبنّي مواقع التشجير والتظليل في الأحياء السكنية بمشاركة القطاع الخاص والمتطوعين.',
-    startDate: '2026-09-01', endDate: '2026-12-31',
-    targetInitiatives: 20, categoryFocus: ['greening', 'shading', 'parks'], status: 'active',
-    portfolioId: 'pf-infra-future'
-  },
-  {
-    id: 'cmp-safe-paths',
-    title: 'حملة «طرق آمنة لمدارسنا»',
-    summary: 'تحسين ممرات المشاة والسلامة المرورية حول المدارس عبر شراكات مع شركات المقاولات المحلية.',
-    startDate: '2026-08-15', endDate: '2027-01-31',
-    targetInitiatives: 12, categoryFocus: ['sidewalks', 'safety', 'lighting'], status: 'active',
-    portfolioId: 'pf-infra-future'
-  }
+  { id: TRACKS.parks, title: 'المسار 01 — الحدائق', summary: 'عشر حدائق أحياء بدراسات متوفرة وجاهزة للتنفيذ بمساحات 5–15 ألف م²، بإجمالي 41.8 مليون ريال.', startDate: '2026-10-21', endDate: '2028-10-21', targetInitiatives: 10, categoryFocus: ['parks'], status: 'active', portfolioId: 'pf-infra-targeted-2026' },
+  { id: TRACKS.roads, title: 'المسار 02 — تطوير الطرق وأنسنتها', summary: 'تسع مبادرات لأنسنة الطرق والتقاطعات الحيوية (أرصفة، مسارات مشاة ودراجات، تشجير، إنارة جمالية)، بإجمالي 259.4 مليون ريال.', startDate: '2026-10-21', endDate: '2029-10-21', targetInitiatives: 9, categoryFocus: ['humanization', 'greening', 'sidewalks'], status: 'active', portfolioId: 'pf-infra-targeted-2026' },
+  { id: TRACKS.pedBridges, title: 'المسار 03 — جسور المشاة', summary: 'ست مبادرات لجسور ومعابر مشاة آمنة عند الجامعات والمجمعات والمدارس ومحطة القطار والمنطقة المركزية، بإجمالي 41 مليون ريال.', startDate: '2026-10-21', endDate: '2027-04-21', targetInitiatives: 6, categoryFocus: ['safety', 'sidewalks'], status: 'active', portfolioId: 'pf-infra-targeted-2026' },
+  { id: TRACKS.bridges, title: 'المسار 04 — الجسور', summary: 'تسعة جسور تقاطعات لتحرير الحركة المرورية على المحاور الرئيسة، بإجمالي 547 مليون ريال.', startDate: '2026-10-21', endDate: '2028-04-21', targetInitiatives: 9, categoryFocus: ['roads', 'safety'], status: 'active', portfolioId: 'pf-infra-targeted-2026' }
 ];
 
 

@@ -9,7 +9,7 @@ import { nowIso } from '../core/date-time.js';
 import { hashPassword, DEFAULT_PASSWORD } from './auth-service.js';
 
 const SEED_FLAG_ID = 'seed-status';
-export const SEED_VERSION = 10; // v10: إضافة 17 مبادرة من عرض «المبادرات المستقبلية — الحدائق» (v9: استبدال التجريبية بالحقيقية)
+export const SEED_VERSION = 11; // v11: استبدال كل المبادرات بالمبادرات المستهدفة الـ34 من عرض الوكالة 21-10-2026
 
 const stamp = (r) => ({ createdAt: nowIso(), updatedAt: nowIso(), ...r });
 
@@ -34,6 +34,7 @@ export async function seedDemoDataIfEmpty() {
     if (version < 8) await topUpToV8();
     if (version < 9) await replaceWithRealInitiativesV9();
     if (version < 10) await topUpToV10();
+    if (version < 11) await replaceWithTargetedInitiativesV11();
   }
   await dataProvider.put('settings', { id: SEED_FLAG_ID, seeded: true, version: SEED_VERSION, at: nowIso() });
   return true;
@@ -83,6 +84,28 @@ async function replaceWithRealInitiativesV9() {
     await dataProvider.put('campaigns', { ...c, portfolioId: DEMO_PORTFOLIOS[0]?.id || null, updatedAt: nowIso() });
   }
   await dataProvider.bulkPut('portfolios', DEMO_PORTFOLIOS.map(stamp));
+  await dataProvider.bulkPut('initiatives', DEMO_INITIATIVES.map(stamp));
+  await dataProvider.bulkPut('gallery', DEMO_GALLERY.map(stamp));
+}
+
+// v10 → v11: حذف كل المبادرات السابقة (19 + 17) وسجلاتها التابعة وزرع المبادرات المستهدفة الـ34
+// مع محفظتها ومساراتها الأربعة (حملات) ومعرض صور العرض
+async function replaceWithTargetedInitiativesV11() {
+  const users = await dataProvider.getAll('users');
+  if (!users.length) return; // منصة مُفرغة عمدًا
+  for (const store of ['initiatives', 'initiativePartners', 'milestones', 'benefits', 'risks', 'kpis',
+    'reviews', 'decisions', 'qualityChecks', 'gateChecklists', 'attachments', 'comments',
+    'changeRequests', 'deliverables', 'agreements', 'progressReports', 'gallery', 'portfolios', 'campaigns']) {
+    await dataProvider.clear(store);
+  }
+  for (const n of await dataProvider.getAll('infrastructureNeeds')) {
+    if (n.matchedInitiativeId) await dataProvider.put('infrastructureNeeds', { ...n, status: 'published', matchedInitiativeId: null, updatedAt: nowIso() });
+  }
+  for (const a of await dataProvider.getAll('needApplications')) {
+    if (a.resultInitiativeId) await dataProvider.put('needApplications', { ...a, resultInitiativeId: null, updatedAt: nowIso() });
+  }
+  await dataProvider.bulkPut('portfolios', DEMO_PORTFOLIOS.map(stamp));
+  await dataProvider.bulkPut('campaigns', DEMO_CAMPAIGNS.map(stamp));
   await dataProvider.bulkPut('initiatives', DEMO_INITIATIVES.map(stamp));
   await dataProvider.bulkPut('gallery', DEMO_GALLERY.map(stamp));
 }

@@ -137,6 +137,6 @@ export async function renderExecutive(container) {
     row.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
   });
   container.querySelector('[data-act="deck"]')?.addEventListener('click', () =>
-    openCommitteeDeck(prioritizeInitiatives(initiatives).map((p) => p.initiative), { title: 'المبادرات المستقبلية — عرض لجنة المبادرات' }));
+    openCommitteeDeck(prioritizeInitiatives(initiatives).map((p) => p.initiative), { title: 'المبادرات المستهدفة — عرض لجنة المبادرات' }));
   if (!can(role, 'decisions.view')) container.querySelector('[data-act="deck"]')?.remove();
 }

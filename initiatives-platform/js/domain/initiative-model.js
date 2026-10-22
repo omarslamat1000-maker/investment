@@ -3,7 +3,7 @@ import { required, minLength, maxLength, isPositiveNumber, isDateYmd, oneOf, val
 import { CATEGORIES, DISTRICTS, STATUSES, COST_BANDS, DURATION_BANDS, READINESS_LEVELS } from '../core/constants.js';
 import { sanitizeRecord } from '../core/sanitizer.js';
 
-export const INITIATIVE_TEXT_FIELDS = ['title', 'summary', 'scope', 'location', 'submitterName', 'submitterEntity', 'notes', 'problem', 'beneficiaryGroups', 'expectedImpact'];
+export const INITIATIVE_TEXT_FIELDS = ['title', 'summary', 'scope', 'location', 'submitterName', 'submitterEntity', 'notes', 'problem', 'beneficiaryGroups', 'expectedImpact', 'indicator', 'supportingDocs', 'readinessText', 'source'];
 
 export function newInitiative(overrides = {}) {
   return {
@@ -39,6 +39,14 @@ export function newInitiative(overrides = {}) {
     costBand: '',           // نطاق التكلفة التقديرية
     durationBand: '',       // المدة التقديرية
     readinessLevel: '',     // مستوى الجاهزية
+    // حقول عرض الوكالة (المبادرات المستهدفة)
+    indicator: '',          // مؤشر قياس الأثر
+    supportingDocs: '',     // المرفقات / الوثائق الداعمة
+    durationMonths: null,   // المدة التقديرية بالأشهر
+    readinessText: '',      // نص الجاهزية كما ورد في العرض
+    mapsUrl: '',            // رابط الموقع على الخرائط
+    planImageUrl: null,     // المخطط / الصورة الثانوية
+    source: '',             // مصدر البيانات
     // مواقع المبادرة المتعددة: [{ id, name, geometry: {type, coords} }]
     // (الحقل القديم geometry يُقرأ كموقع أول للتوافق الخلفي عبر getSites)
     sites: [],

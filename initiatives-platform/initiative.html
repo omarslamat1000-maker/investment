@@ -79,7 +79,7 @@
               <h1>${ini.title}</h1>
               <p class="mi-muted">${categoryLabel(ini.category)}${ini.location ? raw(' • ' + escapeHtml(ini.location)) : ''} • ${ini.submitterEntity || ''}</p>
             </div>
-            ${ini.imageDataUrl ? raw(`<img class="mi-public-ini__img" alt="صورة موقع المبادرة" src='${escapeHtml(ini.imageDataUrl)}'>`) : ''}
+            <div class="mi-public-ini__media">${ini.imageDataUrl ? raw(`<img class="mi-public-ini__img" alt="صورة المبادرة" src='${escapeHtml(ini.imageDataUrl)}'>`) : ''}${ini.planImageUrl ? raw(`<img class="mi-public-ini__img mi-public-ini__img--plan" alt="مخطط المبادرة" src='${escapeHtml(ini.planImageUrl)}'>`) : ''}</div>
           </header>
           ${raw(gateTrackHtml(ini.status))}
           <div class="mi-detail-grid">
@@ -90,8 +90,9 @@
               ${raw(definitionList([
                 ['الفئات المستفيدة', ini.beneficiaryGroups || '—'],
                 ['التكلفة التقديرية', ini.budget ? fmtMoney(ini.budget) : (ini.costBand ? costBandLabel(ini.costBand) : '—')],
-                ['المدة التقديرية', ini.durationBand ? durationBandLabel(ini.durationBand) : '—'],
-                ['مستوى الجاهزية', ini.readinessLevel ? readinessLabel(ini.readinessLevel) : '—'],
+                ['المدة التقديرية', ini.durationMonths ? `${ini.durationMonths} شهرًا` : (ini.durationBand ? durationBandLabel(ini.durationBand) : '—')],
+                ['مستوى الجاهزية', ini.readinessText || (ini.readinessLevel ? readinessLabel(ini.readinessLevel) : '—')],
+                ['مؤشر القياس', ini.indicator || '—'],
                 ['المرحلة الحالية', statusLabel(ini.status)],
                 ['آخر تحديث', fmtDate(ini.updatedAt)]
               ]))}
