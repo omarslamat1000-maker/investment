@@ -510,3 +510,7 @@
 .mi-cost-catalog .mi-input { width: 7rem; padding: 0.3rem 0.5rem; font-size: var(--mi-fs-sm); }
 @media (max-width: 1100px) { .mi-cost-grid { grid-template-columns: 1fr; } .mi-cost-result { position: static; } }
 @media (max-width: 700px) { .mi-cost-pick, .mi-form-grid { grid-template-columns: 1fr; } }
+
+/* صور الصفحة العامة: صورة العرض + المخطط */
+.mi-public-ini__media { display: flex; gap: var(--mi-sp-2); flex-wrap: wrap; justify-content: flex-end; }
+.mi-public-ini__img--plan { width: min(100%, 220px); }

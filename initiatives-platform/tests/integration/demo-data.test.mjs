@@ -17,10 +17,23 @@ const ROOT = join(fileURLToPath(new URL('.', import.meta.url)), '..', '..');
 const iniIds = new Set(DEMO_INITIATIVES.map((i) => i.id));
 const partnerIds = new Set(DEMO_PARTNERS.map((p) => p.id));
 
-test('المبادرات الحقيقية: 36 مبادرة (19 طرق وإنارة + 17 حدائق وأنسنة) كلها تجتاز تحقق النموذج', () => {
-  assert.equal(DEMO_INITIATIVES.length, 36);
-  assert.equal(DEMO_INITIATIVES.filter((i) => i.category === 'parks').length, 12);
-  assert.equal(DEMO_INITIATIVES.filter((i) => /حدائق/.test(i.submitterEntity)).length, 22);
+test('المبادرات المستهدفة: 34 مبادرة في 4 مسارات بإجمالي 889.1 مليون ريال كلها تجتاز تحقق النموذج', () => {
+  assert.equal(DEMO_INITIATIVES.length, 34);
+  const byTrack = (t) => DEMO_INITIATIVES.filter((i) => i.campaignId === t);
+  assert.equal(byTrack('trk-parks').length, 10);
+  assert.equal(byTrack('trk-roads-humanization').length, 9);
+  assert.equal(byTrack('trk-ped-bridges').length, 6);
+  assert.equal(byTrack('trk-bridges').length, 9);
+  const total = DEMO_INITIATIVES.reduce((a, i) => a + i.budget, 0);
+  assert.equal(total, 889_135_200); // العرض يقرّبها إلى 889.1 مليون ريال
+  assert.equal(byTrack('trk-parks').reduce((a, i) => a + i.budget, 0), 41_785_200);
+  assert.equal(byTrack('trk-roads-humanization').reduce((a, i) => a + i.budget, 0), 259_350_000);
+  assert.equal(byTrack('trk-ped-bridges').reduce((a, i) => a + i.budget, 0), 41_000_000);
+  assert.equal(byTrack('trk-bridges').reduce((a, i) => a + i.budget, 0), 547_000_000);
+  for (const i of DEMO_INITIATIVES) {
+    assert.ok(i.durationMonths > 0 && i.readinessText && i.supportingDocs && i.mapsUrl, `${i.id}: حقول العرض ناقصة`);
+    assert.ok(i.campaignId && i.indicator !== undefined, i.id);
+  }
   for (const ini of DEMO_INITIATIVES) {
     const r = validateInitiative(ini);
     assert.equal(r.valid, true, `${ini.id}: ${JSON.stringify(r.errors)}`);
@@ -87,7 +100,7 @@ test('المحفظة: كل المبادرات تتبع محفظة موجودة �
 
 test('المواقع الجغرافية: إحداثيات المدينة المنورة من روابط الخرائط المرفقة', () => {
   const withSites = DEMO_INITIATIVES.filter((i) => i.sites?.length);
-  assert.ok(withSites.length >= 14, 'الغالبية لها موقع محدد');
+  assert.equal(withSites.length, DEMO_INITIATIVES.length, 'كل المبادرات المستهدفة لها موقع من رابط العرض');
   for (const i of withSites) {
     const ids = new Set(i.sites.map((s) => s.id));
     assert.equal(ids.size, i.sites.length, `${i.id}: معرفات مواقع مكررة`);
@@ -109,9 +122,11 @@ test('صور المبادرات موجودة فعليًا في مجلد الأص
     assert.ok(ini.imageDataUrl?.startsWith('./assets/initiatives/'), `${ini.id}: لا صورة`);
     assert.ok(existsSync(join(ROOT, ini.imageDataUrl)), `${ini.id}: ملف الصورة مفقود ${ini.imageDataUrl}`);
   }
-  assert.equal(DEMO_GALLERY.length, DEMO_INITIATIVES.length);
+  const covered = new Set(DEMO_GALLERY.map((g) => g.initiativeId));
+  for (const i of DEMO_INITIATIVES) assert.ok(covered.has(i.id), `${i.id}: لا صورة في المعرض`);
   for (const g of DEMO_GALLERY) {
-    assert.ok(iniIds.has(g.initiativeId), `${g.id}: مبادرة غير موجودة`);
+    if (g.initiativeId) assert.ok(iniIds.has(g.initiativeId), `${g.id}: مبادرة غير موجودة`);
+    if (g.initiativeId === null) assert.ok(/خريطة/.test(g.title), g.id);
     assert.ok(existsSync(join(ROOT, g.imageDataUrl)), `${g.id}: صورة مفقودة`);
   }
 });
